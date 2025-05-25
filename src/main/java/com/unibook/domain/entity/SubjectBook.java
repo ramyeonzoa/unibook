@@ -1,54 +1,30 @@
 package com.unibook.domain.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 @Entity
 @Table(name = "subject_books")
-public class SubjectBook {
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+public class SubjectBook extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long subjectBookId;
 
+    @NotNull(message = "과목은 필수입니다")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "subject_id", nullable = false)
+    @ToString.Exclude
     private Subject subject;
 
+    @NotNull(message = "책은 필수입니다")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id", nullable = false)
+    @ToString.Exclude
     private Book book;
-
-    @Column(nullable = false)
-    private Boolean isRequired = true;
-
-    public Long getSubjectBookId() {
-        return subjectBookId;
-    }
-
-    public void setSubjectBookId(Long subjectBookId) {
-        this.subjectBookId = subjectBookId;
-    }
-
-    public Subject getSubject() {
-        return subject;
-    }
-
-    public void setSubject(Subject subject) {
-        this.subject = subject;
-    }
-
-    public Book getBook() {
-        return book;
-    }
-
-    public void setBook(Book book) {
-        this.book = book;
-    }
-
-    public Boolean getIsRequired() {
-        return isRequired;
-    }
-
-    public void setIsRequired(Boolean isRequired) {
-        this.isRequired = isRequired;
-    }
 }

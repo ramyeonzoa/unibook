@@ -1,138 +1,97 @@
 package com.unibook.domain.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
-public class User {
+@Table(name = "users", indexes = {
+    @Index(name = "idx_user_email", columnList = "email", unique = true),
+    @Index(name = "idx_user_department", columnList = "department_id")
+})
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+public class User extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long userId;
 
-    @Column(nullable = false, length = 50)
-    private String nickname;
-
-    @Column(nullable = false, unique = true, length = 100)
+    @Email(message = "올바른 이메일 형식이어야 합니다")
+    @NotBlank(message = "이메일은 필수입니다")
+    @Column(nullable = false, unique = true, length = 320)
     private String email;
 
-    @Column(nullable = false)
+    @ToString.Exclude
+    @Column(nullable = false, length = 255)
     private String password;
 
+    @NotBlank(message = "이름은 필수입니다")
+    @Size(min = 2, max = 50, message = "이름은 2자 이상 50자 이하여야 합니다")
+    @Column(nullable = false, length = 50)
+    private String name;
+    
+    @NotBlank(message = "전화번호는 필수입니다")
+    @Column(nullable = false, length = 15)
+    private String phoneNumber;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String studentId;
+    @Builder.Default
+    private UserRole role = UserRole.USER;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "school_id", nullable = false)
-    private School school;
+    @JoinColumn(name = "department_id")
+    @ToString.Exclude
+    private Department department;
+
+    // Department를 통해 School에 접근하는 헬퍼 메서드
+    public School getSchool() {
+        return department != null ? department.getSchool() : null;
+    }
 
     @Column(nullable = false)
-    private Boolean isEmailVerified = false;
+    @Builder.Default
+    private Boolean verified = false;
+    
+    public boolean isVerified() {
+        return verified != null && verified;
+    }
 
-    @Column
-    private String emailVerificationToken;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private UserStatus status = UserStatus.ACTIVE;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime passwordUpdatedAt;
 
-    @Column
-    private LocalDateTime lastLoginAt;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user")
+    @Builder.Default
+    @ToString.Exclude
     private List<Post> posts = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (passwordUpdatedAt == null) {
+            passwordUpdatedAt = LocalDateTime.now();
+        }
     }
 
-    public Long getUserId() {
-        return userId;
+    // Enum 정의
+    public enum UserRole {
+        ADMIN, USER  // STUDENT -> USER로 변경
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
-
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getStudentId() {
-        return studentId;
-    }
-
-    public void setStudentId(String studentId) {
-        this.studentId = studentId;
-    }
-
-    public School getSchool() {
-        return school;
-    }
-
-    public void setSchool(School school) {
-        this.school = school;
-    }
-
-    public Boolean getIsEmailVerified() {
-        return isEmailVerified;
-    }
-
-    public void setIsEmailVerified(Boolean isEmailVerified) {
-        this.isEmailVerified = isEmailVerified;
-    }
-
-    public String getEmailVerificationToken() {
-        return emailVerificationToken;
-    }
-
-    public void setEmailVerificationToken(String emailVerificationToken) {
-        this.emailVerificationToken = emailVerificationToken;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getLastLoginAt() {
-        return lastLoginAt;
-    }
-
-    public void setLastLoginAt(LocalDateTime lastLoginAt) {
-        this.lastLoginAt = lastLoginAt;
-    }
-
-    public List<Post> getPosts() {
-        return posts;
-    }
-
-    public void setPosts(List<Post> posts) {
-        this.posts = posts;
+    public enum UserStatus {
+        ACTIVE, SUSPENDED, WITHDRAWN  // BANNED -> SUSPENDED로 변경
     }
 }

@@ -1,5 +1,6 @@
 package com.unibook.service;
 
+import com.unibook.domain.dto.PostResponseDto;
 import com.unibook.domain.entity.Post;
 import com.unibook.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +20,8 @@ public class PostService {
     private final PostRepository postRepository;
     
     public List<Post> getAllPosts() {
-        return postRepository.findAll();
+        // TODO: 페이징 필요 - 전체 조회는 위험
+        return postRepository.findAllWithDetails();
     }
     
     public Optional<Post> getPostById(Long id) {
@@ -37,7 +40,7 @@ public class PostService {
     }
     
     public List<Post> getPostsByStatus(Post.PostStatus status) {
-        return postRepository.findByStatus(status);
+        return postRepository.findByStatusWithDetails(status);
     }
     
     @Transactional
@@ -48,5 +51,12 @@ public class PostService {
     @Transactional
     public void deletePost(Long id) {
         postRepository.deleteById(id);
+    }
+    
+    // DTO 반환 메서드
+    public List<PostResponseDto> getRecentPostDtos(int limit) {
+        return getRecentPosts(limit).stream()
+                .map(PostResponseDto::listFrom)  // 목록용 간단한 DTO 사용
+                .collect(Collectors.toList());
     }
 }

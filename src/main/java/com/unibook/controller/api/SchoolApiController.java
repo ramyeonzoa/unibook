@@ -1,5 +1,6 @@
 package com.unibook.controller.api;
 
+import com.unibook.common.AppConstants;
 import com.unibook.domain.entity.School;
 import com.unibook.service.SchoolService;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +23,10 @@ public class SchoolApiController {
     @GetMapping("/search")
     public ResponseEntity<List<Map<String, Object>>> searchSchools(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "10") int limit) {
+            @RequestParam(defaultValue = "" + AppConstants.SCHOOL_SEARCH_LIMIT) int limit) {
         
         // 최소 2글자 이상 입력해야 검색
-        if (keyword == null || keyword.trim().length() < 2) {
+        if (keyword == null || keyword.trim().length() < AppConstants.MIN_SEARCH_LENGTH) {
             return ResponseEntity.ok(Collections.emptyList());
         }
         
@@ -50,7 +51,7 @@ public class SchoolApiController {
         // 지금은 처음 10개 학교 반환
         List<Map<String, Object>> results = schoolService.getAllSchools()
                 .stream()
-                .limit(10)
+                .limit(AppConstants.SCHOOL_SEARCH_LIMIT)
                 .map(school -> {
                     Map<String, Object> item = new HashMap<>();
                     item.put("id", school.getSchoolId());

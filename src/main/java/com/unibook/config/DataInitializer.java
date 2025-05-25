@@ -1,7 +1,10 @@
 package com.unibook.config;
 
+import com.unibook.common.AppConstants;
+import com.unibook.common.Messages;
 import com.unibook.domain.entity.Department;
 import com.unibook.domain.entity.School;
+import com.unibook.exception.DataInitializationException;
 import com.unibook.repository.DepartmentRepository;
 import com.unibook.repository.SchoolRepository;
 import com.unibook.service.SchoolService;
@@ -66,10 +69,10 @@ public class DataInitializer implements CommandLineRunner {
     }
     
     private int loadSchoolsFromCsv() throws Exception {
-        log.info("Loading schools from CSV...");
+        log.info(Messages.LOG_LOADING_DATA, "schools");
         
         try {
-            ClassPathResource resource = new ClassPathResource("data/univ-email-250411-final.csv");
+            ClassPathResource resource = new ClassPathResource(Messages.CSV_SCHOOLS_FILE);
             
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
@@ -86,24 +89,28 @@ public class DataInitializer implements CommandLineRunner {
                 
                 while ((line = reader.readLine()) != null) {
                     String[] parts = line.split(",");
-                    if (parts.length >= 2) {
+                    if (parts.length >= AppConstants.MIN_CSV_FIELDS) {
                         String emailDomain = parts[0].trim();
                         String schoolName = parts[1].trim();
                         
                         // Get or create school
                         School school = schoolMap.get(schoolName);
                         if (school == null) {
-                            school = new School();
-                            school.setSchoolName(schoolName);
-                            school.setAllDomains(new HashSet<>());
+                            school = School.builder()
+                                    .schoolName(schoolName)
+                                    .primaryDomain(emailDomain.isEmpty() ? null : emailDomain)
+                                    .allDomains(new HashSet<>())
+                                    .build();
                             schoolMap.put(schoolName, school);
                         }
                         
-                        // Add email domain
-                        school.getAllDomains().add(emailDomain);
-                        // Set primary domain (first domain for the school)
-                        if (school.getPrimaryDomain() == null) {
-                            school.setPrimaryDomain(emailDomain);
+                        // Add email domain if not empty
+                        if (!emailDomain.isEmpty()) {
+                            school.getAllDomains().add(emailDomain);
+                            // Update primary domain if it was null
+                            if (school.getPrimaryDomain() == null) {
+                                school.setPrimaryDomain(emailDomain);
+                            }
                         }
                     }
                 }
@@ -126,15 +133,15 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.error("Error loading schools from CSV", e);
-            throw new RuntimeException("Failed to load schools from CSV", e);
+            throw new DataInitializationException.CsvLoadException("univ-email-250411-final.csv", e);
         }
     }
     
     private int loadDepartmentsFromCsv() throws Exception {
-        log.info("Loading departments from CSV...");
+        log.info(Messages.LOG_LOADING_DATA, "departments");
         
         try {
-            ClassPathResource resource = new ClassPathResource("data/univ-dept-mapped.csv");
+            ClassPathResource resource = new ClassPathResource(Messages.CSV_DEPARTMENTS_FILE);
             
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
@@ -150,7 +157,7 @@ public class DataInitializer implements CommandLineRunner {
                 
                 while ((line = reader.readLine()) != null) {
                     String[] parts = line.split(",");
-                    if (parts.length >= 2) {
+                    if (parts.length >= AppConstants.MIN_CSV_FIELDS) {
                         String schoolName = parts[0].trim();
                         String departmentName = parts[1].trim();
                         
@@ -164,16 +171,17 @@ public class DataInitializer implements CommandLineRunner {
                                     departmentName, school.getSchoolId());
                             
                             if (!exists) {
-                                Department department = new Department();
-                                department.setDepartmentName(departmentName);
-                                department.setSchool(school);
+                                Department department = Department.builder()
+                                        .departmentName(departmentName)
+                                        .school(school)
+                                        .build();
                                 departmentRepository.save(department);
                                 count++;
                                 
                                 // Batch save를 위한 flush (매 100개마다)
-                                if (count % 100 == 0) {
+                                if (count % AppConstants.CSV_LOG_INTERVAL == 0) {
                                     departmentRepository.flush();
-                                    log.debug("Flushed after {} departments", count);
+                                    log.debug(Messages.LOG_CSV_FLUSH, count);
                                 }
                             }
                         } else {
@@ -186,7 +194,7 @@ public class DataInitializer implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.error("Error loading departments from CSV", e);
-            throw new RuntimeException("Failed to load departments from CSV", e);
+            throw new DataInitializationException.CsvLoadException("univ-dept-mapped.csv", e);
         }
     }
     
@@ -194,15 +202,15 @@ public class DataInitializer implements CommandLineRunner {
         long schoolCount = schoolRepository.count();
         long departmentCount = departmentRepository.count();
         
-        log.info("Data integrity check - Schools: {}, Departments: {}", schoolCount, departmentCount);
+        log.info(Messages.LOG_DATA_INTEGRITY_CHECK, schoolCount, departmentCount);
         
         // 최소한의 데이터가 있는지 확인
         if (schoolCount == 0) {
-            throw new IllegalStateException("No schools were loaded. Data initialization failed.");
+            throw new DataInitializationException.DataIntegrityException(Messages.SCHOOL_DATA_LOAD_FAILED);
         }
         
         if (departmentCount == 0) {
-            throw new IllegalStateException("No departments were loaded. Data initialization failed.");
+            throw new DataInitializationException.DataIntegrityException(Messages.DEPARTMENT_DATA_LOAD_FAILED);
         }
         
         // 모든 학과가 학교를 가지고 있는지 확인
@@ -211,11 +219,11 @@ public class DataInitializer implements CommandLineRunner {
                 .count();
                 
         if (orphanDepartments > 0) {
-            throw new IllegalStateException(
-                String.format("Found %d departments without schools. Data integrity violated.", orphanDepartments)
+            throw new DataInitializationException.DataIntegrityException(
+                String.format(Messages.DEPARTMENT_INTEGRITY_ERROR, orphanDepartments)
             );
         }
         
-        log.info("Data integrity verification passed!");
+        log.info(Messages.LOG_DATA_INTEGRITY_PASSED);
     }
 }

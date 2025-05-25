@@ -1,5 +1,7 @@
 package com.unibook.util;
 
+import com.unibook.exception.ValidationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Component
 public class FileUploadUtil {
     
@@ -31,22 +34,18 @@ public class FileUploadUtil {
     public void validateFile(MultipartFile file) {
         // 파일이 비어있는지 확인
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("파일이 비어있습니다.");
+            throw new ValidationException.EmptyFileException();
         }
         
         // 파일 크기 확인
         if (file.getSize() > maxFileSize) {
-            throw new IllegalArgumentException(
-                String.format("파일 크기는 %dMB를 초과할 수 없습니다.", maxFileSize / (1024 * 1024))
-            );
+            throw new ValidationException.FileSizeExceededException(maxFileSize);
         }
         
         // 파일 확장자 확인
         String filename = file.getOriginalFilename();
         if (filename == null || !hasAllowedExtension(filename)) {
-            throw new IllegalArgumentException(
-                "허용되지 않는 파일 형식입니다. 허용된 확장자: " + allowedExtensions
-            );
+            throw new ValidationException.InvalidFileExtensionException(allowedExtensions);
         }
     }
     
@@ -84,7 +83,7 @@ public class FileUploadUtil {
             Files.deleteIfExists(path);
         } catch (IOException e) {
             // 파일 삭제 실패는 로그만 남기고 예외를 던지지 않음
-            System.err.println("Failed to delete file: " + filePath);
+            log.error("Failed to delete file: {}", filePath, e);
         }
     }
     

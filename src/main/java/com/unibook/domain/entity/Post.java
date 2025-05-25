@@ -1,169 +1,103 @@
 package com.unibook.domain.entity;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "posts")
-public class Post {
+@Table(name = "posts", indexes = {
+    @Index(name = "idx_post_created_at", columnList = "created_at"),
+    @Index(name = "idx_post_status", columnList = "status"),
+    @Index(name = "idx_post_user", columnList = "user_id"),
+    @Index(name = "idx_post_book", columnList = "book_id"),
+    @Index(name = "idx_post_status_created", columnList = "status, created_at")
+})
+@Getter @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+public class Post extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long postId;
 
-    @Column(nullable = false, length = 200)
+    @NotNull(message = "사용자는 필수입니다")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @ToString.Exclude
+    private User user;
+
+    @NotNull(message = "상품 유형은 필수입니다")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ProductType productType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "book_id")
+    @ToString.Exclude
+    private Book book;
+
+    @NotBlank(message = "제목은 필수입니다")
+    @Size(max = 255, message = "제목은 255자 이하여야 합니다")
+    @Column(nullable = false, length = 255)
     private String title;
 
+    @NotNull(message = "가격은 필수입니다")
+    @Min(value = 0, message = "가격은 0 이상이어야 합니다")
+    @Column(nullable = false)
+    private Integer price;
+    
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false, precision = 10, scale = 0)
-    private BigDecimal price;
-
-    @Column(nullable = false)
+    @NotNull(message = "거래 상태는 필수입니다")
     @Enumerated(EnumType.STRING)
-    private BookCondition bookCondition;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
     private PostStatus status = PostStatus.AVAILABLE;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    @Column
-    private LocalDateTime updatedAt;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private TransactionMethod transactionMethod;
+    
+    @Column(length = 100)
+    private String campusLocation;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer viewCount = 0;
 
-    @ElementCollection
-    @CollectionTable(name = "post_images", joinColumns = @JoinColumn(name = "post_id"))
-    @Column(name = "image_path")
-    private List<String> imagePaths = new ArrayList<>();
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer wishlistCount = 0;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @BatchSize(size = 10)  // N+1 문제 해결: IN 쿼리로 10개씩 묶어서 조회
+    @Builder.Default
+    @ToString.Exclude
+    private List<PostImage> postImages = new ArrayList<>();
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    @OneToOne(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    private PostDescription postDescription;
 
-    public enum BookCondition {
-        NEW, LIKE_NEW, GOOD, FAIR, POOR
+    // Enum 정의
+    public enum ProductType {
+        TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC
     }
 
     public enum PostStatus {
-        AVAILABLE, RESERVED, SOLD
+        AVAILABLE, RESERVED, COMPLETED
     }
-
-    public Long getPostId() {
-        return postId;
-    }
-
-    public void setPostId(Long postId) {
-        this.postId = postId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
-
-    public BookCondition getBookCondition() {
-        return bookCondition;
-    }
-
-    public void setBookCondition(BookCondition bookCondition) {
-        this.bookCondition = bookCondition;
-    }
-
-    public PostStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(PostStatus status) {
-        this.status = status;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public Book getBook() {
-        return book;
-    }
-
-    public void setBook(Book book) {
-        this.book = book;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public Integer getViewCount() {
-        return viewCount;
-    }
-
-    public void setViewCount(Integer viewCount) {
-        this.viewCount = viewCount;
-    }
-
-    public List<String> getImagePaths() {
-        return imagePaths;
-    }
-
-    public void setImagePaths(List<String> imagePaths) {
-        this.imagePaths = imagePaths;
+    
+    public enum TransactionMethod {
+        DIRECT, PARCEL, BOTH
     }
 }

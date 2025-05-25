@@ -13,474 +13,410 @@ Unibook: 대학생 맞춤형 교재 거래 플랫폼
 🔧 Exact Version Configuration
 Critical: Use these exact versions to avoid conflicts
 
-Spring Boot: 3.5.0 (실제 사용 중인 버전)
-Java: 21 (LTS, optimized for Spring Boot 3.5.0)
-Gradle: 8.4+ (compatible with Spring Boot 3.5.0)
+Spring Boot: 3.5.0
+Java: 21 (LTS)
+Gradle: 8.4+
 MySQL: 8.0+ (Windows localhost:3306)
-Lombok: 추가됨 (build.gradle에 compileOnly, annotationProcessor)
+Lombok: 필수 (IntelliJ Annotation Processing 활성화 필요)
+Thymeleaf Security: thymeleaf-extras-springsecurity6
 
 📍 Development Environment
 
 Path: /mnt/c/dev/unibook (Windows C:\dev\unibook)
 IDE: IntelliJ IDEA (Windows) - ⚠️ MUST run from IntelliJ, NOT WSL terminal
-Database: MySQL running on Windows (localhost:3306, username: root, password: 1234)
-WSL: Used for Claude Code and git operations only
-Execution: Spring Boot MUST be run from IntelliJ IDEA
+Database: MySQL on Windows (localhost:3306, username: root, password: 1234)
+WSL: Claude Code와 git 작업용으로만 사용
+Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 실행
 
-✅ Day 1-2 COMPLETED (2025년 1월 25-26일)
+✅ Day 1-3 COMPLETED (2025년 1월 25-26일)
 
-📋 Day 1 완료 사항:
-1. Spring Boot 프로젝트 초기 설정
-2. 8개 Entity 클래스 생성 (User, School, Department, Professor, Subject, Book, Post, SubjectBook)
-3. 8개 Repository 인터페이스 생성
-4. MySQL 데이터베이스 생성 (unibook_db)
-5. application.yml 설정 완료
-6. GitHub 저장소 생성 및 초기 커밋
+📋 Day 1 완료:
+- Spring Boot 프로젝트 초기 설정
+- 8개 Entity 클래스 생성
+- Repository 인터페이스 생성
+- MySQL 데이터베이스 생성
+- GitHub 저장소 생성
 
-📋 Day 2 완료 사항:
-1. Lombok 의존성 추가 (Annotation Processing 활성화 필요)
-2. Service 계층 구현 (UserService, SchoolService, PostService, BookService)
-3. HomeController + index.html 메인 페이지 (Bootstrap 5)
-4. DataInitializer로 CSV 데이터 로드:
-   - 학교: 400개 (univ-email-250411-final.csv)
-   - 학과: 12,870개 (univ-dept-mapped.csv)
-5. 개선사항 적용:
-   - N+1 문제 해결 (Fetch Join)
-   - 데이터 무결성 보장 (@Transactional 강화)
-   - 매직넘버 제거 (application.yml 설정)
-   - 자동완성 검색 UI (jQuery UI Autocomplete)
-   - 캐싱 적용 (@EnableCaching)
-   - 파일 업로드 준비 (FileUploadConfig, FileUploadUtil)
+📋 Day 2 완료:
+- Service 계층 구현 (4개 서비스)
+- HomeController + 메인 페이지
+- CSV 데이터 로드 (학교 400개, 학과 12,870개)
+- 성능 최적화 (Fetch Join, 캐싱)
+- 보안 강화 (환경별 설정 분리)
 
-🎯 Claude Code Starting Point
-Current Status: Spring Boot project structure created by IntelliJ
-Next Action: Add Entity classes, configure application.yml, set up basic structure
-Project structure should now exist:
-/mnt/c/dev/unibook/
-├── src/main/java/com/unibook/
-│   └── UnibookApplication.java
-├── src/main/resources/
-│   └── application.properties  # Need to convert to .yml
-├── build.gradle
-└── gradlew
-🏗️ Project Structure (Spring Boot Best Practices)
-unibook/
-├── src/main/java/com/unibook/
-│   ├── config/           # Security, Database config
-│   ├── controller/       # @Controller classes
-│   ├── service/          # @Service classes (business logic)
-│   ├── repository/       # @Repository interfaces  
-│   ├── domain/
-│   │   ├── entity/       # JPA @Entity classes
-│   │   └── dto/          # Data Transfer Objects
-│   └── util/            # Utility classes
-├── src/main/resources/
-│   ├── templates/        # Thymeleaf .html files
-│   ├── static/
-│   │   ├── css/         # Bootstrap + custom CSS
-│   │   ├── js/          # JavaScript files
-│   │   └── images/      # Static images
-│   └── application.yml   # Configuration
-└── uploads/             # User uploaded files
-    └── images/posts/    # Post images
+📋 Day 3 완료:
+- BaseEntity 생성 (JPA Auditing)
+- 모든 Entity 재구성 (DB 스키마 정합성)
+- Spring Security 설정
+- DTO 패턴 전면 도입
+- 회원가입/로그인 시스템 구현
+- 실시간 비밀번호 검증
+- 로그인 상태별 UI 분기
+
 📋 Development Schedule
-Week 1: Core Features
 
+Week 1: Core Features
 ✅ Day 1-2: Project setup + Entity classes + Basic CRUD
-☐ Day 3: Authentication system (signup/login)
+✅ Day 3: Authentication system (signup/login)
 ☐ Day 4: Email verification with university domain validation
 ☐ Day 5: Post CRUD with image upload
 ☐ Day 6: Advanced search functionality (PROJECT CORE)
 ☐ Day 7: Integration testing and UI improvement
 
 Week 2: Advanced Features
-
 ☐ Day 8: Wishlist + Notification system
-☐ Day 9-10: Firebase real-time chat
+☐ Day 9-10: Firebase real-time chat (결정됨: Firebase 사용)
 ☐ Day 11: Advanced features (view count, user profile)
 ☐ Day 12: UI/UX improvements
 ☐ Day 13: Testing and bug fixes
-☐ Day 14: Deployment preparation
+☐ Day 14: Deployment preparation (플랫폼 미정 - 구현 후 결정)
 
-⚠️ REQUIRED CONFIRMATIONS - Ask Before Proceeding
-Claude Code should ask user to confirm these before starting:
+🏗️ Current Project Structure
+unibook/
+├── src/main/java/com/unibook/
+│   ├── common/          # AppConstants, Messages (NEW)
+│   ├── config/          # SecurityConfig, JpaAuditConfig, DataInitializer
+│   ├── controller/      # HomeController, AuthController, GlobalExceptionHandler
+│   │   └── api/        # SchoolApiController, DepartmentApiController
+│   ├── domain/
+│   │   ├── entity/     # 12개 Entity (모두 BaseEntity 상속)
+│   │   └── dto/        # DTO 클래스들
+│   ├── exception/       # 커스텀 예외 클래스들 (NEW)
+│   │   ├── BusinessException (기본)
+│   │   ├── ValidationException (검증)
+│   │   ├── ResourceNotFoundException (404)
+│   │   ├── AuthenticationException (인증)
+│   │   └── DataInitializationException (초기화)
+│   ├── repository/      # JPA Repository 인터페이스
+│   ├── security/        # UserPrincipal, CustomUserDetailsService
+│   ├── service/         # 비즈니스 로직 서비스
+│   └── util/           # FileUploadUtil 등
+└── src/main/resources/
+    ├── templates/       # Thymeleaf 템플릿
+    │   └── auth/       # signup.html, login.html
+    ├── data/           # CSV 파일들
+    └── application.yml # 설정 파일
 
-MySQL Database Setup
+🔑 Critical Entity Structure (Day 3 확정)
 
-Is MySQL installed and running?
-Database name: unibook_db
-Username/password for connection
-Port: 3306 (default)
-
-
-Email Service Setup (Day 4 needed)
-
-Gmail account for SMTP (app password required)
-User has university domain CSV file ready
-
-
-File Paths
-
-Confirm project location: /mnt/c/Users/[username]/Desktop/unibook
-Where to store uploaded images: /uploads/images/
-
-
-Spring Initializr Configuration
-
-Group: com.unibook
-Artifact: unibook
-Package: com.unibook
-Dependencies: Web, JPA, MySQL, Security, Thymeleaf, Validation, Mail, DevTools
-
-
-
-🗄️ MySQL Database Schema
-Create database first:
-```sql
-CREATE DATABASE unibook_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+1. **BaseEntity (모든 Entity의 부모)**
+```java
+@MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
+public abstract class BaseEntity {
+    @CreatedDate
+    private LocalDateTime createdAt;
+    
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+    
+    @CreatedBy
+    private Long createdBy;
+    
+    @LastModifiedBy
+    private Long updatedBy;
+}
 ```
 
-✅ Current application.yml (Day 2 완료):
+2. **User Entity 핵심 변경사항**
+- nickname → name으로 변경
+- phoneNumber 필드 추가 (필수)
+- User는 School 직접 참조 없음, Department를 통해서만 접근
+- verified 필드 (boolean, 이메일 인증용)
+- UserRole: ADMIN, USER (STUDENT 아님)
+- UserStatus: ACTIVE, SUSPENDED, WITHDRAWN (BANNED 아님)
+
+3. **Post Entity 필수 필드**
+- productType (TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC)
+- status → PostStatus (AVAILABLE, RESERVED, COMPLETED)
+- transactionMethod, campusLocation, description 추가
+- postImages (List<PostImage>) - 이미지는 PostImage 엔티티로 관리
+
+4. **Book Entity**
+- isbn, publicationYear, originalPrice 필드 필수
+- year → publicationYear으로 변경
+
+5. **PostImage Entity**
+- postImageId (imageId 아님)
+- imageUrl (imagePath 아님)
+
+🗄️ Database Configuration
+
+**application.yml (공개 설정)**
 ```yaml
 spring:
+  profiles:
+    active: local
   datasource:
-    url: jdbc:mysql://localhost:3306/unibook_db
+    url: jdbc:mysql://localhost:3306/unibook_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
-    password: 1234
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
-      ddl-auto: update  # Day 2부터 update로 변경됨
+      ddl-auto: update  # 개발 중에는 필요시 create로 변경
     show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.MySQL8Dialect
   cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=300s
-      
+    type: simple
+    cache-names:
+      - schools
+      - schoolSearch
+
 app:
   home:
     popular-books-limit: 8
     recent-posts-limit: 5
-  file:
-    upload-dir: uploads/
-    max-size: 10485760  # 10MB
-    allowed-extensions: jpg,jpeg,png,gif
 ```
-🎯 Key Features to Implement
-1. University Email Verification
 
-CSV file with university email domains (e.g., snu.ac.kr)
-Validate email domain before sending verification
-Only allow verified university students
+**application-local.yml (gitignore, 개발자 로컬 설정)**
+```yaml
+spring:
+  datasource:
+    password: 1234
 
-2. Advanced Search System (PROJECT CORE)
-Book detail page should show:
-
-"Courses using this book" section
-Grouped by: School → Department → Professor → Subject
-"Show only my university" filter option
-Clickable navigation:
-
-Click department → show all textbooks for that department
-Click professor → show all textbooks for that professor
-Click subject → show all textbooks for that subject
-
-
-
-3. Transaction History
-
-Show previous transaction prices for same textbook
-Display completed transaction history
-
-🔧 Technical Requirements
-Dependencies (Day 2 업데이트됨):
-```gradle
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'  // Day 2 추가
-    implementation 'com.github.ben-manes.caffeine:caffeine'  // Day 2 추가
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    
-    // Lombok - Day 2 추가
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-}
+logging:
+  level:
+    com.unibook: DEBUG
+    org.hibernate.SQL: DEBUG
 ```
-Package Structure
-src/main/java/com/unibook/
-├── config/          # Security, Database config
-├── domain/
-│   ├── entity/      # JPA entities
-│   └── dto/         # Data transfer objects
-├── repository/      # JPA repositories
-├── service/         # Business logic
-├── controller/      # Web controllers
-└── util/           # Utility classes
-🎨 Frontend Approach
 
-Template Engine: Thymeleaf
-CSS Framework: Bootstrap 5
-JavaScript: Vanilla JS + AJAX for dynamic content
-Image Upload: Local file storage (path stored in DB)
+🔐 Spring Security & Authentication (Day 3 완료)
 
-🚨 Priority Guidelines
+1. **SecurityConfig 핵심 설정**
+- `/`, `/home`, `/signup`, `/login`, `/api/**` - permitAll()
+- `/search/**`, `/posts/**`, `/books/**` - permitAll() (검색은 로그인 없이 가능)
+- CustomUserDetailsService와 DaoAuthenticationProvider 설정 필수
+- 로그인 시 email 사용 (username 파라미터로 받음)
 
-MUST HAVE: Authentication + Post CRUD + Advanced search
-SHOULD HAVE: Wishlist + Basic notifications
-NICE TO HAVE: Real-time chat + Advanced UI
+2. **회원가입 검증**
+- 이메일: 대학 이메일 형식 (현재는 경고만, Day 4에서 엄격 적용)
+- 비밀번호: 8-20자, 영문+숫자+특수문자(@$!%*#?&_) 필수
+- 전화번호: 자동 포맷팅 (010-1234-5678)
+- 학과: 필수 선택 (자동완성 검색)
 
-📝 Development Notes
+3. **UserPrincipal**
+- Spring Security UserDetails 구현
+- 개발 단계: verified=false여도 로그인 가능
+- isEnabled()는 status == ACTIVE만 체크
 
-Focus on robust search functionality - this is the core differentiator
-Use Spring Data JPA for complex queries with multiple joins
-Implement proper validation for university email domains
-Plan for scalability but implement MVP first
+📊 DTO Pattern Implementation (Day 3 완료)
 
-🔍 Key Queries to Implement
-java// Find subjects that use a specific book
-List<Subject> findSubjectsByBooks_BookId(Long bookId);
+1. **필수 DTO 클래스들**
+- SignupRequestDto: 회원가입 요청
+- LoginRequestDto: 로그인 요청  
+- UserResponseDto: 사용자 정보 응답
+- PostResponseDto: 게시글 응답 (listFrom() 메서드 포함)
+- SchoolDto, BookDto: 목록 표시용
 
-// Find posts by professor
-List<Post> findByBook_Subjects_Professor_ProfessorId(Long professorId);
+2. **Service 메서드 규칙**
+- Entity 반환: getAllSchools(), getRecentPosts()
+- DTO 반환: getAllSchoolDtos(), getRecentPostDtos()
+- Controller는 항상 DTO 메서드 사용
 
-// Find posts by department
-List<Post> findByBook_Subjects_Professor_Department_DepartmentId(Long departmentId);
+🎨 Frontend Implementation (Day 3 완료)
 
-// Complex search with multiple filters
-List<Post> findByBook_Subjects_Professor_Department_School_SchoolId(Long schoolId);
-🚨 Common Issues & Solutions (Day 1-2 경험 기반)
+1. **Thymeleaf Security**
+- xmlns:sec 네임스페이스 필수
+- sec:authorize="isAuthenticated()" - 로그인 사용자만
+- sec:authorize="!isAuthenticated()" - 비로그인 사용자만
+- sec:authentication="principal.name" - 사용자 정보 접근
 
-1. **Lombok 컴파일 오류** ⚠️ 자주 발생
-   - 문제: cannot find symbol (getter/setter)
-   - 해결: IntelliJ → Settings → Build → Compiler → Annotation Processors → Enable annotation processing
-   - 추가: build.gradle에 compileOnly와 annotationProcessor 둘 다 필요
+2. **자동완성 검색**
+- jQuery UI Autocomplete 사용
+- 학교: 2글자 이상 입력 시 작동
+- 학과: 학교명 입력 → 해당 학교의 모든 학과 표시 (limit 200)
+- 선택 시 hidden input에 ID 저장
 
-2. **Spring Boot 실행 위치 문제** ⚠️ 중요
-   - 문제: WSL에서 실행 시 Windows MySQL 연결 불가
-   - 해결: 반드시 IntelliJ IDEA에서 실행 (WSL은 git/Claude Code 작업만)
-   - Windows MySQL은 localhost:3306에서 실행 중
+3. **실시간 검증**
+- 이메일 중복 체크: 500ms 디바운스
+- 비밀번호 규칙: 각 조건별 ✅/❌ 표시
+- 비밀번호 확인: 실시간 일치 여부 체크
 
-3. **application.yml 구조 오류**
-   - 문제: mapping values are not allowed here (duplicate key)
-   - 해결: YAML 들여쓰기 확인, 중복 키 제거
-   ```yaml
-   spring:  # 이 키가 중복되지 않도록 주의
-     datasource:
-       url: ...
-     jpa:
-       hibernate:
-   ```
+⚠️ CONFIRMATIONS - Day 4 이후 필요 사항
 
-4. **Map.of() 타입 추론 오류**
-   - 문제: Java cannot infer type arguments for Map<>
-   - 해결: HashMap 사용으로 변경
-   ```java
-   // 문제: Map.of("id", id, "text", text)
-   // 해결:
-   Map<String, Object> item = new HashMap<>();
-   item.put("id", school.getSchoolId());
-   item.put("text", school.getSchoolName());
-   ```
+☐ Day 4에 필요한 설정:
+- Gmail SMTP 계정 (앱 비밀번호 필요)
+- 이메일 인증 토큰 저장 방식 결정
 
-5. **N+1 쿼리 문제**
-   - 문제: Lazy Loading으로 인한 추가 쿼리 발생
-   - 해결: Fetch Join 사용
-   ```java
-   @Query("SELECT p FROM Post p " +
-          "LEFT JOIN FETCH p.user u " +
-          "LEFT JOIN FETCH u.school")
-   ```
+☐ Day 5에 필요한 설정:
+- 파일 업로드 경로: /uploads/images/posts/ (설정 완료, 폴더 생성 필요)
+- 이미지 리사이징 라이브러리 결정
 
+☐ Day 6에 필요한 설정:
+- 네이버 책 검색 API (Client ID/Secret)
+- MySQL Full-text search 설정 (결정됨: Elasticsearch 대신 MySQL 사용)
 
+🎯 Key Features to Implement (Day 4-14)
 
-📋 Daily Checkpoints - Verify Completion
-Day 1 Success Criteria:
+1. **Day 4: University Email Verification**
+- Gmail SMTP 설정 (앱 비밀번호)
+- 인증 토큰 생성 및 저장
+- 인증 메일 템플릿
+- 토큰 만료 처리
+- 재발송 기능
 
-✅ Spring Boot project runs without errors
-✅ MySQL connection successful
-✅ Basic Entity classes created (8개)
-✅ Can access http://localhost:8080
-✅ GitHub repository 생성 및 push 완료
+2. **Day 5: Post CRUD with Image Upload**
+- 게시글 작성 폼
+- 다중 이미지 업로드 (최대 5개)
+- 이미지 순서 변경
+- 썸네일 생성
+- 게시글 수정/삭제
 
-Day 2 Success Criteria:
+3. **Day 6: Advanced Search System (PROJECT CORE)**
+- 교재 상세 페이지
+- "이 책을 사용하는 과목" 섹션
+- 학교 → 학과 → 교수 → 과목 계층 구조
+- "우리 학교만 보기" 필터
+- 클릭 가능한 네비게이션
+- 검색 히스토리
 
-✅ Service 계층 구현 (4개 서비스)
-✅ HomeController + index.html 메인 페이지
-✅ CSV 데이터 로드 (학교 400개, 학과 12,870개)
-✅ Bootstrap 5 UI 적용
-✅ 성능 최적화 (Fetch Join, 캐싱)
-✅ 자동완성 검색 구현
-✅ 파일 업로드 준비 완료
+4. **Day 7: Integration Testing & UI**
+- 전체 기능 통합 테스트
+- UI/UX 개선
+- 반응형 디자인 점검
+- 성능 최적화
 
-Day 3 Success Criteria:
+5. **Day 8: Wishlist + Notification**
+- 찜하기 기능
+- 실시간 알림 (SSE 또는 WebSocket)
+- 알림 설정 페이지
 
-☐ Spring Security 설정 (메인 페이지 public 접근)
-☐ User registration works
-☐ Password encryption working (BCrypt)
-☐ Login/logout functional
-☐ Basic Thymeleaf pages render
+6. **Day 9-10: Real-time Chat**
+- Firebase 설정 (결정됨: Firebase 사용)
+- 1:1 채팅
+- 채팅방 목록
+- 읽음 표시
+- 이미지 전송
 
-Day 4 Success Criteria:
+7. **Day 11: Advanced Features**
+- 조회수 증가 (중복 방지)
+- 사용자 프로필 페이지
+- 거래 후기
+- 신고 기능
 
-☐ University email validation working
-☐ Actual email sent and received
-☐ Email verification completes
+8. **Day 12: UI/UX Improvements**
+- 디자인 시스템 통일
+- 다크 모드
+- 접근성 개선
+- 로딩 상태 표시
 
-🎯 Key Implementation Notes
-Entity Relationships (Critical for Search Feature)
-java// Subject_Book junction table is KEY for advanced search
-@Entity
-public class SubjectBook {
-    @ManyToOne
-    private Subject subject;
-    
-    @ManyToOne  
-    private Book book;
-    
-    // This enables: "What subjects use this book?"
-    // And: "What books are used in this subject?"
-}
+9. **Day 13: Testing & Bug Fixes**
+- 단위 테스트
+- 통합 테스트
+- 버그 수정
+- 보안 점검
+
+10. **Day 14: Deployment Preparation**
+- 프로덕션 설정
+- 도커라이징
+- CI/CD 파이프라인
+- 모니터링 설정
+
+🚨 Common Pitfalls & Solutions (Day 1-3 경험)
+
+1. **Lombok 관련**
+- 문제: @ToString 순환 참조
+- 해결: @ToString.Exclude 사용 (연관관계 필드에)
+- 주의: @Builder.Default 필수 (컬렉션 초기화)
+
+2. **Entity 필드명 불일치**
+- User: nickname → name
+- Book: year → publicationYear  
+- PostImage: imageId → postImageId, imagePath → imageUrl
+- 해결: DTO에서 정확한 getter 메서드명 사용
+
+3. **Spring Security 로그인 실패**
+- 원인: CustomUserDetailsService 미연결
+- 해결: SecurityConfig에 authenticationProvider Bean 설정
+- 주의: HTML form의 username 필드명 유지 (email 입력받아도)
+- 추가: 세션 고정 공격 방어, 동시 로그인 차단 설정됨
+
+4. **학과 자동완성 일부만 표시**
+- 원인: API에서 20개 제한
+- 해결: limit을 200으로 증가, 정렬 추가
+
+5. **폼 검증 실패 시 데이터 유실**
+- 원인: 선택한 학과 정보 미복원
+- 해결: Model에 selectedDepartmentText 추가
+
+6. **N+1 쿼리 문제**
+- 해결: Fetch Join 사용 + @BatchSize 추가
+```java
+@Query("SELECT p FROM Post p " +
+       "LEFT JOIN FETCH p.user u " +
+       "LEFT JOIN FETCH u.department d " +
+       "LEFT JOIN FETCH d.school")
+
+// PostImage는 BatchSize로 해결
+@BatchSize(size = 10)
+private List<PostImage> postImages;
+```
+
+7. **리팩터링 후 새로운 구조**
+- AppConstants: Magic Number 상수화
+- Messages: 모든 문자열 메시지 중앙화
+- 커스텀 예외: IllegalArgumentException → 구체적 예외
+- 인덱스 추가: 주요 검색 필드에 DB 인덱스
+
 📧 Gmail App Password Setup (Day 4)
 Gmail 보안 설정으로 인해 일반 비밀번호로는 SMTP 접근 불가
-Day 4에 필요한 설정:
+1. Google 계정 → 보안 → 2단계 인증 활성화
+2. 앱 비밀번호 생성 → "Mail" 선택
+3. 생성된 16자리 비밀번호를 application.yml에 설정
 
-Google 계정 → 보안 → 2단계 인증 활성화
-앱 비밀번호 생성 → "Mail" 선택
-생성된 16자리 비밀번호를 application.yml에 설정
+📊 CSV Data Processing (완료)
+- univ-email-250411-final.csv: 학교 + 이메일 도메인
+- univ-dept-mapped.csv: 학교별 학과 정보
+- DataInitializer에서 자동 로드
+- 도메인 없는 학교도 저장 (primaryDomain nullable)
 
-📊 CSV Data Processing Strategy
-School Entity Initialization
-java// Handle multiple domains per school
-@Entity
-public class School {
-    private String schoolName;
-    private String primaryDomain;  // 첫 번째 도메인
-    
-    @ElementCollection
-    private Set<String> allDomains;  // 모든 도메인들
-}
+🔍 Key Queries to Implement (Day 6)
+```java
+// 특정 책을 사용하는 과목 찾기
+List<Subject> findSubjectsByBooks_BookId(Long bookId);
 
-// Email validation logic
-public boolean isValidUniversityEmail(String email) {
-    String domain = email.substring(email.indexOf("@") + 1);
-    return schoolRepository.existsByAllDomainsContaining(domain);
-}
-Data Loading Priority
+// 교수별 게시글
+List<Post> findByBook_Subjects_Professor_ProfessorId(Long professorId);
 
-Day 2: Load univ-email-250411-final.csv → School entities
-Day 2: Load univ-department-mapped.csv → Department entities
-Day 4: Use domains for email validation before sending verification
+// 학과별 게시글
+List<Post> findByBook_Subjects_Professor_Department_DepartmentId(Long departmentId);
 
-File Upload Structure
-/uploads/
-  /images/
-    /posts/
-      /{postId}/
-        - main.jpg (대표 이미지)
-        - sub1.jpg, sub2.jpg... (추가 이미지)
-🔄 Development Flow
-
-Always test after each major feature
-Commit frequently with clear messages
-Ask user for confirmation before major changes
-If stuck, provide multiple solution options
-
-🚀 Claude Code Starting Commands
-
-Day 3 시작 명령어:
-```bash
-cd /mnt/c/dev/unibook
-claude-code "Day 2까지 완료된 상태야. Day 3 작업을 시작해줘:
-1. Spring Security 설정 - 메인 페이지는 public 접근 허용
-2. User 회원가입 기능 (비밀번호 BCrypt 암호화)
-3. 로그인/로그아웃 구현
-4. 회원가입 페이지와 로그인 페이지 생성
-5. 학교 선택은 자동완성 검색 활용"
+// 학교별 복합 검색
+List<Post> findByBook_Subjects_Professor_Department_School_SchoolId(Long schoolId);
 ```
 
-📝 Day 1-2 핵심 교훈 (Future Sessions 필독)
+🛠️ 유용한 코드 스니펫
 
-1. **Lombok은 IntelliJ 설정 필수**
-   - Annotation Processing 활성화하지 않으면 컴파일 에러
-   - @Data, @Getter, @Setter 사용으로 코드 간결화
-
-2. **성능은 처음부터 고려**
-   - N+1 문제는 Fetch Join으로 해결
-   - 400개 학교는 드롭다운보다 자동완성 검색이 적합
-   - 캐싱으로 반복 조회 최적화
-
-3. **설정값은 하드코딩 금지**
-   - application.yml에 설정값 분리
-   - @Value 또는 @ConfigurationProperties 활용
-
-4. **데이터 초기화는 트랜잭션으로**
-   - @Transactional(rollbackFor = Exception.class)
-   - 부분 실패 방지, 데이터 무결성 보장
-
-5. **파일 업로드는 보안 우선**
-   - 확장자 검증, 파일 크기 제한
-   - 업로드 경로는 웹루트 외부에
-
-💡 Day 3 주의사항
-- Spring Security 추가 시 모든 페이지가 로그인 필요하게 됨
-- 메인 페이지("/")는 permitAll() 설정 필수
-- 정적 리소스(/css, /js, /images)도 permitAll() 필요
-- CSRF 토큰 처리 주의 (Thymeleaf는 자동 처리)
-
-🛠️ Day 2 구현 세부사항 (참고용)
-
-**자동완성 검색 구현:**
+**자동완성 검색 구현**
 ```javascript
-// index.html
-$("#schoolSearch").autocomplete({
-    source: "/api/schools/search",
+$("#departmentSearch").autocomplete({
+    source: "/api/departments/search",
     minLength: 2,
     select: function(event, ui) {
-        window.location.href = "/schools/" + ui.item.id;
+        $("#departmentId").val(ui.item.id);
+        $("#selectedDepartment").html(
+            '<div class="alert alert-info">' + ui.item.text + '</div>'
+        );
     }
 });
 ```
 
-**Fetch Join 쿼리:**
-```java
-// PostRepository.java
-@Query("SELECT p FROM Post p " +
-       "LEFT JOIN FETCH p.user u " +
-       "LEFT JOIN FETCH u.school " +
-       "LEFT JOIN FETCH p.book " +
-       "ORDER BY p.createdAt DESC")
-List<Post> findRecentPostsWithDetails(Pageable pageable);
+**실시간 비밀번호 검증**
+```javascript
+$("#password").on("input", function() {
+    const password = $(this).val();
+    
+    // 각 규칙별 체크
+    if (password.length >= 8) {
+        $("#lengthCheck").addClass("valid").find(".requirement-icon").text("✅");
+    } else {
+        $("#lengthCheck").removeClass("valid").find(".requirement-icon").text("❌");
+    }
+    // ... 다른 규칙들
+});
 ```
 
-**캐싱 설정:**
+**파일 업로드 유틸리티 (Day 5)**
 ```java
-// UnibookApplication.java
-@EnableCaching
-@SpringBootApplication
-public class UnibookApplication {
-    // ...
-}
-
-// SchoolService.java
-@Cacheable("schools")
-public List<School> searchSchools(String query) {
-    // ...
-}
-```
-
-**파일 업로드 유틸리티:**
-```java
-// FileUploadUtil.java
 public void validateFile(MultipartFile file) {
     if (file.isEmpty()) {
         throw new IllegalArgumentException("파일이 비어있습니다.");
@@ -495,11 +431,69 @@ public void validateFile(MultipartFile file) {
 }
 ```
 
-📌 프로젝트 현재 상태 요약
-- Spring Boot 3.5.0 + Java 21 + MySQL 8.0
-- 8개 Entity, 8개 Repository, 4개 Service 구현 완료
-- 메인 페이지 UI 완성 (Bootstrap 5)
-- 학교/학과 데이터 12,000+ 로드 완료
-- 성능 최적화 및 보안 기초 작업 완료
-- Day 3부터 인증/인가 시스템 구현 예정
+🔄 Development Workflow
 
+1. **Entity 변경 시**
+   - ddl-auto: create로 변경
+   - 애플리케이션 실행 (테이블 재생성)
+   - 데이터 확인 후 ddl-auto: update로 복원
+
+2. **빌드 에러 시**
+   - gradlew clean build
+   - IntelliJ: File → Invalidate Caches and Restart
+   - Annotation Processing 확인
+
+3. **실행 방법**
+   - IntelliJ에서 UnibookApplication 실행 (권장)
+   - 또는 Windows 터미널에서 gradlew bootRun
+   - WSL에서는 실행하지 말 것!
+
+📌 현재 프로젝트 상태 (Day 3 완료 + 대규모 리팩터링)
+
+✅ 완료된 기능:
+- 전체 인증 시스템 (회원가입/로그인/로그아웃)
+- DTO 패턴 전면 적용
+- 실시간 폼 검증
+- 로그인 상태별 UI 분기
+- 학교-학과 자동완성 검색
+- BaseEntity 기반 감사(Audit) 기능
+
+✅ Day 3 이후 추가 리팩터링:
+- 보안 강화: 세션 고정 공격 방어, 동시 로그인 차단
+- 성능 개선: BookService 쿼리 최적화, 인덱스 추가, N+1 해결
+- 예외 처리: 커스텀 예외 클래스 체계 구축
+- 트랜잭션: 동시성 제어 (SERIALIZABLE)
+- AuditorAware: 0L = 시스템 사용자 정의
+- 코드 정리: Magic Number/String → 상수화
+
+⏳ 다음 단계 (Day 4):
+- 이메일 인증 시스템
+- 대학 이메일 도메인 엄격 검증
+- 비밀번호 재설정 기능
+
+💡 핵심 원칙
+1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
+2. 모든 설정값은 application.yml에서 관리
+3. 비밀번호 등 민감정보는 application-local.yml에
+4. 성능 문제는 처음부터 고려 (Fetch Join, 캐싱, 인덱스)
+5. 사용자 경험 우선 (실시간 검증, 자동완성)
+6. 예외는 구체적으로 (커스텀 예외 사용)
+7. 상수는 중앙 관리 (AppConstants, Messages)
+
+🚀 Day 4 시작 명령어
+```bash
+cd /mnt/c/dev/unibook
+claude-code "Day 3까지 완료된 상태야. CLAUDE.md 참고해서 Day 4 작업을 시작해줘:
+1. Gmail SMTP 설정
+2. 이메일 인증 토큰 Entity 생성
+3. 인증 메일 발송 서비스
+4. 인증 링크 처리 Controller
+5. 대학 이메일 도메인 검증 강화"
+```
+
+📝 추가 고려사항
+- 모바일 반응형 디자인 (Day 7, 12)
+- SEO 최적화 (Day 12)
+- 접근성 (WCAG 2.1) 준수 (Day 12)
+- 성능 모니터링 도구 (Day 14)
+- 에러 추적 시스템 (Day 14)

@@ -25,9 +25,10 @@ public class HomeController {
     
     @GetMapping("/")
     public String home(Model model) {
-        model.addAttribute("schools", schoolService.getAllSchools());
-        model.addAttribute("popularBooks", bookService.getPopularBooks(popularBooksLimit));
-        model.addAttribute("recentPosts", postService.getRecentPosts(recentPostsLimit));
+        // DTO를 사용하여 데이터 전달
+        model.addAttribute("schools", schoolService.getAllSchoolDtos());
+        model.addAttribute("popularBooks", bookService.getPopularBookDtos(popularBooksLimit));
+        model.addAttribute("recentPosts", postService.getRecentPostDtos(recentPostsLimit));
         
         return "index";
     }

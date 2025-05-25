@@ -1,5 +1,6 @@
 package com.unibook.service;
 
+import com.unibook.domain.dto.SchoolDto;
 import com.unibook.domain.entity.School;
 import com.unibook.repository.SchoolRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +45,7 @@ public class SchoolService {
             return false;
         }
         String domain = email.substring(email.indexOf("@") + 1);
-        return schoolRepository.existsByAllDomainsContaining(domain);
+        return schoolRepository.existsByDomain(domain);
     }
     
     @Cacheable(value = "schoolSearch", key = "#keyword")
@@ -53,5 +55,12 @@ public class SchoolService {
     
     public boolean existsBySchoolName(String schoolName) {
         return schoolRepository.existsBySchoolName(schoolName);
+    }
+    
+    // DTO 반환 메서드
+    public List<SchoolDto> getAllSchoolDtos() {
+        return getAllSchools().stream()
+                .map(SchoolDto::from)
+                .collect(Collectors.toList());
     }
 }

@@ -10,7 +10,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update  # Preserves data between restarts
+      ddl-auto: update  # Update schema without dropping data
     show-sql: true
     properties:
       hibernate:
