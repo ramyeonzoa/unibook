@@ -1,9 +1,17 @@
 package com.unibook.repository;
 
 import com.unibook.domain.entity.Post;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
+    Page<Post> findAllByOrderByCreatedAtDesc(Pageable pageable);
+    List<Post> findByUser_School_SchoolId(Long schoolId);
+    List<Post> findByStatus(Post.PostStatus status);
+    List<Post> findByBook_BookId(Long bookId);
 }
