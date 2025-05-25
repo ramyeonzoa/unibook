@@ -27,8 +27,17 @@ public class DataInitializer implements CommandLineRunner {
     private final SchoolService schoolService;
     
     @Override
-    @Transactional
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
+        try {
+            initializeData();
+        } catch (Exception e) {
+            log.error("Failed to initialize data", e);
+            // 애플리케이션 시작은 계속되도록 함
+        }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void initializeData() throws Exception {
         log.info("=== Starting Data Initialization ===");
         
         // Check if data already exists
@@ -37,16 +46,26 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
         
-        // Load schools from email domains CSV
-        loadSchoolsFromCsv();
-        
-        // Load departments from department CSV
-        loadDepartmentsFromCsv();
-        
-        log.info("=== Data Initialization Completed ===");
+        try {
+            // Load schools from email domains CSV
+            int schoolCount = loadSchoolsFromCsv();
+            log.info("Successfully loaded {} schools", schoolCount);
+            
+            // Load departments from department CSV
+            int departmentCount = loadDepartmentsFromCsv();
+            log.info("Successfully loaded {} departments", departmentCount);
+            
+            // Verify data integrity
+            verifyDataIntegrity();
+            
+            log.info("=== Data Initialization Completed Successfully ===");
+        } catch (Exception e) {
+            log.error("Error during data initialization. Rolling back all changes.", e);
+            throw e;  // 트랜잭션 롤백을 위해 예외를 다시 던짐
+        }
     }
     
-    private void loadSchoolsFromCsv() {
+    private int loadSchoolsFromCsv() throws Exception {
         log.info("Loading schools from CSV...");
         
         try {
@@ -89,22 +108,29 @@ public class DataInitializer implements CommandLineRunner {
                     }
                 }
                 
-                // Save all schools
+                // Save all schools in batches for better performance
+                List<School> schoolsToSave = new ArrayList<>();
                 for (School school : schoolMap.values()) {
                     if (!schoolService.existsBySchoolName(school.getSchoolName())) {
-                        schoolRepository.save(school);
-                        count++;
+                        schoolsToSave.add(school);
                     }
                 }
                 
-                log.info("Loaded {} schools from CSV", count);
+                // Batch save
+                if (!schoolsToSave.isEmpty()) {
+                    List<School> savedSchools = schoolRepository.saveAll(schoolsToSave);
+                    count = savedSchools.size();
+                }
+                
+                return count;
             }
         } catch (Exception e) {
             log.error("Error loading schools from CSV", e);
+            throw new RuntimeException("Failed to load schools from CSV", e);
         }
     }
     
-    private void loadDepartmentsFromCsv() {
+    private int loadDepartmentsFromCsv() throws Exception {
         log.info("Loading departments from CSV...");
         
         try {
@@ -143,6 +169,12 @@ public class DataInitializer implements CommandLineRunner {
                                 department.setSchool(school);
                                 departmentRepository.save(department);
                                 count++;
+                                
+                                // Batch save를 위한 flush (매 100개마다)
+                                if (count % 100 == 0) {
+                                    departmentRepository.flush();
+                                    log.debug("Flushed after {} departments", count);
+                                }
                             }
                         } else {
                             log.warn("School not found for department: {} - {}", schoolName, departmentName);
@@ -150,10 +182,40 @@ public class DataInitializer implements CommandLineRunner {
                     }
                 }
                 
-                log.info("Loaded {} departments from CSV", count);
+                return count;
             }
         } catch (Exception e) {
             log.error("Error loading departments from CSV", e);
+            throw new RuntimeException("Failed to load departments from CSV", e);
         }
+    }
+    
+    private void verifyDataIntegrity() {
+        long schoolCount = schoolRepository.count();
+        long departmentCount = departmentRepository.count();
+        
+        log.info("Data integrity check - Schools: {}, Departments: {}", schoolCount, departmentCount);
+        
+        // 최소한의 데이터가 있는지 확인
+        if (schoolCount == 0) {
+            throw new IllegalStateException("No schools were loaded. Data initialization failed.");
+        }
+        
+        if (departmentCount == 0) {
+            throw new IllegalStateException("No departments were loaded. Data initialization failed.");
+        }
+        
+        // 모든 학과가 학교를 가지고 있는지 확인
+        long orphanDepartments = departmentRepository.findAll().stream()
+                .filter(dept -> dept.getSchool() == null)
+                .count();
+                
+        if (orphanDepartments > 0) {
+            throw new IllegalStateException(
+                String.format("Found %d departments without schools. Data integrity violated.", orphanDepartments)
+            );
+        }
+        
+        log.info("Data integrity verification passed!");
     }
 }

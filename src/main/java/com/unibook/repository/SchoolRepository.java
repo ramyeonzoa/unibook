@@ -10,7 +10,7 @@ import java.util.Optional;
 @Repository
 public interface SchoolRepository extends JpaRepository<School, Long> {
     Optional<School> findBySchoolName(String schoolName);
-    List<School> findBySchoolNameContaining(String keyword);
+    List<School> findBySchoolNameContainingOrderBySchoolNameAsc(String keyword);
     boolean existsBySchoolName(String schoolName);
     boolean existsByAllDomainsContaining(String domain);
 }

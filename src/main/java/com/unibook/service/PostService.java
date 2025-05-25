@@ -22,15 +22,18 @@ public class PostService {
     }
     
     public Optional<Post> getPostById(Long id) {
-        return postRepository.findById(id);
+        // Fetch Join을 사용하여 연관 데이터를 한 번에 조회
+        return postRepository.findByIdWithDetails(id);
     }
     
     public List<Post> getRecentPosts(int limit) {
-        return postRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit)).getContent();
+        // Fetch Join을 사용하여 N+1 문제 해결
+        return postRepository.findRecentPostsWithDetails(PageRequest.of(0, limit));
     }
     
     public List<Post> getPostsBySchool(Long schoolId) {
-        return postRepository.findByUser_School_SchoolId(schoolId);
+        // Fetch Join을 사용하여 N+1 문제 해결
+        return postRepository.findBySchoolIdWithDetails(schoolId);
     }
     
     public List<Post> getPostsByStatus(Post.PostStatus status) {

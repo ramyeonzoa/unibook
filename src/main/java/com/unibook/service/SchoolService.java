@@ -3,6 +3,9 @@ package com.unibook.service;
 import com.unibook.domain.entity.School;
 import com.unibook.repository.SchoolRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,8 +19,9 @@ public class SchoolService {
     
     private final SchoolRepository schoolRepository;
     
+    @Cacheable("schools")
     public List<School> getAllSchools() {
-        return schoolRepository.findAll();
+        return schoolRepository.findAll(Sort.by(Sort.Direction.ASC, "schoolName"));
     }
     
     public Optional<School> getSchoolById(Long id) {
@@ -29,6 +33,7 @@ public class SchoolService {
     }
     
     @Transactional
+    @CacheEvict(value = "schools", allEntries = true)
     public School saveSchool(School school) {
         return schoolRepository.save(school);
     }
@@ -41,8 +46,9 @@ public class SchoolService {
         return schoolRepository.existsByAllDomainsContaining(domain);
     }
     
+    @Cacheable(value = "schoolSearch", key = "#keyword")
     public List<School> searchSchools(String keyword) {
-        return schoolRepository.findBySchoolNameContaining(keyword);
+        return schoolRepository.findBySchoolNameContainingOrderBySchoolNameAsc(keyword);
     }
     
     public boolean existsBySchoolName(String schoolName) {

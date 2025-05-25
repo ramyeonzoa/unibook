@@ -49,6 +49,7 @@ out/
 .vscode/
 
 # Application properties with sensitive data
+application-local.yml
 application-dev.yml
 application-prod.yml
 
