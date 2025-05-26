@@ -5,18 +5,31 @@ import com.unibook.domain.dto.SignupRequestDto;
 import com.unibook.domain.dto.UserResponseDto;
 import com.unibook.domain.entity.Department;
 import com.unibook.domain.entity.User;
+import com.unibook.exception.RateLimitException;
+import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.repository.DepartmentRepository;
+import com.unibook.security.UserPrincipal;
 import com.unibook.service.EmailService;
+import com.unibook.service.RateLimitService;
 import com.unibook.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -26,6 +39,7 @@ public class AuthController {
     private final UserService userService;
     private final EmailService emailService;
     private final DepartmentRepository departmentRepository;
+    private final RateLimitService rateLimitService;
     
     // 회원가입 페이지
     @GetMapping("/signup")
@@ -49,14 +63,14 @@ public class AuthController {
         
         try {
             UserResponseDto newUser = userService.signup(signupDto);
-            log.info("New user registered: {}", newUser.getEmail());
+            log.info(Messages.LOG_NEW_USER_REGISTERED, newUser.getEmail());
             
             // 이메일 발송은 별도로 처리 (순환 참조 방지)
             try {
                 User user = userService.getUserByEmail(newUser.getEmail()).orElseThrow();
                 emailService.sendVerificationEmail(user);
             } catch (Exception e) {
-                log.error("Failed to send verification email", e);
+                log.error(Messages.LOG_EMAIL_SEND_FAILED, e);
                 // 이메일 발송 실패해도 회원가입은 성공
             }
             
@@ -106,16 +120,60 @@ public class AuthController {
     
     // 이메일 인증 처리
     @GetMapping("/verify-email")
-    public String verifyEmail(@RequestParam String token, RedirectAttributes redirectAttributes) {
+    public String verifyEmail(@RequestParam String token, 
+                             @AuthenticationPrincipal UserPrincipal currentUser,
+                             HttpServletRequest request,
+                             RedirectAttributes redirectAttributes) {
         try {
-            userService.verifyEmail(token);
-            redirectAttributes.addFlashAttribute("successMessage", "이메일 인증이 완료되었습니다. 이제 로그인할 수 있습니다.");
-            return "redirect:/login";
+            User verifiedUser = userService.verifyEmail(token);
+            log.info(Messages.LOG_EMAIL_VERIFIED, verifiedUser.getEmail());
+            
+            // 현재 로그인한 사용자와 인증을 완료한 사용자가 동일한 경우
+            if (currentUser != null && currentUser.getUserId().equals(verifiedUser.getUserId())) {
+                log.info(Messages.LOG_SAME_USER_VERIFIED, verifiedUser.getEmail());
+                
+                // 세션 갱신을 위해 수동으로 로그아웃 처리
+                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null) {
+                    new SecurityContextLogoutHandler().logout(request, null, auth);
+                }
+                
+                redirectAttributes.addFlashAttribute("successMessage", Messages.EMAIL_VERIFIED_NEED_LOGIN);
+                redirectAttributes.addFlashAttribute("autoEmail", verifiedUser.getEmail());
+                return "redirect:/login";
+            }
+            
+            // 다른 사용자거나 비로그인 상태인 경우
+            redirectAttributes.addFlashAttribute("successMessage", 
+                Messages.EMAIL_VERIFIED);
+            redirectAttributes.addFlashAttribute("autoEmail", verifiedUser.getEmail());
+            
+            // 로그인 상태가 아니면 로그인 페이지로, 로그인 상태면 홈으로
+            return currentUser == null ? "redirect:/login" : "redirect:/";
+            
+        } catch (ResourceNotFoundException e) {
+            // 토큰을 찾을 수 없는 경우
+            log.error("Email verification failed - token not found: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.TOKEN_INVALID);
+            return "redirect:/token-error";
+        } catch (ValidationException e) {
+            // 검증 오류 (토큰 만료, 이미 사용됨, 잘못된 타입 등)
+            log.error("Email verification validation failed: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.TOKEN_EXPIRED_OR_USED);
+            return "redirect:/token-error";
         } catch (Exception e) {
-            log.error("Email verification failed: {}", e.getMessage());
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/login";
+            // 예상치 못한 오류
+            log.error("Email verification failed with unexpected error", e);
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.EMAIL_VERIFICATION_ERROR);
+            return "redirect:/token-error";
         }
+    }
+    
+    // 토큰 에러 페이지
+    @GetMapping("/token-error")
+    public String tokenError(@RequestParam(required = false) String message, Model model) {
+        model.addAttribute("errorMessage", message);
+        return "error/token-error";
     }
     
     // 이메일 재발송 페이지
@@ -128,13 +186,27 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public String resendVerification(@RequestParam String email, RedirectAttributes redirectAttributes) {
         try {
+            // Rate Limiting 체크
+            rateLimitService.checkEmailRateLimit(email, "resend-verification");
+            
             User user = userService.validateUserForEmailResend(email);
             emailService.sendVerificationEmail(user);
-            redirectAttributes.addFlashAttribute("successMessage", "인증 이메일이 재발송되었습니다. 이메일을 확인해주세요.");
+            redirectAttributes.addFlashAttribute("successMessage", Messages.EMAIL_RESENT);
+            redirectAttributes.addFlashAttribute("showEmailHelp", true);
             return "redirect:/login";
-        } catch (Exception e) {
-            log.error("Email resend failed: {}", e.getMessage());
+        } catch (RateLimitException e) {
+            log.warn("Email resend rate limit exceeded for: {}", email);
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("email", email);
+            return "redirect:/resend-verification";
+        } catch (ResourceNotFoundException | ValidationException e) {
+            log.error("Email resend failed - validation error: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("email", email);
+            return "redirect:/resend-verification";
+        } catch (Exception e) {
+            log.error("Email resend failed with unexpected error", e);
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.EMAIL_RESEND_ERROR);
             return "redirect:/resend-verification";
         }
     }
@@ -149,28 +221,52 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public String forgotPassword(@RequestParam String email, RedirectAttributes redirectAttributes) {
         try {
+            // Rate Limiting 체크
+            rateLimitService.checkEmailRateLimit(email, "password-reset");
+            
             User user = userService.getUserForPasswordReset(email);
             emailService.sendPasswordResetEmail(user);
-            redirectAttributes.addFlashAttribute("successMessage", "비밀번호 재설정 링크가 이메일로 발송되었습니다.");
+            redirectAttributes.addFlashAttribute("successMessage", Messages.PASSWORD_RESET_EMAIL_SENT);
+            redirectAttributes.addFlashAttribute("showEmailHelp", true);
             return "redirect:/login";
-        } catch (Exception e) {
-            log.error("Password reset request failed: {}", e.getMessage());
+        } catch (RateLimitException e) {
+            log.warn("Password reset rate limit exceeded for: {}", email);
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("email", email);
+            return "redirect:/forgot-password";
+        } catch (ResourceNotFoundException e) {
+            log.error("Password reset request failed - user not found: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("email", email);
+            return "redirect:/forgot-password";
+        } catch (Exception e) {
+            log.error("Password reset request failed with unexpected error", e);
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.PASSWORD_RESET_REQUEST_ERROR);
             return "redirect:/forgot-password";
         }
     }
     
     // 비밀번호 재설정 페이지
     @GetMapping("/reset-password")
-    public String resetPasswordForm(@RequestParam String token, Model model) {
+    public String resetPasswordForm(@RequestParam String token, 
+                                   RedirectAttributes redirectAttributes,
+                                   Model model) {
         try {
             userService.validatePasswordResetToken(token);
             model.addAttribute("token", token);
             return "auth/reset-password";
+        } catch (ResourceNotFoundException e) {
+            log.error("Password reset token not found: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.TOKEN_INVALID);
+            return "redirect:/token-error";
+        } catch (ValidationException e) {
+            log.error("Password reset token validation failed: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.TOKEN_EXPIRED_OR_USED);
+            return "redirect:/token-error";
         } catch (Exception e) {
-            log.error("Invalid password reset token: {}", e.getMessage());
-            model.addAttribute("errorMessage", e.getMessage());
-            return "auth/login";
+            log.error("Invalid password reset token - unexpected error", e);
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.TOKEN_VERIFICATION_ERROR);
+            return "redirect:/token-error";
         }
     }
     
@@ -183,18 +279,28 @@ public class AuthController {
         try {
             // 비밀번호 일치 확인
             if (!newPassword.equals(confirmPassword)) {
-                throw new ValidationException("비밀번호가 일치하지 않습니다.");
+                throw new ValidationException(Messages.PASSWORD_NOT_MATCH);
             }
             
             // 비밀번호 복잡성 검증
             validatePasswordComplexity(newPassword);
             
             userService.resetPassword(token, newPassword);
-            redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 성공적으로 변경되었습니다.");
+            redirectAttributes.addFlashAttribute("successMessage", Messages.PASSWORD_CHANGED);
             return "redirect:/login";
-        } catch (Exception e) {
-            log.error("Password reset failed: {}", e.getMessage());
+        } catch (ResourceNotFoundException e) {
+            // 토큰을 찾을 수 없는 경우
+            log.error("Password reset failed - token not found: {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.TOKEN_INVALID);
+            return "redirect:/token-error";
+        } catch (ValidationException e) {
+            // 검증 오류 (토큰 만료, 같은 비밀번호, 복잡성 규칙 등)
+            log.error("Password reset validation failed: {}", e.getMessage());
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/reset-password?token=" + token;
+        } catch (Exception e) {
+            log.error("Password reset failed with unexpected error", e);
+            redirectAttributes.addFlashAttribute("errorMessage", Messages.PASSWORD_RESET_ERROR);
             return "redirect:/reset-password?token=" + token;
         }
     }
@@ -202,16 +308,16 @@ public class AuthController {
     // 비밀번호 복잡성 검증 메서드
     private void validatePasswordComplexity(String password) {
         if (password.length() < 8) {
-            throw new ValidationException("비밀번호는 최소 8자 이상이어야 합니다.");
+            throw new ValidationException(Messages.PASSWORD_TOO_SHORT);
         }
         if (!password.matches(".*[A-Za-z].*")) {
-            throw new ValidationException("비밀번호는 영문자를 포함해야 합니다.");
+            throw new ValidationException(Messages.PASSWORD_NEED_LETTER);
         }
         if (!password.matches(".*\\d.*")) {
-            throw new ValidationException("비밀번호는 숫자를 포함해야 합니다.");
+            throw new ValidationException(Messages.PASSWORD_NEED_DIGIT);
         }
         if (!password.matches(".*[@$!%*#?&_].*")) {
-            throw new ValidationException("비밀번호는 특수문자(@$!%*#?&_)를 포함해야 합니다.");
+            throw new ValidationException(Messages.PASSWORD_NEED_SPECIAL);
         }
     }
     
@@ -223,6 +329,48 @@ public class AuthController {
                     String departmentText = dept.getSchool().getSchoolName() + " - " + dept.getDepartmentName();
                     model.addAttribute("selectedDepartmentText", departmentText);
                 });
+        }
+    }
+    
+    // API endpoint for authenticated users to resend verification email
+    @PostMapping("/api/auth/resend-verification")
+    @ResponseBody
+    public ResponseEntity<?> resendVerificationEmailForAuthenticatedUser(
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        try {
+            // 로그인한 사용자의 정보 확인
+            if (userPrincipal == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", Messages.LOGIN_REQUIRED));
+            }
+            
+            // 이미 인증된 사용자인지 확인
+            if (userPrincipal.isVerified()) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("message", Messages.EMAIL_ALREADY_VERIFIED));
+            }
+            
+            String email = userPrincipal.getEmail();
+            
+            // Rate Limiting 체크
+            rateLimitService.checkEmailRateLimit(email, "resend-verification");
+            
+            // 사용자 조회 및 인증 메일 발송
+            User user = userService.getUserByEmail(email)
+                    .orElseThrow(() -> new ValidationException(Messages.USER_NOT_FOUND_SIMPLE));
+            emailService.sendVerificationEmail(user);
+            
+            return ResponseEntity.ok(Map.of(
+                    "message", Messages.EMAIL_RESENT_API,
+                    "email", email
+            ));
+        } catch (RateLimitException e) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Failed to resend verification email", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", Messages.EMAIL_RESEND_FAILED_API));
         }
     }
 }

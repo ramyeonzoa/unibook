@@ -123,7 +123,7 @@ public class UserService {
      * 이메일 인증 처리
      */
     @Transactional
-    public void verifyEmail(String token) {
+    public User verifyEmail(String token) {
         EmailVerificationToken verificationToken = tokenRepository.findByToken(token)
                 .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 인증 토큰입니다."));
         
@@ -143,6 +143,7 @@ public class UserService {
         tokenRepository.save(verificationToken);
         
         log.info("Email verified successfully for user: {}", user.getEmail());
+        return user;
     }
     
     /**
@@ -194,6 +195,13 @@ public class UserService {
         validatePasswordResetToken(token);
         
         User user = resetToken.getUser();
+        
+        // 새 비밀번호가 이전 비밀번호와 같은지 확인
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            log.warn("Password reset attempt with same password for user: {}", user.getEmail());
+            throw new ValidationException(Messages.PASSWORD_SAME_AS_PREVIOUS);
+        }
+        
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         

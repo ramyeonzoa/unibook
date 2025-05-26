@@ -1,9 +1,12 @@
 package com.unibook.service;
 
+import com.unibook.common.AppConstants;
 import com.unibook.domain.dto.BookDto;
 import com.unibook.domain.entity.Book;
 import com.unibook.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +45,8 @@ public class BookService {
     public List<Book> getPopularBooks(int limit) {
         // TODO: Day 6에서 viewCount 기반 정렬 구현 예정
         // 현재는 최신 책 반환 (임시)
-        return bookRepository.findTop8ByOrderByCreatedAtDesc();
+        Pageable pageable = PageRequest.of(0, limit);
+        return bookRepository.findByOrderByCreatedAtDesc(pageable);
     }
     
     public boolean existsByIsbn(String isbn) {

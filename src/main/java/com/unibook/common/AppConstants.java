@@ -40,7 +40,49 @@ public final class AppConstants {
     /** CSV 필드 최소 개수 */
     public static final int MIN_CSV_FIELDS = 2;
     
+    // ===== 홈페이지 표시 =====
+    /** 홈페이지 인기 도서 표시 개수 */
+    public static final int HOME_POPULAR_BOOKS_LIMIT = 8;
+    
+    /** 홈페이지 최신 게시글 표시 개수 */
+    public static final int HOME_RECENT_POSTS_LIMIT = 5;
+    
     // ===== 기타 =====
     /** 이메일 구분자 */
     public static final String EMAIL_SEPARATOR = "@";
+    
+    // ===== Rate Limiting =====
+    /** 이메일 재발송 쿨다운 시간 (초) */
+    public static final int EMAIL_RATE_LIMIT_COOLDOWN_SECONDS = 60;
+    
+    /** 시간당 최대 이메일 발송 횟수 */
+    public static final int EMAIL_RATE_LIMIT_MAX_ATTEMPTS_PER_HOUR = 5;
+    
+    /** Rate Limit 정리 주기 (밀리초) - 1시간 */
+    public static final long RATE_LIMIT_CLEANUP_INTERVAL = 3600000;
+    
+    /** Rate Limit 기록 보관 시간 (시간) */
+    public static final int RATE_LIMIT_RETENTION_HOURS = 2;
+    
+    // ===== 스케줄러 관련 =====
+    /** 토큰 정리 기준 일수 */
+    public static final int TOKEN_CLEANUP_DAYS = 7;
+    
+    // ===== 이메일 재시도 관련 =====
+    /** 최대 이메일 재시도 횟수 */
+    public static final int EMAIL_MAX_RETRY_ATTEMPTS = 3;
+    
+    /** 이메일 재시도 초기 지연 시간 (밀리초) */
+    public static final long EMAIL_RETRY_DELAY = 1000L;
+    
+    /** 이메일 재시도 지연 배수 */
+    public static final int EMAIL_RETRY_MULTIPLIER = 2;
+    
+    // ===== UI 관련 =====
+    /** jQuery Autocomplete 최소 입력 길이 */
+    public static final int AUTOCOMPLETE_MIN_LENGTH = 2;
+    
+    // ===== Spring Security 관련 =====
+    /** 최대 동시 세션 수 */
+    public static final int MAX_CONCURRENT_SESSIONS = 1;
 }

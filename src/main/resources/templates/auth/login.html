@@ -100,6 +100,7 @@
                        class="form-control" 
                        id="username" 
                        name="username"
+                       th:value="${autoEmail}"
                        placeholder="student@university.ac.kr"
                        required
                        autofocus>
@@ -132,13 +133,21 @@
                 <button type="submit" class="btn btn-primary">로그인</button>
             </div>
             
-            <!-- 비밀번호 찾기 / 이메일 재발송 -->
+            <!-- 비밀번호 찾기 -->
             <div class="text-center mt-3">
                 <a th:href="@{/forgot-password}" class="text-decoration-none text-muted small">비밀번호를 잊으셨나요?</a>
-                <span class="text-muted small mx-2">|</span>
-                <a th:href="@{/resend-verification}" class="text-decoration-none text-muted small">인증 메일 재발송</a>
             </div>
         </form>
+        
+        <!-- 비밀번호 재설정 이메일 발송 후 도움말 -->
+        <div th:if="${showEmailHelp}" class="alert alert-info mt-3 small">
+            <strong>💡 이메일이 도착하지 않았나요?</strong>
+            <ul class="mb-0 mt-2">
+                <li>스팸함을 확인해주세요</li>
+                <li>입력한 이메일 주소가 정확한지 확인해주세요</li>
+                <li>5분 후에도 도착하지 않으면 다시 시도해주세요</li>
+            </ul>
+        </div>
         
         <!-- 구분선 -->
         <div class="divider">
@@ -161,10 +170,18 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-// 페이지 로드 시 이메일 필드에 포커스
+<script th:inline="javascript">
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('username').focus();
+    const usernameField = document.getElementById('username');
+    const passwordField = document.getElementById('password');
+    
+    // 이메일이 자동 입력되어 있으면 비밀번호 필드에 포커스, 아니면 이메일 필드에 포커스
+    if (usernameField.value && usernameField.value.trim() !== '') {
+        passwordField.focus();
+        console.log('Auto email detected, focusing on password field');
+    } else {
+        usernameField.focus();
+    }
 });
 
 // URL 파라미터에서 에러 메시지 처리 (Spring Security 기본 동작)

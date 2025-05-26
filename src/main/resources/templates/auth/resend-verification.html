@@ -18,6 +18,11 @@
                         <span th:text="${errorMessage}"></span>
                     </div>
                     
+                    <div class="alert alert-info" role="alert">
+                        <strong>💡 로그인한 사용자라면?</strong>
+                        <p class="mb-0">메인 페이지 상단의 인증 배너에서 재발송할 수 있습니다.</p>
+                    </div>
+                    
                     <form th:action="@{/resend-verification}" method="post">
                         <div class="mb-3">
                             <label for="email" class="form-label">가입하신 이메일 주소</label>

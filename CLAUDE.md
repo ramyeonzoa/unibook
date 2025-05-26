@@ -54,14 +54,42 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
 - 로그인 상태별 UI 분기
 
 📋 Day 4 완료:
-- Gmail SMTP 설정 (unibooknotify@gmail.com)
-- EmailVerificationToken Entity 및 Repository
-- EmailService 구현 (이메일 발송 로직)
-- 이메일 인증 템플릿 (HTML)
-- 비밀번호 재설정 기능
-- 하이브리드 이메일 중복확인 (버튼 방식)
-- 로딩 유틸리티 추가 (loading.css, loading.js)
-- 대학 이메일 도메인 엄격 검증 적용
+- Email Verification System 구현
+  - Gmail SMTP 설정 (unibooknotify@gmail.com)
+  - EmailVerificationToken Entity 및 Repository
+  - EmailService 구현 (비동기 처리 @Async)
+  - 이메일 인증/비밀번호 재설정 토큰 관리
+- Email Templates 개선
+  - 미니멀 모던 디자인 (그라데이션, 카드 스타일)
+  - 반응형 이메일 템플릿 (verification.html, password-reset.html)
+  - 인증 과정 시각화 (1-2-3 단계)
+  - 브랜드 일관성 (📚 / 🔐 아이콘)
+- Security & UX 개선
+  - 비밀번호 재설정 시 이전 비밀번호 검증 (UserService.resetPassword)
+  - 토큰 만료 시간 통일 (1시간)
+  - Rate Limiting 구현 (RateLimitService - 1분 쿨다운, 시간당 5회)
+  - 이메일 인증 플로우 개선
+- Spring Retry 적용
+  - 이메일 발송 실패 시 자동 재시도 (3회)
+  - 지수 백오프 (1초 → 2초 → 4초)
+  - @Retryable + @Recover 패턴
+- UI/UX 개선
+  - 인증된 사용자 재로그인 유도 (세션 갱신)
+  - 로그인 시 이메일 자동 입력 (autoEmail)
+  - 인증 메일 재발송: 로그인 사용자는 메인 페이지에서만 가능
+  - 전용 토큰 에러 페이지 (/token-error)
+  - 예외 처리 일관성 (ResourceNotFoundException, ValidationException 구분)
+- 코드 리팩터링
+  - Messages 클래스로 하드코딩된 메시지 상수화 (28개)
+  - BookRepository: findTop8 → Pageable 방식으로 변경
+  - 중복 비밀번호 검증 로직은 유지 (복잡도 고려)
+- 추가 구현 세부사항
+  - VerificationInterceptor: 모든 요청에 isEmailVerified 상태 자동 추가
+  - WebMvcConfig: 인증 필요 경로 인터셉터 설정 (/posts/new, /wishlist, /chat 등)
+  - AsyncConfig: 이메일 전용 스레드풀 (core 2, max 5, queue 100)
+  - RateLimitService: 스케줄러로 1시간마다 2시간 이상된 기록 정리
+  - AppConstants: 재시도/Rate Limit 관련 상수 추가
+  - verification-required.html: 대화형 도움말 아코디언, AJAX 재발송
 
 📋 Development Schedule
 
@@ -85,12 +113,14 @@ Week 2: Advanced Features
 unibook/
 ├── src/main/java/com/unibook/
 │   ├── common/          # AppConstants, Messages
-│   ├── config/          # SecurityConfig, JpaAuditConfig, DataInitializer
-│   ├── controller/      # HomeController, AuthController, GlobalExceptionHandler
+│   ├── config/          # SecurityConfig, JpaAuditConfig, DataInitializer, 
+│   │                   # AsyncConfig, VerificationInterceptor, WebMvcConfig
+│   ├── controller/      # HomeController, AuthController, GlobalExceptionHandler,
+│   │   │               # VerificationController
 │   │   └── api/        # SchoolApiController, DepartmentApiController
 │   ├── domain/
 │   │   ├── entity/     # 13개 Entity (모두 BaseEntity 상속)
-│   │   │               # NEW: EmailVerificationToken
+│   │   │               # EmailVerificationToken 포함
 │   │   └── dto/        # DTO 클래스들
 │   ├── exception/       # 커스텀 예외 클래스들
 │   │   ├── BusinessException (기본)
@@ -98,21 +128,24 @@ unibook/
 │   │   ├── ResourceNotFoundException (404)
 │   │   ├── AuthenticationException (인증)
 │   │   ├── DataInitializationException (초기화)
-│   │   └── EmailException (이메일) (NEW)
+│   │   ├── EmailException (이메일)
+│   │   └── RateLimitException (Rate Limiting)
 │   ├── repository/      # JPA Repository 인터페이스
-│   │                   # NEW: EmailVerificationTokenRepository
+│   │                   # EmailVerificationTokenRepository 포함
 │   ├── security/        # UserPrincipal, CustomUserDetailsService
 │   ├── service/         # 비즈니스 로직 서비스
-│   │                   # NEW: EmailService
+│   │                   # EmailService, RateLimitService 포함
 │   └── util/           # FileUploadUtil 등
 └── src/main/resources/
-    ├── static/         # 정적 리소스 (NEW)
+    ├── static/         # 정적 리소스
     │   ├── css/       # loading.css
     │   └── js/        # loading.js
     ├── templates/       # Thymeleaf 템플릿
     │   ├── auth/       # signup.html, login.html, resend-verification.html,
-    │   │               # forgot-password.html, reset-password.html (NEW)
-    │   └── email/      # verification.html, password-reset.html (NEW)
+    │   │               # forgot-password.html, reset-password.html,
+    │   │               # verification-required.html
+    │   ├── email/      # verification.html, password-reset.html
+    │   └── error/      # token-error.html
     ├── data/           # CSV 파일들
     └── application.yml # 설정 파일
 
@@ -264,16 +297,9 @@ logging:
 - 네이버 책 검색 API (Client ID/Secret)
 - MySQL Full-text search 설정 (결정됨: Elasticsearch 대신 MySQL 사용)
 
-🎯 Key Features to Implement (Day 4-14)
+🎯 Key Features to Implement (Day 5-14)
 
-1. **Day 4: University Email Verification**
-- Gmail SMTP 설정 (앱 비밀번호)
-- 인증 토큰 생성 및 저장
-- 인증 메일 템플릿
-- 토큰 만료 처리
-- 재발송 기능
-
-2. **Day 5: Post CRUD with Image Upload**
+1. **Day 5: Post CRUD with Image Upload**
 - 게시글 작성 폼
 - 다중 이미지 업로드 (최대 5개)
 - 이미지 순서 변경
@@ -376,11 +402,18 @@ private List<PostImage> postImages;
 - 커스텀 예외: IllegalArgumentException → 구체적 예외
 - 인덱스 추가: 주요 검색 필드에 DB 인덱스
 
-📧 Gmail App Password Setup (Day 4)
-Gmail 보안 설정으로 인해 일반 비밀번호로는 SMTP 접근 불가
-1. Google 계정 → 보안 → 2단계 인증 활성화
-2. 앱 비밀번호 생성 → "Mail" 선택
-3. 생성된 16자리 비밀번호를 application.yml에 설정
+8. **Day 4 추가 문제 해결**
+- CSRF 토큰 누락: AJAX 요청에 헤더 추가 필요
+- 토큰 에러 표시: 전용 에러 페이지로 해결
+- 세션 갱신: 이메일 인증 후 재로그인 유도
+- Rate Limit 메모리 누수: 스케줄러로 주기적 정리
+
+📧 Gmail SMTP Configuration (Day 4 완료)
+- Gmail: unibooknotify@gmail.com
+- App Password: application-local.yml에 설정
+- Spring Mail + Spring Retry 구성 완료
+- 비동기 처리 (@Async + @EnableAsync)
+- 재시도 로직: 3회, 지수 백오프
 
 📊 CSV Data Processing (완료)
 - univ-email-250411-final.csv: 학교 + 이메일 도메인
@@ -467,17 +500,15 @@ public void validateFile(MultipartFile file) {
    - 또는 Windows 터미널에서 gradlew bootRun
    - WSL에서는 실행하지 말 것!
 
-📌 현재 프로젝트 상태 (Day 3 완료 + 대규모 리팩터링)
+📌 현재 프로젝트 상태 (Day 4 완료 + 추가 개선사항)
 
-✅ 완료된 기능:
+✅ Day 1-3 완료된 기능:
 - 전체 인증 시스템 (회원가입/로그인/로그아웃)
 - DTO 패턴 전면 적용
 - 실시간 폼 검증
 - 로그인 상태별 UI 분기
 - 학교-학과 자동완성 검색
 - BaseEntity 기반 감사(Audit) 기능
-
-✅ Day 3 이후 추가 리팩터링:
 - 보안 강화: 세션 고정 공격 방어, 동시 로그인 차단
 - 성능 개선: BookService 쿼리 최적화, 인덱스 추가, N+1 해결
 - 예외 처리: 커스텀 예외 클래스 체계 구축
@@ -485,10 +516,19 @@ public void validateFile(MultipartFile file) {
 - AuditorAware: 0L = 시스템 사용자 정의
 - 코드 정리: Magic Number/String → 상수화
 
-⏳ 다음 단계 (Day 4):
-- 이메일 인증 시스템
-- 대학 이메일 도메인 엄격 검증
+✅ Day 4 완료된 기능:
+- 이메일 인증 시스템 (Gmail SMTP)
 - 비밀번호 재설정 기능
+- 이메일 템플릿 디자인 개선
+- Spring Retry 자동 재시도
+- 비동기 이메일 발송
+- 토큰 만료 시간 관리
+- UI/UX 일관성 개선
+
+⏳ 다음 단계 (Day 5):
+- 게시글 CRUD
+- 다중 이미지 업로드
+- 이미지 리사이징
 
 💡 핵심 원칙
 1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
@@ -499,15 +539,15 @@ public void validateFile(MultipartFile file) {
 6. 예외는 구체적으로 (커스텀 예외 사용)
 7. 상수는 중앙 관리 (AppConstants, Messages)
 
-🚀 Day 4 시작 명령어
+🚀 Day 5 시작 명령어
 ```bash
 cd /mnt/c/dev/unibook
-claude-code "Day 3까지 완료된 상태야. CLAUDE.md 참고해서 Day 4 작업을 시작해줘:
-1. Gmail SMTP 설정
-2. 이메일 인증 토큰 Entity 생성
-3. 인증 메일 발송 서비스
-4. 인증 링크 처리 Controller
-5. 대학 이메일 도메인 검증 강화"
+claude-code "Day 4까지 완료된 상태야. CLAUDE.md 참고해서 Day 5 작업을 시작해줘:
+1. Post Entity 및 PostImage Entity 검토
+2. PostController 생성 (CRUD)
+3. 다중 이미지 업로드 구현
+4. 이미지 리사이징 처리
+5. 게시글 목록/상세 페이지 UI"
 ```
 
 📝 추가 고려사항

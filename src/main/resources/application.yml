@@ -78,7 +78,7 @@ app:
       max-count: 5  # 게시글당 최대 이미지 수
   email:
     verification:
-      expiration-hours: 24  # 이메일 인증 토큰 유효 시간
+      expiration-hours: 1  # 이메일 인증 토큰 유효 시간 (1시간)
       base-url: http://localhost:8080  # 프로덕션에서는 실제 도메인으로 변경
     password-reset:
-      expiration-hours: 2  # 비밀번호 재설정 토큰 유효 시간
+      expiration-hours: 1  # 비밀번호 재설정 토큰 유효 시간 (1시간)

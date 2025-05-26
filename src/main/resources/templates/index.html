@@ -14,6 +14,9 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <!-- Loading CSS -->
     <link rel="stylesheet" href="/css/loading.css">
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
     <!-- Navigation -->
@@ -80,14 +83,43 @@
         </div>
     </nav>
 
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-0" role="alert">
+        <div class="container">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
+        <div class="container">
+            <i class="bi bi-exclamation-circle-fill me-2"></i>
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+
     <!-- Email Verification Warning (for unverified users) -->
     <div sec:authorize="isAuthenticated()" th:if="${#authentication.principal.verified == false}"
-         class="alert alert-warning alert-dismissible fade show mb-0" role="alert">
+         class="alert alert-warning alert-dismissible fade show mb-0" role="alert" id="verificationAlert">
         <div class="container">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <strong>이메일 인증이 필요합니다!</strong>
             이메일로 발송된 인증 링크를 확인해주세요. 인증 전까지 일부 기능이 제한됩니다.
-            <a th:href="@{/resend-verification}" class="alert-link ms-2">인증 메일 재발송</a>
+            <button type="button" class="btn btn-sm btn-warning ms-2" id="resendVerificationBtn">
+                <i class="bi bi-envelope"></i> 인증 메일 재발송
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <!-- Success Message (hidden by default) -->
+    <div class="alert alert-success alert-dismissible fade show mb-0 d-none" role="alert" id="resendSuccessAlert">
+        <div class="container">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>인증 메일이 재발송되었습니다!</strong>
+            이메일을 확인해주세요. 메일이 도착하지 않았다면 스팸함을 확인해주세요.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </div>
@@ -242,6 +274,54 @@
             if ($(this).val() === "") {
                 $("#selectedSchoolId").val("");
             }
+        });
+        
+        // CSRF 토큰 설정
+        const token = $("meta[name='_csrf']").attr("content");
+        const header = $("meta[name='_csrf_header']").attr("content");
+        
+        // 인증 메일 재발송 버튼 클릭 처리
+        $("#resendVerificationBtn").on("click", function() {
+            const $btn = $(this);
+            const originalHtml = $btn.html();
+            
+            // 버튼 비활성화 및 로딩 표시
+            $btn.prop("disabled", true);
+            $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 발송 중...');
+            
+            $.ajax({
+                url: "/api/auth/resend-verification",
+                type: "POST",
+                beforeSend: function(xhr) {
+                    // CSRF 토큰 추가
+                    xhr.setRequestHeader(header, token);
+                },
+                success: function(response) {
+                    // 성공 메시지 표시
+                    $("#verificationAlert").addClass("d-none");
+                    $("#resendSuccessAlert").removeClass("d-none");
+                    
+                    // 5초 후 자동으로 성공 메시지 숨기기
+                    setTimeout(function() {
+                        $("#resendSuccessAlert").addClass("d-none");
+                        $("#verificationAlert").removeClass("d-none");
+                    }, 5000);
+                },
+                error: function(xhr) {
+                    let errorMessage = "인증 메일 재발송에 실패했습니다.";
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    
+                    alert(errorMessage);
+                },
+                complete: function() {
+                    // 버튼 원상복구
+                    $btn.prop("disabled", false);
+                    $btn.html(originalHtml);
+                }
+            });
         });
     });
     </script>

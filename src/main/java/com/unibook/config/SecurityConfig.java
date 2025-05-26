@@ -1,5 +1,6 @@
 package com.unibook.config;
 
+import com.unibook.common.AppConstants;
 import com.unibook.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -37,10 +38,12 @@ public class SecurityConfig {
                 .requestMatchers("/search", "/search/**").permitAll()
                 .requestMatchers("/posts", "/posts/**").permitAll()
                 .requestMatchers("/books", "/books/**").permitAll()
-                // API 엔드포인트 허용
+                // 인증이 필요한 API 엔드포인트
+                .requestMatchers("/api/auth/resend-verification").authenticated()
+                // 나머지 API 엔드포인트 허용
                 .requestMatchers("/api/**").permitAll()
                 // 회원가입, 로그인, 이메일 인증 관련 페이지 허용
-                .requestMatchers("/signup", "/login", "/error").permitAll()
+                .requestMatchers("/signup", "/login", "/error", "/token-error").permitAll()
                 .requestMatchers("/verify-email", "/resend-verification", "/forgot-password", "/reset-password").permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
@@ -63,7 +66,7 @@ public class SecurityConfig {
             )
             .sessionManagement(session -> session
                 .sessionFixation().newSession()  // 로그인 시 새 세션 ID 발급
-                .maximumSessions(1)
+                .maximumSessions(AppConstants.MAX_CONCURRENT_SESSIONS)
                 .maxSessionsPreventsLogin(true)  // 동시 로그인 차단
             );
 
