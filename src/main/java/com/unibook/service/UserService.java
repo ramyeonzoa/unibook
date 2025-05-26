@@ -5,9 +5,12 @@ import com.unibook.common.Messages;
 import com.unibook.domain.dto.SignupRequestDto;
 import com.unibook.domain.dto.UserResponseDto;
 import com.unibook.domain.entity.Department;
+import com.unibook.domain.entity.EmailVerificationToken;
 import com.unibook.domain.entity.User;
+import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.repository.DepartmentRepository;
+import com.unibook.repository.EmailVerificationTokenRepository;
 import com.unibook.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,7 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
+    private final EmailVerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     
     public List<User> getAllUsers() {
@@ -72,10 +76,20 @@ public class UserService {
         }
         
         if (!isValidUniversityEmail) {
-            log.warn(Messages.LOG_INVALID_UNIVERSITY_EMAIL, 
-                    emailDomain, department.getSchool().getSchoolName());
-            // 개발 단계에서는 경고만 하고 진행 (나중에 예외 처리)
-            // throw new ValidationException.InvalidUniversityEmailException();
+            // 도메인 정보가 있는 학교는 엄격하게 검증
+            if (department.getSchool().getAllDomains() != null && !department.getSchool().getAllDomains().isEmpty()) {
+                log.error(Messages.LOG_INVALID_UNIVERSITY_EMAIL, 
+                        emailDomain, department.getSchool().getSchoolName());
+                String validDomains = String.join(", @", department.getSchool().getAllDomains());
+                throw new ValidationException(
+                    String.format("%s의 이메일 도메인(@%s)으로 가입해주세요.", 
+                        department.getSchool().getSchoolName(), validDomains)
+                );
+            } else {
+                // 도메인 정보가 없는 학교는 일단 허용 (추후 관리자가 도메인 추가)
+                log.warn("School {} has no domain information. Allowing any email domain.", 
+                        department.getSchool().getSchoolName());
+            }
         }
         
         // 사용자 생성
@@ -93,6 +107,8 @@ public class UserService {
         User savedUser = userRepository.save(user);
         log.info(Messages.LOG_USER_CREATED, savedUser.getUserId());
         
+        // 이메일 발송은 Controller에서 처리 (순환 참조 방지)
+        
         // TODO: Day 11 - ActivityLogService로 회원가입 성공 로그 기록
         // activityLogService.logUserActivity(savedUser.getEmail(), "SIGNUP", "SUCCESS");
         
@@ -101,5 +117,89 @@ public class UserService {
     
     public boolean isEmailAvailable(String email) {
         return !existsByEmail(email);
+    }
+    
+    /**
+     * 이메일 인증 처리
+     */
+    @Transactional
+    public void verifyEmail(String token) {
+        EmailVerificationToken verificationToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 인증 토큰입니다."));
+        
+        if (!verificationToken.isValid()) {
+            throw new ValidationException("만료되었거나 이미 사용된 토큰입니다.");
+        }
+        
+        if (verificationToken.getTokenType() != EmailVerificationToken.TokenType.EMAIL_VERIFICATION) {
+            throw new ValidationException("이메일 인증용 토큰이 아닙니다.");
+        }
+        
+        User user = verificationToken.getUser();
+        user.setVerified(true);
+        userRepository.save(user);
+        
+        verificationToken.markAsUsed();
+        tokenRepository.save(verificationToken);
+        
+        log.info("Email verified successfully for user: {}", user.getEmail());
+    }
+    
+    /**
+     * 이메일 재발송을 위한 사용자 검증
+     */
+    public User validateUserForEmailResend(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("등록되지 않은 이메일입니다."));
+        
+        if (user.isVerified()) {
+            throw new ValidationException("이미 인증된 이메일입니다.");
+        }
+        
+        return user;
+    }
+    
+    /**
+     * 비밀번호 재설정을 위한 사용자 조회
+     */
+    public User getUserForPasswordReset(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("등록되지 않은 이메일입니다."));
+    }
+    
+    /**
+     * 비밀번호 재설정 토큰 검증
+     */
+    public void validatePasswordResetToken(String token) {
+        EmailVerificationToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 토큰입니다."));
+        
+        if (!resetToken.isValid()) {
+            throw new ValidationException("만료되었거나 이미 사용된 토큰입니다.");
+        }
+        
+        if (resetToken.getTokenType() != EmailVerificationToken.TokenType.PASSWORD_RESET) {
+            throw new ValidationException("비밀번호 재설정용 토큰이 아닙니다.");
+        }
+    }
+    
+    /**
+     * 비밀번호 재설정
+     */
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        EmailVerificationToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new ResourceNotFoundException("유효하지 않은 토큰입니다."));
+        
+        validatePasswordResetToken(token);
+        
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        resetToken.markAsUsed();
+        tokenRepository.save(resetToken);
+        
+        log.info("Password reset successfully for user: {}", user.getEmail());
     }
 }

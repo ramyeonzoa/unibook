@@ -7,8 +7,12 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <!-- jQuery UI CSS -->
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <!-- Loading CSS -->
+    <link rel="stylesheet" href="/css/loading.css">
     
     <style>
         .signup-container {
@@ -74,12 +78,18 @@
             <!-- 이메일 입력 -->
             <div class="mb-3">
                 <label for="email" class="form-label">이메일 (대학교 이메일)</label>
-                <input type="email" 
-                       class="form-control" 
-                       id="email" 
-                       th:field="*{email}" 
-                       placeholder="student@university.ac.kr"
-                       required>
+                <div class="input-group">
+                    <input type="email" 
+                           class="form-control" 
+                           id="email" 
+                           th:field="*{email}" 
+                           placeholder="student@university.ac.kr"
+                           required>
+                    <button type="button" 
+                            class="btn btn-outline-secondary" 
+                            id="emailCheckBtn"
+                            disabled>중복확인</button>
+                </div>
                 <div th:if="${#fields.hasErrors('email')}" 
                      th:errors="*{email}" 
                      class="error-message"></div>
@@ -196,6 +206,8 @@
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Loading JS -->
+<script src="/js/loading.js"></script>
 
 <script>
 $(document).ready(function() {
@@ -240,28 +252,92 @@ $(document).ready(function() {
         }
     });
     
-    // 이메일 중복 체크
-    let emailTimeout;
+    // 이메일 중복 체크 상태 관리
+    let emailCheckState = {
+        checked: false,
+        checkedEmail: '',
+        available: false
+    };
+    
+    // 이메일 체크 상태 초기화
+    function resetEmailCheck() {
+        emailCheckState = {
+            checked: false,
+            checkedEmail: '',
+            available: false
+        };
+        $("#emailCheckBtn").removeClass('btn-success btn-warning btn-danger').addClass('btn-outline-secondary');
+        $("#emailCheckBtn").html('중복확인');
+        $("#emailCheckMessage").empty();
+    }
+    
+    // 이메일 입력 감지
     $("#email").on("input", function() {
-        clearTimeout(emailTimeout);
         const email = $(this).val();
+        const btn = $("#emailCheckBtn");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         
-        if (email && email.includes("@")) {
-            emailTimeout = setTimeout(function() {
-                $.ajax({
-                    url: "/api/auth/check-email",
-                    data: { email: email },
-                    success: function(available) {
-                        const message = $("#emailCheckMessage");
-                        if (available) {
-                            message.html('<div class="text-success small">사용 가능한 이메일입니다.</div>');
-                        } else {
-                            message.html('<div class="text-danger small">이미 사용중인 이메일입니다.</div>');
-                        }
-                    }
-                });
-            }, 500);
+        if (email && emailRegex.test(email)) {
+            btn.prop('disabled', false);
+            
+            // 이미 확인한 이메일과 다르면
+            if (emailCheckState.checked && email !== emailCheckState.checkedEmail) {
+                btn.removeClass('btn-success btn-danger').addClass('btn-warning');
+                btn.html('<i class="bi bi-exclamation-circle"></i> 다시 확인');
+                emailCheckState.checked = false;
+                $("#emailCheckMessage").html('<div class="text-warning small"><i class="bi bi-exclamation-triangle"></i> 이메일이 변경되었습니다. 다시 확인해주세요.</div>');
+            } else if (!emailCheckState.checked) {
+                btn.removeClass('btn-success btn-warning btn-danger').addClass('btn-outline-secondary');
+                btn.html('중복확인');
+            }
+        } else {
+            btn.prop('disabled', true);
+            if (email && !emailRegex.test(email)) {
+                $("#emailCheckMessage").html('<div class="text-muted small">올바른 이메일 형식을 입력해주세요.</div>');
+            } else {
+                resetEmailCheck();
+            }
         }
+    });
+    
+    // 중복확인 버튼 클릭
+    $("#emailCheckBtn").click(function() {
+        const email = $("#email").val();
+        const btn = $(this);
+        const originalHtml = btn.html();
+        
+        // 로딩 상태
+        btn.prop('disabled', true);
+        btn.html('<span class="spinner-border spinner-border-sm me-1"></span>확인 중...');
+        
+        $.ajax({
+            url: "/api/auth/check-email",
+            data: { email: email },
+            success: function(available) {
+                emailCheckState = {
+                    checked: true,
+                    checkedEmail: email,
+                    available: available
+                };
+                
+                if (available) {
+                    btn.removeClass('btn-outline-secondary btn-warning btn-danger').addClass('btn-success');
+                    btn.html('<i class="bi bi-check-circle"></i> 확인완료');
+                    $("#emailCheckMessage").html('<div class="text-success small"><i class="bi bi-check-circle"></i> 사용 가능한 이메일입니다.</div>');
+                    btn.prop('disabled', true); // 확인 완료 후 비활성화
+                } else {
+                    btn.removeClass('btn-outline-secondary btn-warning').addClass('btn-danger');
+                    btn.html('<i class="bi bi-x-circle"></i> 사용불가');
+                    $("#emailCheckMessage").html('<div class="text-danger small"><i class="bi bi-x-circle"></i> 이미 사용중인 이메일입니다.</div>');
+                    btn.prop('disabled', false); // 다시 시도 가능
+                }
+            },
+            error: function() {
+                btn.html(originalHtml);
+                btn.prop('disabled', false);
+                $("#emailCheckMessage").html('<div class="text-danger small"><i class="bi bi-exclamation-triangle"></i> 이메일 확인 중 오류가 발생했습니다.</div>');
+            }
+        });
     });
     
     // 비밀번호 규칙 실시간 검증
@@ -330,6 +406,25 @@ $(document).ready(function() {
             value = value.replace(/(\d{3})(\d{3,4})/, '$1-$2');
         }
         $(this).val(value);
+    });
+    
+    // 폼 제출 시 검증
+    $("#signupForm").on("submit", function(e) {
+        // 이메일 중복확인 검증
+        if (!emailCheckState.checked || !emailCheckState.available) {
+            e.preventDefault();
+            alert('이메일 중복확인을 해주세요.');
+            $("#email").focus();
+            return false;
+        }
+        
+        // 혹시 모를 이메일 변경 체크
+        if ($("#email").val() !== emailCheckState.checkedEmail) {
+            e.preventDefault();
+            alert('이메일이 변경되었습니다. 다시 중복확인을 해주세요.');
+            $("#email").focus();
+            return false;
+        }
     });
 });
 </script>

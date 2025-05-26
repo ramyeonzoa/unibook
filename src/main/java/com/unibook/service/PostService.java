@@ -34,12 +34,12 @@ public class PostService {
         return postRepository.findRecentPostsWithDetails(PageRequest.of(0, limit));
     }
     
-    public List<Post> getPostsBySchool(Long schoolId) {
+    public List<Post> findPostsBySchoolId(Long schoolId) {
         // Fetch Join을 사용하여 N+1 문제 해결
         return postRepository.findBySchoolIdWithDetails(schoolId);
     }
     
-    public List<Post> getPostsByStatus(Post.PostStatus status) {
+    public List<Post> findPostsByStatus(Post.PostStatus status) {
         return postRepository.findByStatusWithDetails(status);
     }
     

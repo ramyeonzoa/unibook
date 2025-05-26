@@ -132,9 +132,11 @@
                 <button type="submit" class="btn btn-primary">로그인</button>
             </div>
             
-            <!-- 비밀번호 찾기 (나중에 구현) -->
+            <!-- 비밀번호 찾기 / 이메일 재발송 -->
             <div class="text-center mt-3">
-                <a href="#" class="text-decoration-none text-muted small">비밀번호를 잊으셨나요?</a>
+                <a th:href="@{/forgot-password}" class="text-decoration-none text-muted small">비밀번호를 잊으셨나요?</a>
+                <span class="text-muted small mx-2">|</span>
+                <a th:href="@{/resend-verification}" class="text-decoration-none text-muted small">인증 메일 재발송</a>
             </div>
         </form>
         

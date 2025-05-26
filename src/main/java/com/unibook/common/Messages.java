@@ -12,10 +12,13 @@ public final class Messages {
     
     // ===== 성공 메시지 =====
     /** 회원가입 성공 메시지 */
-    public static final String SIGNUP_SUCCESS = "회원가입이 완료되었습니다. 이메일 인증 후 로그인해주세요.";
+    public static final String SIGNUP_SUCCESS = "회원가입이 완료되었습니다. 이메일로 발송된 인증 링크를 확인해주세요.";
     
     /** 로그아웃 성공 메시지 */
     public static final String LOGOUT_SUCCESS = "로그아웃되었습니다.";
+    
+    /** 이메일 인증 필요 메시지 */
+    public static final String EMAIL_NOT_VERIFIED = "이메일 인증이 필요합니다. 인증 메일을 확인해주세요.";
     
     // ===== 에러 메시지 =====
     /** 회원가입 실패 메시지 */

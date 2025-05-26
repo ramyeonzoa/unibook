@@ -36,6 +36,22 @@ spring:
       max-file-size: 10MB
       max-request-size: 50MB  # 여러 파일 업로드 시 전체 요청 크기
       file-size-threshold: 2KB  # 메모리에 저장할 임계값
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:}  # Gmail 주소 (application-local.yml에 설정)
+    password: ${MAIL_PASSWORD:}  # 앱 비밀번호 (application-local.yml에 설정)
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          timeout: 5000
+          connectiontimeout: 5000
+          writetimeout: 5000
+    default-encoding: UTF-8
 
 server:
   port: 8080
@@ -60,3 +76,9 @@ app:
     post-images:
       path: uploads/posts/
       max-count: 5  # 게시글당 최대 이미지 수
+  email:
+    verification:
+      expiration-hours: 24  # 이메일 인증 토큰 유효 시간
+      base-url: http://localhost:8080  # 프로덕션에서는 실제 도메인으로 변경
+    password-reset:
+      expiration-hours: 2  # 비밀번호 재설정 토큰 유효 시간

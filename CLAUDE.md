@@ -28,7 +28,7 @@ Database: MySQL on Windows (localhost:3306, username: root, password: 1234)
 WSL: Claude Code와 git 작업용으로만 사용
 Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 실행
 
-✅ Day 1-3 COMPLETED (2025년 1월 25-26일)
+✅ Day 1-4 COMPLETED (2025년 1월 25-27일)
 
 📋 Day 1 완료:
 - Spring Boot 프로젝트 초기 설정
@@ -53,12 +53,22 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
 - 실시간 비밀번호 검증
 - 로그인 상태별 UI 분기
 
+📋 Day 4 완료:
+- Gmail SMTP 설정 (unibooknotify@gmail.com)
+- EmailVerificationToken Entity 및 Repository
+- EmailService 구현 (이메일 발송 로직)
+- 이메일 인증 템플릿 (HTML)
+- 비밀번호 재설정 기능
+- 하이브리드 이메일 중복확인 (버튼 방식)
+- 로딩 유틸리티 추가 (loading.css, loading.js)
+- 대학 이메일 도메인 엄격 검증 적용
+
 📋 Development Schedule
 
 Week 1: Core Features
 ✅ Day 1-2: Project setup + Entity classes + Basic CRUD
 ✅ Day 3: Authentication system (signup/login)
-☐ Day 4: Email verification with university domain validation
+✅ Day 4: Email verification with university domain validation
 ☐ Day 5: Post CRUD with image upload
 ☐ Day 6: Advanced search functionality (PROJECT CORE)
 ☐ Day 7: Integration testing and UI improvement
@@ -74,26 +84,35 @@ Week 2: Advanced Features
 🏗️ Current Project Structure
 unibook/
 ├── src/main/java/com/unibook/
-│   ├── common/          # AppConstants, Messages (NEW)
+│   ├── common/          # AppConstants, Messages
 │   ├── config/          # SecurityConfig, JpaAuditConfig, DataInitializer
 │   ├── controller/      # HomeController, AuthController, GlobalExceptionHandler
 │   │   └── api/        # SchoolApiController, DepartmentApiController
 │   ├── domain/
-│   │   ├── entity/     # 12개 Entity (모두 BaseEntity 상속)
+│   │   ├── entity/     # 13개 Entity (모두 BaseEntity 상속)
+│   │   │               # NEW: EmailVerificationToken
 │   │   └── dto/        # DTO 클래스들
-│   ├── exception/       # 커스텀 예외 클래스들 (NEW)
+│   ├── exception/       # 커스텀 예외 클래스들
 │   │   ├── BusinessException (기본)
 │   │   ├── ValidationException (검증)
 │   │   ├── ResourceNotFoundException (404)
 │   │   ├── AuthenticationException (인증)
-│   │   └── DataInitializationException (초기화)
+│   │   ├── DataInitializationException (초기화)
+│   │   └── EmailException (이메일) (NEW)
 │   ├── repository/      # JPA Repository 인터페이스
+│   │                   # NEW: EmailVerificationTokenRepository
 │   ├── security/        # UserPrincipal, CustomUserDetailsService
 │   ├── service/         # 비즈니스 로직 서비스
+│   │                   # NEW: EmailService
 │   └── util/           # FileUploadUtil 등
 └── src/main/resources/
+    ├── static/         # 정적 리소스 (NEW)
+    │   ├── css/       # loading.css
+    │   └── js/        # loading.js
     ├── templates/       # Thymeleaf 템플릿
-    │   └── auth/       # signup.html, login.html
+    │   ├── auth/       # signup.html, login.html, resend-verification.html,
+    │   │               # forgot-password.html, reset-password.html (NEW)
+    │   └── email/      # verification.html, password-reset.html (NEW)
     ├── data/           # CSV 파일들
     └── application.yml # 설정 파일
 

@@ -39,8 +39,9 @@ public class SecurityConfig {
                 .requestMatchers("/books", "/books/**").permitAll()
                 // API 엔드포인트 허용
                 .requestMatchers("/api/**").permitAll()
-                // 회원가입, 로그인 페이지 허용
+                // 회원가입, 로그인, 이메일 인증 관련 페이지 허용
                 .requestMatchers("/signup", "/login", "/error").permitAll()
+                .requestMatchers("/verify-email", "/resend-verification", "/forgot-password", "/reset-password").permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
             )
