@@ -88,6 +88,52 @@
             transform: translateY(-50%);
             color: #6c757d;
         }
+        
+        /* 드래그 앤 드롭 스타일 */
+        .sortable-item {
+            position: relative;
+            cursor: move;
+            transition: transform 0.2s ease;
+        }
+        
+        .sortable-item:hover {
+            transform: scale(1.02);
+        }
+        
+        .sortable-item.ui-sortable-helper {
+            transform: rotate(5deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        .sortable-item.ui-sortable-placeholder {
+            border: 2px dashed #0d6efd;
+            background: rgba(13, 110, 253, 0.1);
+            visibility: visible !important;
+        }
+        
+        .drag-handle {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 4px;
+            cursor: move;
+            font-size: 14px;
+            display: none; /* 드래그 핸들 숨김 */
+        }
+        
+        .existing-delete-btn {
+            background: rgba(220, 53, 69, 0.9);
+            color: black;
+            border: none;
+        }
+        
+        .existing-delete-btn:hover {
+            background: rgba(220, 53, 69, 1);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -221,12 +267,37 @@
                             <input type="file" class="form-control" id="images" name="images" 
                                    multiple accept="image/*">
                             <div class="form-text">JPG, PNG, GIF, WEBP 파일만 업로드 가능 (최대 10MB)</div>
+                            
+                            <!-- 통합 이미지 미리보기 -->
+                            <div class="mt-3">
+                                <h6 th:if="${isEdit}">이미지 관리 
+                                    <small class="text-muted">(드래그해서 순서 변경 가능)</small>
+                                </h6>
+                                <div class="preview-container" id="imagePreview">
+                                    <!-- 수정 시 기존 이미지 표시 -->
+                                    <div th:if="${isEdit and post != null and post.postImages != null}" 
+                                         th:each="image : ${post.postImages}" 
+                                         class="preview-item sortable-item existing-image" 
+                                         th:data-image-id="${image.postImageId}"
+                                         th:data-image-order="${image.imageOrder}">
+                                        <img th:src="${image.imageUrl}" th:alt="${'이미지 ' + image.imageOrder}">
+                                        <span class="order-badge" 
+                                              th:text="${image.imageOrder == 0 ? '대표' : image.imageOrder}"></span>
+                                        <button type="button" class="delete-btn existing-delete-btn" 
+                                                th:data-image-id="${image.postImageId}">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- 숨겨진 입력 필드들 -->
+                                <div id="hiddenImageFields"></div>
+                            </div>
                         </div>
                         
                         <!-- 버튼 -->
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="submit" class="btn btn-primary" th:text="${isEdit} ? '수정하기' : '등록하기'">
-                                등록하기
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <span th:text="${isEdit} ? '수정하기' : '등록하기'">등록하기</span>
                             </button>
                             <a href="/posts" class="btn btn-secondary">취소</a>
                         </div>
@@ -239,6 +310,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
     $(document).ready(function() {
         // 상품 유형에 따른 책 선택 표시/숨김
@@ -273,7 +345,219 @@
         $('#productType').trigger('change');
         $('input[name="transactionMethod"]:checked').trigger('change');
         $('#description').trigger('input');
+        
+        // 이미지 업로드 관리
+        var selectedFiles = [];
+        var maxImages = 5;
+        
+        $('#images').on('change', function(e) {
+            var files = e.target.files;
+            var currentCount = selectedFiles.length;
+            var existingCount = $('#imagePreview .existing-image').length;
+            
+            // 전체 이미지 개수 체크 (기존 + 새 이미지)
+            if (existingCount + currentCount + files.length > maxImages) {
+                alert('이미지는 최대 ' + maxImages + '개까지 업로드 가능합니다.');
+                return;
+            }
+            
+            // 파일 추가
+            for (var i = 0; i < files.length; i++) {
+                if (currentCount + i >= maxImages) break;
+                
+                var file = files[i];
+                
+                // 파일 크기 체크 (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(file.name + ' 파일이 10MB를 초과합니다.');
+                    continue;
+                }
+                
+                // 이미지 파일인지 체크
+                if (!file.type.startsWith('image/')) {
+                    alert(file.name + '은(는) 이미지 파일이 아닙니다.');
+                    continue;
+                }
+                
+                selectedFiles.push(file);
+            }
+            
+            // 미리보기 업데이트
+            updatePreview();
+            
+            // DataTransfer를 사용하여 파일 입력 업데이트
+            updateFileInput();
+        });
+        
+        function updatePreview() {
+            var previewContainer = $('#imagePreview');
+            // 기존 이미지는 유지하고 새 이미지만 제거
+            previewContainer.find('.new-image').remove();
+            
+            // 순차적으로 처리하여 순서 보장
+            function processFileAtIndex(index) {
+                if (index >= selectedFiles.length) {
+                    // 모든 파일 처리 완료 후 정렬 기능 재초기화
+                    initImageSorting();
+                    updateImageOrders();
+                    return;
+                }
+                
+                var file = selectedFiles[index];
+                var reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    var previewItem = $('<div class="preview-item sortable-item new-image"></div>');
+                    var img = $('<img>').attr('src', e.target.result);
+                    var deleteBtn = $('<button type="button" class="delete-btn"><i class="bi bi-x"></i></button>');
+                    var existingCount = $('#imagePreview .existing-image').length;
+                    var totalIndex = existingCount + index;
+                    var orderBadge = $('<span class="order-badge"></span>')
+                        .text(totalIndex === 0 ? '대표' : totalIndex);
+                    
+                    // 파일 객체와 원본 인덱스 저장 (중요!)
+                    previewItem.data('file', file);
+                    previewItem.data('originalIndex', index);
+                    
+                    // 파일 객체로 삭제 처리
+                    deleteBtn.on('click', function() {
+                        removeImageByFile(file);
+                    });
+                    
+                    previewItem.append(img, deleteBtn, orderBadge);
+                    previewContainer.append(previewItem);
+                    
+                    // 다음 파일 처리
+                    processFileAtIndex(index + 1);
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // 첫 번째 파일부터 시작
+            processFileAtIndex(0);
+        }
+    
+        function removeImage(index) {
+            selectedFiles.splice(index, 1);
+            updatePreview();
+            updateFileInput();
+        }
+        
+        function removeImageByFile(fileToRemove) {
+            var index = selectedFiles.indexOf(fileToRemove);
+            if (index > -1) {
+                selectedFiles.splice(index, 1);
+                updatePreview();
+                updateFileInput();
+            }
+        }
+        
+        // 이미지 정렬 기능 초기화
+        initImageSorting();
+        
+        // 수정 모드일 때 초기 순서 설정
+        if ($('.existing-image').length > 0) {
+            updateImageOrders();
+        }
+        
+        // 기존 이미지 삭제 기능
+        $('.existing-delete-btn').on('click', function() {
+            var imageId = $(this).data('image-id');
+            var item = $(this).closest('.sortable-item');
+            
+            if (confirm('이 이미지를 삭제하시겠습니까?')) {
+                // 삭제할 이미지 ID를 hidden field에 추가
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'deleteImageIds',
+                    value: imageId
+                }).appendTo('#hiddenImageFields');
+                
+                // 화면에서 제거
+                item.remove();
+                
+                // 순서 업데이트
+                updateImageOrders();
+            }
+        });
     });
+    
+    function initImageSorting() {
+        $('#imagePreview').sortable({
+            items: '.sortable-item',
+            placeholder: 'sortable-item ui-sortable-placeholder',
+            helper: 'clone',
+            tolerance: 'pointer',
+            cancel: '.delete-btn', // 삭제 버튼 클릭 시에는 드래그 안 됨
+            start: function(event, ui) {
+                ui.placeholder.height(ui.item.height());
+                ui.placeholder.width(ui.item.width());
+            },
+            update: function(event, ui) {
+                updateImageOrders();
+            }
+        });
+    }
+    
+    
+    function updateImageOrders() {
+        // 기존 순서 입력 필드 제거
+        $('input[name="imageOrders"]').remove();
+        $('input[name="newImageOrders"]').remove();
+        
+        var newFiles = [];
+        var newFileOrders = [];
+        
+        // 모든 이미지의 순서 업데이트
+        $('#imagePreview .sortable-item').each(function(index) {
+            var imageId = $(this).data('image-id');
+            var newOrder = index; // 0부터 시작 (첫 번째가 대표 이미지)
+            
+            // 순서 배지 업데이트
+            $(this).find('.order-badge').text(newOrder === 0 ? '대표' : newOrder);
+            
+            if (imageId) {
+                // 기존 이미지: hidden field 추가
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'imageOrders',
+                    value: imageId + ':' + newOrder
+                }).appendTo('#hiddenImageFields');
+            } else {
+                // 새 이미지: 파일 수집 및 순서 저장
+                var file = $(this).data('file');
+                if (file) {
+                    newFiles.push(file);
+                    newFileOrders.push(newOrder);
+                    
+                    // 새 이미지의 순서도 hidden field로 전달
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'newImageOrders',
+                        value: newFileOrders.length - 1 + ':' + newOrder // 파일 인덱스:원하는순서
+                    }).appendTo('#hiddenImageFields');
+                }
+            }
+        });
+        
+        // selectedFiles 업데이트 (새 이미지만, DOM 순서대로)
+        selectedFiles = newFiles;
+        updateFileInput();
+    }
+    
+    function updateFileInput() {
+        // DataTransfer 객체를 사용하여 파일 입력 업데이트
+        var dataTransfer = new DataTransfer();
+        
+        // selectedFiles 배열의 순서대로 파일 추가
+        selectedFiles.forEach(function(file) {
+            dataTransfer.items.add(file);
+        });
+        
+        // 파일 입력 요소 업데이트
+        $('#images')[0].files = dataTransfer.files;
+    }
 </script>
 
 <!-- 공통 Footer 포함 -->

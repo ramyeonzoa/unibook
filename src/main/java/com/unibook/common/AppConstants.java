@@ -85,4 +85,11 @@ public final class AppConstants {
     // ===== Spring Security 관련 =====
     /** 최대 동시 세션 수 */
     public static final int MAX_CONCURRENT_SESSIONS = 1;
+    
+    // ===== 파일 업로드 관련 =====
+    /** 게시글당 최대 이미지 개수 */
+    public static final int MAX_IMAGES_PER_POST = 5;
+    
+    /** 최대 파일 크기 (바이트) - 10MB */
+    public static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 }

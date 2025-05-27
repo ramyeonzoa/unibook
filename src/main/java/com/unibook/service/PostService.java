@@ -147,7 +147,7 @@ public class PostService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Post updatePost(Long postId, PostRequestDto postDto, 
                           List<MultipartFile> newImages, List<Long> deleteImageIds,
-                          Map<Long, Integer> imageOrders) {
+                          List<String> imageOrders, List<String> newImageOrders) {
         log.info("게시글 수정 시작: postId={}", postId);
         
         Post post = postRepository.findById(postId)
@@ -171,9 +171,9 @@ public class PostService {
                 deleteImages(post, deleteImageIds);
             }
             
-            // 4. 새 이미지 추가
+            // 4. 새 이미지 추가 (순서 정보와 함께)
             if (newImages != null && !newImages.isEmpty()) {
-                processImages(post, newImages);
+                processImagesWithOrder(post, newImages, newImageOrders);
             }
             
             // 5. 이미지 순서 업데이트
@@ -260,6 +260,17 @@ public class PostService {
      * 이미지 처리
      */
     private void processImages(Post post, List<MultipartFile> images) throws IOException {
+        // 현재 이미지 개수 확인
+        int currentImageCount = post.getPostImages().size();
+        
+        // 추가할 이미지 개수 확인
+        long newImageCount = images.stream().filter(img -> !img.isEmpty()).count();
+        
+        if (currentImageCount + newImageCount > AppConstants.MAX_IMAGES_PER_POST) {
+            throw new ValidationException("이미지는 최대 " + AppConstants.MAX_IMAGES_PER_POST + "개까지 업로드 가능합니다.");
+        }
+        
+        // 시작 순서 결정 (기존 이미지가 있으면 최대값+1, 없으면 0부터)
         int currentOrder = post.getPostImages().stream()
                 .mapToInt(PostImage::getImageOrder)
                 .max()
@@ -281,6 +292,70 @@ public class PostService {
                         .build();
                 
                 post.getPostImages().add(postImage);
+                
+                log.debug("이미지 추가: order={}, path={}", currentOrder, imagePath);
+            }
+        }
+    }
+    
+    /**
+     * 이미지 처리 (순서 지정)
+     */
+    private void processImagesWithOrder(Post post, List<MultipartFile> images, List<String> newImageOrders) throws IOException {
+        Map<Integer, Integer> fileIndexToOrder = new HashMap<>();
+        
+        // newImageOrders 파싱 ("fileIndex:desiredOrder" 형태)
+        if (newImageOrders != null) {
+            for (String orderData : newImageOrders) {
+                String[] parts = orderData.split(":");
+                if (parts.length == 2) {
+                    try {
+                        int fileIndex = Integer.parseInt(parts[0]);
+                        int desiredOrder = Integer.parseInt(parts[1]);
+                        fileIndexToOrder.put(fileIndex, desiredOrder);
+                    } catch (NumberFormatException e) {
+                        log.warn("새 이미지 순서 파싱 실패: {}", orderData);
+                    }
+                }
+            }
+        }
+        
+        // 현재 이미지 개수 확인
+        int currentImageCount = post.getPostImages().size();
+        long newImageCount = images.stream().filter(img -> !img.isEmpty()).count();
+        
+        if (currentImageCount + newImageCount > AppConstants.MAX_IMAGES_PER_POST) {
+            throw new ValidationException("이미지는 최대 " + AppConstants.MAX_IMAGES_PER_POST + "개까지 업로드 가능합니다.");
+        }
+        
+        // 각 이미지 처리
+        for (int i = 0; i < images.size(); i++) {
+            MultipartFile image = images.get(i);
+            if (!image.isEmpty()) {
+                // 파일 유효성 검증
+                fileUploadUtil.validateFile(image);
+                
+                // 이미지 저장
+                String imagePath = fileUploadUtil.saveFile(image, "/images/posts/");
+                
+                // 지정된 순서가 있으면 사용, 없으면 기본값 (현재 최대값 + 1)
+                Integer desiredOrder = fileIndexToOrder.get(i);
+                int imageOrder = desiredOrder != null ? desiredOrder : 
+                    post.getPostImages().stream()
+                        .mapToInt(PostImage::getImageOrder)
+                        .max()
+                        .orElse(-1) + 1;
+                
+                // PostImage 엔티티 생성
+                PostImage postImage = PostImage.builder()
+                        .post(post)
+                        .imageUrl(imagePath)
+                        .imageOrder(imageOrder)
+                        .build();
+                
+                post.getPostImages().add(postImage);
+                
+                log.debug("이미지 추가: order={}, path={}", imageOrder, imagePath);
             }
         }
     }
@@ -304,11 +379,33 @@ public class PostService {
     /**
      * 이미지 순서 업데이트
      */
-    private void updateImageOrders(Post post, Map<Long, Integer> imageOrders) {
+    private void updateImageOrders(Post post, List<String> imageOrders) {
+        if (imageOrders == null || imageOrders.isEmpty()) {
+            return;
+        }
+        
+        // "imageId:order" 형태의 문자열을 파싱
+        Map<Long, Integer> orderMap = new HashMap<>();
+        for (String orderData : imageOrders) {
+            String[] parts = orderData.split(":");
+            if (parts.length == 2) {
+                try {
+                    Long imageId = Long.parseLong(parts[0]);
+                    Integer order = Integer.parseInt(parts[1]);
+                    orderMap.put(imageId, order);
+                } catch (NumberFormatException e) {
+                    log.warn("이미지 순서 파싱 실패: {}", orderData);
+                }
+            }
+        }
+        
+        // PostImage 순서 업데이트
         for (PostImage image : post.getPostImages()) {
-            Integer newOrder = imageOrders.get(image.getPostImageId());
+            Integer newOrder = orderMap.get(image.getPostImageId());
             if (newOrder != null) {
                 image.setImageOrder(newOrder);
+                log.debug("이미지 순서 업데이트: imageId={}, newOrder={}", 
+                         image.getPostImageId(), newOrder);
             }
         }
     }

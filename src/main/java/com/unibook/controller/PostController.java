@@ -150,6 +150,7 @@ public class PostController {
         PostRequestDto postDto = new PostRequestDto();
         
         model.addAttribute("postDto", postDto);
+        model.addAttribute("isEdit", false);
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("transactionMethods", Post.TransactionMethod.values());
         model.addAttribute("books", bookService.getAllBooks()); // 책 선택을 위한 목록
@@ -261,7 +262,8 @@ public class PostController {
                         BindingResult bindingResult,
                         @RequestParam(value = "images", required = false) List<MultipartFile> images,
                         @RequestParam(value = "deleteImageIds", required = false) List<Long> deleteImageIds,
-                        @RequestParam(value = "imageOrders", required = false) Map<Long, Integer> imageOrders,
+                        @RequestParam(value = "imageOrders", required = false) List<String> imageOrders,
+                        @RequestParam(value = "newImageOrders", required = false) List<String> newImageOrders,
                         @AuthenticationPrincipal UserPrincipal userPrincipal,
                         RedirectAttributes redirectAttributes,
                         Model model) {
@@ -301,7 +303,7 @@ public class PostController {
         
         try {
             // 게시글 수정 (트랜잭션 내에서 처리)
-            Post updatedPost = postService.updatePost(id, postDto, images, deleteImageIds, imageOrders);
+            Post updatedPost = postService.updatePost(id, postDto, images, deleteImageIds, imageOrders, newImageOrders);
             
             redirectAttributes.addFlashAttribute("successMessage", "게시글이 수정되었습니다.");
             return "redirect:/posts/" + updatedPost.getPostId();

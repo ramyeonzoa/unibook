@@ -23,6 +23,27 @@
             font-weight: bold;
             color: #0d6efd;
         }
+        /* 캐러셀 컨트롤 버튼 배경 */
+        .carousel-control-prev,
+        .carousel-control-next {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .carousel-control-prev {
+            left: 10px;
+        }
+        .carousel-control-next {
+            right: 10px;
+        }
+        .carousel-control-prev-icon,
+        .carousel-control-next-icon {
+            width: 24px;
+            height: 24px;
+        }
     </style>
 </head>
 <body>
@@ -33,9 +54,63 @@
     <div class="row">
         <!-- 이미지 섹션 -->
         <div class="col-lg-6">
+            <!-- 이미지 캐러셀 -->
             <div th:if="${post.postImages != null and !post.postImages.isEmpty()}">
-                <img th:src="${post.postImages[0].imageUrl}" class="main-image" alt="상품 이미지">
+                <div id="imageCarousel" class="carousel slide">
+                    <!-- 캐러셀 인디케이터 (이미지가 2개 이상일 때만 표시) -->
+                    <div th:if="${#lists.size(post.postImages) > 1}" 
+                         class="carousel-indicators">
+                        <button th:each="image, iterStat : ${post.postImages}" 
+                                type="button" 
+                                data-bs-target="#imageCarousel" 
+                                th:data-bs-slide-to="${iterStat.index}"
+                                th:class="${iterStat.index == 0 ? 'active' : ''}"
+                                th:aria-label="'이미지 ' + ${iterStat.index + 1}">
+                        </button>
+                    </div>
+                    
+                    <!-- 캐러셀 이미지들 -->
+                    <div class="carousel-inner">
+                        <div th:each="image, iterStat : ${post.postImages}" 
+                             th:class="'carousel-item' + ${iterStat.index == 0 ? ' active' : ''}">
+                            <img th:src="${image.imageUrl}" 
+                                 class="d-block w-100 main-image" 
+                                 th:alt="'상품 이미지 ' + ${iterStat.index + 1}">
+                        </div>
+                    </div>
+                    
+                    <!-- 캐러셀 컨트롤 (이미지가 2개 이상일 때만 표시) -->
+                    <div th:if="${#lists.size(post.postImages) > 1}">
+                        <button class="carousel-control-prev" type="button" 
+                                data-bs-target="#imageCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">이전</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" 
+                                data-bs-target="#imageCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">다음</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 썸네일 갤러리 (이미지가 2개 이상일 때만 표시) -->
+                <div th:if="${#lists.size(post.postImages) > 1}" class="mt-3">
+                    <div class="row g-2">
+                        <div th:each="image, iterStat : ${post.postImages}" 
+                             class="col-3">
+                            <img th:src="${image.imageUrl}" 
+                                 class="img-thumbnail w-100 cursor-pointer thumbnail-img" 
+                                 th:alt="'썸네일 ' + ${iterStat.index + 1}"
+                                 th:data-bs-target="'#imageCarousel'"
+                                 th:data-bs-slide-to="${iterStat.index}"
+                                 style="height: 80px; object-fit: cover; cursor: pointer;">
+                        </div>
+                    </div>
+                </div>
             </div>
+            
+            <!-- 이미지가 없을 때 -->
             <div th:unless="${post.postImages != null and !post.postImages.isEmpty()}" 
                  class="bg-light rounded p-5 text-center">
                 <p class="text-muted">이미지가 없습니다</p>
@@ -192,6 +267,24 @@ function updateStatus(newStatus) {
         });
     }
 }
+
+// 썸네일 클릭 시 캐러셀 이동
+$(document).ready(function() {
+    $('.thumbnail-img').on('click', function() {
+        var slideIndex = $(this).data('bs-slide-to');
+        var carousel = new bootstrap.Carousel(document.getElementById('imageCarousel'));
+        carousel.to(slideIndex);
+    });
+    
+    // 현재 활성 썸네일 하이라이트
+    $('#imageCarousel').on('slide.bs.carousel', function (e) {
+        $('.thumbnail-img').removeClass('border-primary border-3');
+        $('.thumbnail-img').eq(e.to).addClass('border-primary border-3');
+    });
+    
+    // 초기 썸네일 하이라이트
+    $('.thumbnail-img').eq(0).addClass('border-primary border-3');
+});
 /*]]>*/
 </script>
 </body>

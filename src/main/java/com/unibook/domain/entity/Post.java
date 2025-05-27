@@ -79,6 +79,7 @@ public class Post extends BaseEntity {
     private Integer wishlistCount = 0;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("imageOrder ASC")  // 이미지 순서대로 정렬
     @BatchSize(size = 10)  // N+1 문제 해결: IN 쿼리로 10개씩 묶어서 조회
     @Builder.Default
     @ToString.Exclude
