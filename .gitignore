@@ -54,7 +54,8 @@ application-dev.yml
 application-prod.yml
 
 # Uploaded files
-/uploads/
+/uploads/**
+!/uploads/.gitkeep
 
 # OS
 .DS_Store

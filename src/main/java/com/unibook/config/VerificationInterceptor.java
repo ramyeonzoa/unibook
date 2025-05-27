@@ -28,7 +28,7 @@ public class VerificationInterceptor implements HandlerInterceptor {
         "/forgot-password", "/reset-password",
         "/api/auth/check-email", "/api/auth/resend-verification",
         "/api/schools", "/api/departments",
-        "/search", "/posts/view", "/books/view"
+        "/search", "/posts", "/books/view"
     );
     
     // 인증이 필요한 기능 URL 패턴
@@ -46,20 +46,39 @@ public class VerificationInterceptor implements HandlerInterceptor {
             return true;
         }
         
-        // 인증 정보 확인
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated() && authentication.getPrincipal() instanceof UserPrincipal) {
-            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        // 제한된 경로에 대한 접근 검사
+        if (isRestrictedPath(requestURI)) {
+            // 인증 정보 확인
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             
-            // 제한된 경로에 미인증 사용자가 접근하는 경우
-            if (!userPrincipal.isVerified() && isRestrictedPath(requestURI)) {
+            // 로그인하지 않은 사용자
+            if (authentication == null || !authentication.isAuthenticated() || 
+                !(authentication.getPrincipal() instanceof UserPrincipal)) {
+                log.info("Non-authenticated user attempted to access restricted path: {}", requestURI);
+                
+                // AJAX 요청인 경우
+                if (isAjaxRequest(request)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"error\":\"로그인이 필요합니다.\"}");
+                    return false;
+                }
+                
+                // 일반 요청인 경우 로그인 페이지로 리다이렉트
+                response.sendRedirect("/login?returnUrl=" + requestURI);
+                return false;
+            }
+            
+            // 로그인한 사용자의 이메일 인증 확인
+            UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+            if (!userPrincipal.isVerified()) {
                 log.info("Unverified user {} attempted to access restricted path: {}", 
                          userPrincipal.getEmail(), requestURI);
                 
                 // AJAX 요청인 경우
                 if (isAjaxRequest(request)) {
                     response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                    response.setContentType("application/json");
+                    response.setContentType("application/json;charset=UTF-8");
                     response.getWriter().write("{\"error\":\"이메일 인증이 필요합니다.\"}");
                     return false;
                 }
@@ -89,7 +108,13 @@ public class VerificationInterceptor implements HandlerInterceptor {
     private boolean isAllowedPath(String path) {
         // 정적 리소스
         if (path.startsWith("/css/") || path.startsWith("/js/") || 
-            path.startsWith("/images/") || path.startsWith("/webjars/")) {
+            path.startsWith("/images/") || path.startsWith("/webjars/") ||
+            path.startsWith("/uploads/")) {
+            return true;
+        }
+        
+        // 개별 게시글 보기 (posts/123 형식)
+        if (path.matches("/posts/\\d+")) {
             return true;
         }
         

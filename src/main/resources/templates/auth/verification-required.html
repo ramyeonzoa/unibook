@@ -1,127 +1,72 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>이메일 인증 필요 - Unibook</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    
-    <!-- CSRF Token -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-    
-    <style>
-        .verification-container {
-            max-width: 500px;
-            margin: 100px auto;
-            padding: 40px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            border-radius: 10px;
-            background-color: white;
-            text-align: center;
-        }
-        .verification-icon {
-            font-size: 4rem;
-            color: #ffc107;
-            margin-bottom: 20px;
-        }
-        .btn-primary {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-        }
-        .btn-primary:hover {
-            background-color: #45a049;
-            border-color: #45a049;
-        }
-    </style>
 </head>
-<body class="bg-light">
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+        <a class="navbar-brand" href="/">📚 Unibook</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" href="/">홈으로</a>
+        </div>
+    </div>
+</nav>
 
-<div class="container">
-    <div class="verification-container">
-        <div class="verification-icon">
-            <i class="bi bi-envelope-exclamation"></i>
-        </div>
-        
-        <h2 class="mb-3">이메일 인증이 필요합니다</h2>
-        
-        <p class="text-muted mb-4">
-            이 기능을 사용하려면 먼저 이메일 인증을 완료해야 합니다.<br>
-            가입 시 입력한 이메일로 발송된 인증 링크를 확인해주세요.
-        </p>
-        
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> 
-            <strong sec:authentication="principal.email">이메일</strong>로 인증 메일이 발송되었습니다.
-        </div>
-        
-        <div class="d-grid gap-2 mb-3">
-            <button type="button" class="btn btn-primary" id="resendBtn">
-                <i class="bi bi-arrow-repeat"></i> 인증 메일 재발송
-            </button>
-        </div>
-        
-        <div class="accordion mb-4" id="helpAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingOne">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
-                            data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                        이메일이 도착하지 않았나요?
-                    </button>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="alert alert-warning">
+                <h2 class="mb-4">
+                    <i class="bi bi-envelope-exclamation fs-1"></i>
                 </h2>
-                <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" 
-                     data-bs-parent="#helpAccordion">
-                    <div class="accordion-body text-start">
-                        <ul>
-                            <li><strong>스팸함</strong>을 확인해주세요</li>
-                            <li>이메일 주소가 정확한지 확인해주세요</li>
-                            <li>학교 이메일의 경우 도착이 지연될 수 있습니다</li>
-                            <li>5분 후에도 도착하지 않으면 재발송을 시도해주세요</li>
-                        </ul>
-                    </div>
+                <h4>이메일 인증이 필요합니다</h4>
+                <p class="mt-3">
+                    이 기능을 사용하려면 먼저 이메일 인증을 완료해주세요.<br>
+                    가입하신 이메일 주소로 인증 메일이 발송되었습니다.
+                </p>
+                <hr>
+                <p class="mb-4">
+                    <strong>인증 메일을 받지 못하셨나요?</strong><br>
+                    스팸함을 확인해주시거나 아래 버튼을 눌러 재발송해주세요.
+                </p>
+                <button id="resendBtn" class="btn btn-warning">
+                    <i class="bi bi-arrow-repeat"></i> 인증 메일 재발송
+                </button>
+                <div id="successMessage" class="alert alert-success mt-3 d-none">
+                    인증 메일이 재발송되었습니다!
+                </div>
+                <div id="errorMessage" class="alert alert-danger mt-3 d-none">
+                    오류가 발생했습니다. 잠시 후 다시 시도해주세요.
                 </div>
             </div>
-        </div>
-        
-        <div class="text-center">
-            <a th:href="${returnUrl}" class="text-decoration-none">
-                <i class="bi bi-arrow-left"></i> 이전 페이지로 돌아가기
-            </a>
+            
+            <div class="mt-4">
+                <a href="/" class="btn btn-primary">
+                    <i class="bi bi-house"></i> 메인으로 돌아가기
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Success Alert (hidden by default) -->
-<div class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050;">
-    <div class="alert alert-success alert-dismissible fade show d-none" role="alert" id="successAlert">
-        <i class="bi bi-check-circle-fill me-2"></i>
-        인증 메일이 재발송되었습니다!
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-</div>
-
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script>
+<script th:inline="javascript">
+/*<![CDATA[*/
 $(document).ready(function() {
     const token = $("meta[name='_csrf']").attr("content");
     const header = $("meta[name='_csrf_header']").attr("content");
     
-    $("#resendBtn").on("click", function() {
+    $("#resendBtn").click(function() {
         const $btn = $(this);
-        const originalHtml = $btn.html();
-        
-        // 버튼 비활성화 및 로딩 표시
         $btn.prop("disabled", true);
-        $btn.html('<span class="spinner-border spinner-border-sm" role="status"></span> 발송 중...');
+        $btn.html('<span class="spinner-border spinner-border-sm"></span> 발송 중...');
         
         $.ajax({
             url: "/api/auth/resend-verification",
@@ -129,37 +74,25 @@ $(document).ready(function() {
             beforeSend: function(xhr) {
                 xhr.setRequestHeader(header, token);
             },
-            success: function(response) {
-                // 성공 알림 표시
-                $("#successAlert").removeClass("d-none");
-                
-                // 5초 후 자동으로 숨기기
+            success: function() {
+                $("#successMessage").removeClass("d-none");
+                $("#errorMessage").addClass("d-none");
                 setTimeout(function() {
-                    $("#successAlert").addClass("d-none");
+                    $("#successMessage").addClass("d-none");
                 }, 5000);
             },
-            error: function(xhr) {
-                let errorMessage = "인증 메일 재발송에 실패했습니다.";
-                
-                if (xhr.status === 429) {
-                    errorMessage = "너무 많은 요청입니다. 잠시 후 다시 시도해주세요.";
-                } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                
-                alert(errorMessage);
+            error: function() {
+                $("#errorMessage").removeClass("d-none");
+                $("#successMessage").addClass("d-none");
             },
             complete: function() {
-                // 버튼 원상복구
-                setTimeout(function() {
-                    $btn.prop("disabled", false);
-                    $btn.html(originalHtml);
-                }, 3000);
+                $btn.prop("disabled", false);
+                $btn.html('<i class="bi bi-arrow-repeat"></i> 인증 메일 재발송');
             }
         });
     });
 });
+/*]]>*/
 </script>
-
 </body>
 </html>

@@ -59,7 +59,7 @@ public class Post extends BaseEntity {
 
     @NotNull(message = "거래 상태는 필수입니다")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'AVAILABLE'")
     @Builder.Default
     private PostStatus status = PostStatus.AVAILABLE;
     

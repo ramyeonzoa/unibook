@@ -93,6 +93,8 @@
         
         <!-- 로그인 폼 -->
         <form th:action="@{/login}" method="post">
+            <!-- returnUrl 파라미터 처리 -->
+            <input type="hidden" name="returnUrl" th:value="${param.returnUrl}" th:if="${param.returnUrl != null}"/>
             <!-- 이메일 입력 -->
             <div class="mb-3">
                 <label for="username" class="form-label">이메일</label>

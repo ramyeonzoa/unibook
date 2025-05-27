@@ -210,4 +210,11 @@ public class UserService {
         
         log.info("Password reset successfully for user: {}", user.getEmail());
     }
+    
+    /**
+     * 사용자 ID로 조회
+     */
+    public Optional<User> findById(Long userId) {
+        return userRepository.findById(userId);
+    }
 }

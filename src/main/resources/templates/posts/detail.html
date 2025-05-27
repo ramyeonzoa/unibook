@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${post.title + ' - Unibook'}">게시글 상세 - Unibook</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <style>
+        .main-image {
+            width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+        }
+        .price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+<!-- 공통 헤더 포함 -->
+<nav th:replace="~{fragments/header :: header}"></nav>
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- 이미지 섹션 -->
+        <div class="col-lg-6">
+            <div th:if="${post.postImages != null and !post.postImages.isEmpty()}">
+                <img th:src="${post.postImages[0].imageUrl}" class="main-image" alt="상품 이미지">
+            </div>
+            <div th:unless="${post.postImages != null and !post.postImages.isEmpty()}" 
+                 class="bg-light rounded p-5 text-center">
+                <p class="text-muted">이미지가 없습니다</p>
+            </div>
+        </div>
+        
+        <!-- 정보 섹션 -->
+        <div class="col-lg-6">
+            <h2 th:text="${post.title}">제목</h2>
+            
+            <!-- 상태 표시 -->
+            <span th:switch="${post.status}">
+                <span th:case="${T(com.unibook.domain.entity.Post.PostStatus).AVAILABLE}" class="badge bg-success">판매중</span>
+                <span th:case="${T(com.unibook.domain.entity.Post.PostStatus).RESERVED}" class="badge bg-warning text-dark">예약중</span>
+                <span th:case="${T(com.unibook.domain.entity.Post.PostStatus).COMPLETED}" class="badge bg-secondary">거래완료</span>
+            </span>
+            
+            <p class="price mt-3" th:text="${#numbers.formatInteger(post.price, 0, 'COMMA') + '원'}">0원</p>
+            
+            <!-- 기본 정보 -->
+            <div class="mt-4">
+                <p><strong>상품 유형:</strong> 
+                    <span th:if="${post.productType == 'TEXTBOOK'}">전공교재</span>
+                    <span th:if="${post.productType == 'CERTBOOK'}">자격증 교재</span>
+                    <span th:if="${post.productType == 'NOTE'}">필기노트</span>
+                    <span th:if="${post.productType == 'PASTEXAM'}">족보/기출</span>
+                    <span th:if="${post.productType == 'ETC'}">기타</span>
+                </p>
+                
+                <!-- 책 정보 -->
+                <div th:if="${post.book != null}" class="bg-light p-3 rounded">
+                    <h5>📖 교재 정보</h5>
+                    <p th:if="${post.book.title}"><strong>제목:</strong> <span th:text="${post.book.title}"></span></p>
+                    <p th:if="${post.book.author}"><strong>저자:</strong> <span th:text="${post.book.author}"></span></p>
+                </div>
+                
+                <p><strong>거래 방법:</strong> 
+                    <span th:if="${post.transactionMethod == 'DIRECT'}">직거래</span>
+                    <span th:if="${post.transactionMethod == 'PARCEL'}">택배</span>
+                    <span th:if="${post.transactionMethod == 'BOTH'}">직거래/택배</span>
+                </p>
+                
+                <p th:if="${post.campusLocation}">
+                    <strong>거래 장소:</strong> <span th:text="${post.campusLocation}"></span>
+                </p>
+                
+                <p><strong>조회수:</strong> <span th:text="${post.viewCount}">0</span></p>
+            </div>
+            
+            <!-- 설명 -->
+            <div th:if="${post.description}" class="mt-4">
+                <h5>상세 설명</h5>
+                <p th:text="${post.description}" style="white-space: pre-wrap;">설명</p>
+            </div>
+            
+            <!-- 작성자 정보 -->
+            <div class="bg-light p-3 rounded mt-4">
+                <h6>판매자 정보</h6>
+                <p><strong>이름:</strong> <span th:text="${post.user.name}">이름</span></p>
+                <p class="text-muted small">
+                    등록일: <span th:text="${#temporals.format(post.createdAt, 'yyyy.MM.dd HH:mm')}"></span>
+                </p>
+            </div>
+            
+            <!-- 액션 버튼 -->
+            <div class="mt-4">
+                <!-- 작성자 버튼 -->
+                <div th:if="${isOwner}" class="d-flex gap-2 flex-wrap">
+                    <a th:href="@{/posts/{id}/edit(id=${post.postId})}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> 수정
+                    </a>
+                    <form th:action="@{/posts/{id}/delete(id=${post.postId})}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('정말로 삭제하시겠습니까?');">
+                            <i class="bi bi-trash"></i> 삭제
+                        </button>
+                    </form>
+                    
+                    <!-- 상태 변경 드롭다운 -->
+                    <div class="dropdown">
+                        <button class="btn btn-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear"></i> 상태 변경
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" 
+                                   th:classappend="${post.status.toString() == 'AVAILABLE' ? 'active' : ''}"
+                                   onclick="updateStatus('AVAILABLE'); return false;">
+                                <i class="bi bi-check-circle text-success"></i> 판매중
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" 
+                                   th:classappend="${post.status.toString() == 'RESERVED' ? 'active' : ''}"
+                                   onclick="updateStatus('RESERVED'); return false;">
+                                <i class="bi bi-clock text-warning"></i> 예약중
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" 
+                                   th:classappend="${post.status.toString() == 'COMPLETED' ? 'active' : ''}"
+                                   onclick="updateStatus('COMPLETED'); return false;">
+                                <i class="bi bi-check-square text-secondary"></i> 거래완료
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 비작성자 버튼 (로그인 사용자) -->
+                <div th:if="${!isOwner}" sec:authorize="isAuthenticated()" class="d-grid gap-2">
+                    <button class="btn btn-primary btn-lg" 
+                            th:disabled="${post.status.toString() == 'COMPLETED'}">
+                        <i class="bi bi-chat-dots"></i> 문의하기
+                    </button>
+                    <button class="btn btn-outline-danger">
+                        <i class="bi bi-heart"></i> 찜하기
+                    </button>
+                </div>
+                
+                <!-- 비로그인 사용자 -->
+                <div th:if="${!isOwner}" sec:authorize="!isAuthenticated()" class="d-grid gap-2">
+                    <a href="/login" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right"></i> 로그인하여 문의하기
+                    </a>
+                    <p class="text-muted text-center mt-2">
+                        로그인 후 판매자에게 문의하거나 찜하기를 할 수 있습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 공통 Footer 포함 -->
+<footer th:replace="~{fragments/header :: footer}"></footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+var postId = /*[[${post.postId}]]*/ 0;
+
+function updateStatus(newStatus) {
+    if (confirm('상태를 변경하시겠습니까?')) {
+        $.ajax({
+            url: '/posts/' + postId + '/status',
+            type: 'POST',
+            data: { 
+                status: newStatus,
+                _csrf: /*[[${_csrf.token}]]*/ ''
+            },
+            success: function(response) {
+                location.reload();
+            },
+            error: function(xhr) {
+                alert('상태 변경에 실패했습니다.');
+            }
+        });
+    }
+}
+/*]]>*/
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<body>
+    <!-- 공통 헤더 Fragment -->
+    <nav th:fragment="header" class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="/">
+                <i class="bi bi-book"></i> Unibook
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/posts">게시글</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <a class="nav-link" href="/posts/new">
+                            <i class="bi bi-pencil-square"></i> 글쓰기
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <!-- 로그인하지 않은 사용자에게만 표시 -->
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="nav-link" href="/login">로그인</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="!isAuthenticated()">
+                        <a class="btn btn-primary btn-sm" href="/signup">회원가입</a>
+                    </li>
+                    
+                    <!-- 로그인한 사용자에게만 표시 -->
+                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i>
+                            <span sec:authentication="principal.name">사용자</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li>
+                                <h6 class="dropdown-header">
+                                    <span sec:authentication="principal.email">이메일</span>
+                                </h6>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/posts/my">
+                                <i class="bi bi-list-ul"></i> 내 게시글
+                            </a></li>
+                            <li><a class="dropdown-item" href="/wishlist">
+                                <i class="bi bi-heart"></i> 찜 목록
+                            </a></li>
+                            <li><a class="dropdown-item" href="/profile">
+                                <i class="bi bi-gear"></i> 설정
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="m-0">
+                                    <button type="submit" class="dropdown-item text-danger">
+                                        <i class="bi bi-box-arrow-right"></i> 로그아웃
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <!-- 게시글 작성 버튼 (로그인한 사용자만) -->
+                    <li class="nav-item ms-2" sec:authorize="isAuthenticated()">
+                        <a class="btn btn-primary btn-sm" href="/posts/new">
+                            <i class="bi bi-plus-circle"></i> 판매글 작성
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 공통 알림 메시지 Fragment -->
+    <div th:fragment="messages">
+        <!-- Flash Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show mb-0" role="alert">
+            <div class="container">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span th:text="${successMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
+            <div class="container">
+                <i class="bi bi-exclamation-circle-fill me-2"></i>
+                <span th:text="${errorMessage}"></span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+        
+        <!-- Email Verification Warning (for unverified users) -->
+        <div sec:authorize="isAuthenticated()" th:if="${#authentication.principal.verified == false}"
+             class="alert alert-warning alert-dismissible fade show mb-0" role="alert" id="verificationAlert">
+            <div class="container">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>이메일 인증이 필요합니다!</strong>
+                이메일로 발송된 인증 링크를 확인해주세요. 인증 전까지 일부 기능이 제한됩니다.
+                <button type="button" class="btn btn-sm btn-warning ms-2" id="resendVerificationBtn">
+                    <i class="bi bi-envelope"></i> 인증 메일 재발송
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 공통 Footer Fragment -->
+    <footer th:fragment="footer" class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 Unibook. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

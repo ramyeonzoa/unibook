@@ -91,13 +91,55 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
   - AppConstants: 재시도/Rate Limit 관련 상수 추가
   - verification-required.html: 대화형 도움말 아코디언, AJAX 재발송
 
+📋 Day 5 완료:
+- PostController 생성 (완전한 CRUD 엔드포인트)
+  - 권한 체크: 작성자/관리자 구분
+  - 이미지 업로드/삭제 처리
+  - AJAX 상태 변경 API (/posts/{id}/status)
+  - 이메일 미인증 사용자 차단 로직 추가
+- PostRequestDto 생성 (게시글 폼 바인딩용 DTO)
+  - Entity ↔ DTO 변환 메서드
+  - 검증 어노테이션 포함
+  - bookTitle, bookAuthor 직접 입력 필드 제거 (MVP 단순화)
+- PostService 확장
+  - 조회수 중복 방지 (30분 간격, 비동기 처리)
+  - 이미지 처리 로직 (저장/삭제/순서)
+  - 트랜잭션 격리 수준 설정 (READ_COMMITTED)
+- 게시글 템플릿 구현
+  - form.html: 기본 파일 업로드 (드래그앤드롭은 MVP 이후)
+  - list.html: 카드 레이아웃, 페이지네이션, 필터 UI (백엔드 미구현)
+  - detail.html: 단순화된 이미지 표시, 권한별 버튼 표시
+- 파일 업로드 시스템
+  - uploads/images/posts/ 자동 생성 (FileUploadUtil)
+  - UUID 파일명, 정적 리소스 제공 (WebMvcConfig)
+  - 파일 검증: 확장자, 크기, 빈 파일 체크
+  - SecurityConfig에 /uploads/** 경로 허용 추가
+- 공통 헤더/푸터 Fragment 구현
+  - fragments/header.html 생성
+  - 모든 페이지에 일관된 네비게이션 적용
+  - Bootstrap 버전 통일 (5.3.0)
+  - Thymeleaf 3.1+ 제약사항 대응 (#request 객체 사용 불가)
+- 권한별 UI 개선
+  - 작성자: 수정/삭제/상태변경 가능
+  - 로그인 사용자: 문의하기(예약중도 가능)/찜하기
+  - 비로그인 사용자: 게시글 조회만 가능, 로그인 유도
+- 게시글 상태 표시 개선
+  - Enum 비교 문제 해결 (toString() 사용)
+  - 모든 페이지에서 일관된 배지 표시
+  - 예약중 배지: bg-warning text-dark
+- Day 5 현재 문제점:
+  - 다중 이미지 업로드 미구현 (현재 단일 이미지만)
+  - 게시글 수정 시 이미지 변경 반영 안됨
+  - 게시글 삭제 시 이미지 파일이 서버에 잔존
+  - 도서 정보 API 미연동으로 책 선택 불가
+
 📋 Development Schedule
 
 Week 1: Core Features
 ✅ Day 1-2: Project setup + Entity classes + Basic CRUD
 ✅ Day 3: Authentication system (signup/login)
 ✅ Day 4: Email verification with university domain validation
-☐ Day 5: Post CRUD with image upload
+⏳ Day 5: Post CRUD with image upload (진행중)
 ☐ Day 6: Advanced search functionality (PROJECT CORE)
 ☐ Day 7: Integration testing and UI improvement
 
@@ -116,12 +158,12 @@ unibook/
 │   ├── config/          # SecurityConfig, JpaAuditConfig, DataInitializer, 
 │   │                   # AsyncConfig, VerificationInterceptor, WebMvcConfig
 │   ├── controller/      # HomeController, AuthController, GlobalExceptionHandler,
-│   │   │               # VerificationController
+│   │   │               # VerificationController, PostController
 │   │   └── api/        # SchoolApiController, DepartmentApiController
 │   ├── domain/
 │   │   ├── entity/     # 13개 Entity (모두 BaseEntity 상속)
 │   │   │               # EmailVerificationToken 포함
-│   │   └── dto/        # DTO 클래스들
+│   │   └── dto/        # DTO 클래스들 (PostRequestDto, PostResponseDto 포함)
 │   ├── exception/       # 커스텀 예외 클래스들
 │   │   ├── BusinessException (기본)
 │   │   ├── ValidationException (검증)
@@ -145,7 +187,9 @@ unibook/
     │   │               # forgot-password.html, reset-password.html,
     │   │               # verification-required.html
     │   ├── email/      # verification.html, password-reset.html
-    │   └── error/      # token-error.html
+    │   ├── error/      # token-error.html
+    │   ├── fragments/  # header.html (공통 헤더/푸터/메시지)
+    │   └── posts/      # list.html, form.html, detail.html
     ├── data/           # CSV 파일들
     └── application.yml # 설정 파일
 
@@ -283,19 +327,27 @@ logging:
 - 비밀번호 규칙: 각 조건별 ✅/❌ 표시
 - 비밀번호 확인: 실시간 일치 여부 체크
 
-⚠️ CONFIRMATIONS - Day 4 이후 필요 사항
+⚠️ CONFIRMATIONS & DECISIONS
 
-☐ Day 4에 필요한 설정:
-- Gmail SMTP 계정 (앱 비밀번호 필요)
-- 이메일 인증 토큰 저장 방식 결정
+✅ 확정된 사항:
+- 이메일 인증 방식: User.verified boolean 필드 사용 (권한 기반 X)
+- 파일 업로드 경로: uploads/images/posts/ (프로필 이미지는 uploads/images/profiles/)
+- 검색 엔진: MySQL Full-text search (Elasticsearch 대신)
+- 책 정보 입력: 네이버 책 검색 API를 통한 검색 → 선택 → DB 자동 저장
 
-☐ Day 5에 필요한 설정:
-- 파일 업로드 경로: /uploads/images/posts/ (설정 완료, 폴더 생성 필요)
-- 이미지 리사이징 라이브러리 결정
+☐ Day 5 잔여 작업:
+- 다중 이미지 업로드 구현
+- 게시글 수정 시 이미지 처리
+- 파일 삭제 로직 구현
+- 네이버 책 검색 API 연동 (Client ID/Secret 필요)
+- 책 검색 UI 구현 (모달 또는 자동완성)
 
 ☐ Day 6에 필요한 설정:
-- 네이버 책 검색 API (Client ID/Secret)
-- MySQL Full-text search 설정 (결정됨: Elasticsearch 대신 MySQL 사용)
+- MySQL Full-text search 인덱스 설정
+
+☐ 미정 사항:
+- 채팅 시스템: Firebase 또는 간단한 대안 (Day 9-10에서 결정)
+- 배포 플랫폼: AWS, NCP 등 (Day 14에서 결정)
 
 🎯 Key Features to Implement (Day 5-14)
 
@@ -408,6 +460,14 @@ private List<PostImage> postImages;
 - 세션 갱신: 이메일 인증 후 재로그인 유도
 - Rate Limit 메모리 누수: 스케줄러로 주기적 정리
 
+9. **Day 5 문제 해결**
+- Thymeleaf 3.1+ 제약: #request 객체 사용 불가 → active 클래스 제거 또는 JS 처리
+- Enum 비교: 문자열 비교 시 toString() 메서드 사용 필요
+- 중복 URL 매핑: 동일한 경로에 여러 컨트롤러 메서드 매핑 금지
+- SecurityConfig 패턴: 정규식 대신 와일드카드 사용 (/posts/* not /posts/[0-9]+)
+- 정적 리소스 접근: /uploads/** 경로를 SecurityConfig에 permitAll() 추가
+- MVP 우선: 복잡한 기능은 나중에, 먼저 동작하는 코드 작성
+
 📧 Gmail SMTP Configuration (Day 4 완료)
 - Gmail: unibooknotify@gmail.com
 - App Password: application-local.yml에 설정
@@ -500,7 +560,7 @@ public void validateFile(MultipartFile file) {
    - 또는 Windows 터미널에서 gradlew bootRun
    - WSL에서는 실행하지 말 것!
 
-📌 현재 프로젝트 상태 (Day 4 완료 + 추가 개선사항)
+📌 현재 프로젝트 상태 (Day 5 진행중)
 
 ✅ Day 1-3 완료된 기능:
 - 전체 인증 시스템 (회원가입/로그인/로그아웃)
@@ -525,10 +585,19 @@ public void validateFile(MultipartFile file) {
 - 토큰 만료 시간 관리
 - UI/UX 일관성 개선
 
-⏳ 다음 단계 (Day 5):
-- 게시글 CRUD
-- 다중 이미지 업로드
-- 이미지 리사이징
+✅ Day 5 완료된 기능:
+- 게시글 기본 CRUD ✅
+- 단일 이미지 업로드 ✅
+- 공통 헤더/푸터 ✅
+- 권한별 UI ✅
+- 상태 변경 기능 ✅
+- 비로그인 사용자 게시글 조회 ✅
+
+❌ Day 5 미완성 기능:
+- 다중 이미지 업로드 (현재 1개만 가능)
+- 게시글 수정 시 이미지 변경 반영
+- 게시글/이미지 삭제 시 실제 파일 삭제
+- 네이버 책 검색 API 연동 (현재 책 선택 불가)
 
 💡 핵심 원칙
 1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)

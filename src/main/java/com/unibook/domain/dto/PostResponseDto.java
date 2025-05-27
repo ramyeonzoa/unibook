@@ -78,8 +78,8 @@ public class PostResponseDto {
                 .price(post.getPrice())
                 .productType(post.getProductType())
                 .status(post.getStatus())
-                .viewCount(post.getViewCount())
-                .wishlistCount(post.getWishlistCount())
+                .viewCount(post.getViewCount() != null ? post.getViewCount() : 0)
+                .wishlistCount(post.getWishlistCount() != null ? post.getWishlistCount() : 0)
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt());
         
@@ -138,7 +138,8 @@ public class PostResponseDto {
                 .price(post.getPrice())
                 .productType(post.getProductType())
                 .status(post.getStatus())
-                .viewCount(post.getViewCount())
+                .viewCount(post.getViewCount() != null ? post.getViewCount() : 0)
+                .wishlistCount(post.getWishlistCount() != null ? post.getWishlistCount() : 0)
                 .createdAt(post.getCreatedAt());
         
         // 사용자 기본 정보만
