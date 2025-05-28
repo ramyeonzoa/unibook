@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title th:text="${isEdit} ? '게시글 수정' : '게시글 작성'">게시글 작성</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -177,14 +179,53 @@
                         
                         <!-- 책 선택 (교재인 경우) -->
                         <div class="mb-3" id="bookSelectDiv" style="display: none;">
-                            <label for="bookId" class="form-label">교재 선택</label>
-                            <select class="form-select" id="bookId" th:field="*{bookId}">
-                                <option value="">선택하세요</option>
-                                <option th:each="book : ${books}" 
-                                        th:value="${book.bookId}" 
-                                        th:text="${book.title + ' - ' + book.author}"></option>
-                            </select>
-                            <small class="form-text text-muted">목록에 책이 없는 경우 관리자에게 문의해주세요.</small>
+                            <label class="form-label">교재 정보</label>
+                            <input type="hidden" th:field="*{bookId}" id="bookId">
+                            
+                            <!-- 선택된 책 정보 표시 -->
+                            <div id="selectedBookInfo" class="alert alert-info" style="display: none;">
+                                <div class="d-flex align-items-start gap-3">
+                                    <!-- 책 표지 썸네일 -->
+                                    <div id="selectedBookImageContainer" style="width: 60px; height: 80px; flex-shrink: 0; position: relative;">
+                                        <img id="selectedBookImage" 
+                                             src="" 
+                                             alt="Book cover" 
+                                             class="w-100 h-100 rounded border"
+                                             style="object-fit: cover; display: none; position: absolute; top: 0; left: 0;"
+                                             onerror="this.style.display='none'; document.getElementById('selectedBookPlaceholder').style.display='flex';">
+                                        <div id="selectedBookPlaceholder" class="w-100 h-100 bg-light border rounded d-flex align-items-center justify-content-center" style="display: flex; position: absolute; top: 0; left: 0;">
+                                            <i class="bi bi-book text-muted" style="font-size: 1.5rem;"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 책 정보 -->
+                                    <div class="flex-grow-1">
+                                        <h6 id="selectedBookTitle" class="mb-1"></h6>
+                                        <small class="text-muted">
+                                            <span id="selectedBookAuthor"></span> | 
+                                            <span id="selectedBookPublisher"></span>
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 삭제 버튼 -->
+                                    <div class="flex-shrink-0">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeBookBtn">
+                                            <i class="bi bi-x"></i> 선택 취소
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="removeBook" name="removeBook" value="false">
+                            
+                            <!-- 책 검색 버튼 -->
+                            <div id="bookSearchBtnDiv">
+                                <button type="button" class="btn btn-outline-primary" id="bookSearchBtn">
+                                    <i class="bi bi-search"></i> 책 검색하기
+                                </button>
+                                <small class="form-text text-muted d-block mt-1">
+                                    네이버 책 검색을 통해 교재 정보를 입력할 수 있습니다.
+                                </small>
+                            </div>
                         </div>
                         
                         <!-- 제목 -->
@@ -275,7 +316,7 @@
                                 </h6>
                                 <div class="preview-container" id="imagePreview">
                                     <!-- 수정 시 기존 이미지 표시 -->
-                                    <div th:if="${isEdit and post != null and post.postImages != null}" 
+                                    <div th:if="${isEdit and post != null and post.postImages != null and !post.postImages.isEmpty()}" 
                                          th:each="image : ${post.postImages}" 
                                          class="preview-item sortable-item existing-image" 
                                          th:data-image-id="${image.postImageId}"
@@ -308,10 +349,10 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-<script>
+<script th:inline="javascript">
     $(document).ready(function() {
         // 상품 유형에 따른 책 선택 표시/숨김
         $('#productType').on('change', function() {
@@ -345,6 +386,50 @@
         $('#productType').trigger('change');
         $('input[name="transactionMethod"]:checked').trigger('change');
         $('#description').trigger('input');
+        
+        // 수정 모드일 때 기존 책 정보 표시
+        try {
+            var selectedBookStr = /*[[${selectedBookJson}]]*/ 'null';
+            var selectedBook = null;
+            
+            if (selectedBookStr && selectedBookStr !== 'null') {
+                selectedBook = typeof selectedBookStr === 'string' ? JSON.parse(selectedBookStr) : selectedBookStr;
+            }
+            
+            if (selectedBook && typeof selectedBook === 'object') {
+                $('#selectedBookTitle').text(selectedBook.title || '');
+                $('#selectedBookAuthor').text(selectedBook.author || '');
+                $('#selectedBookPublisher').text(selectedBook.publisher || '');
+                $('#bookId').val(selectedBook.bookId || '');
+                
+                // 책 표지 이미지 처리
+                if (selectedBook.imageUrl && selectedBook.imageUrl.trim() !== '') {
+                    $('#selectedBookImage')
+                        .attr('src', selectedBook.imageUrl)
+                        .css({'display': 'block', 'z-index': '2'});
+                    $('#selectedBookPlaceholder').css({'display': 'none', 'z-index': '1'});
+                } else {
+                    $('#selectedBookImage').css({'display': 'none', 'z-index': '1'});
+                    $('#selectedBookPlaceholder').css({'display': 'flex', 'z-index': '2'});
+                }
+                
+                $('#selectedBookInfo').show();
+                $('#bookSearchBtnDiv').hide();
+                $('#removeBook').val('false');
+            }
+        } catch (e) {
+            console.error('책 정보 처리 중 오류:', e);
+        }
+        
+        // 책 선택 취소 버튼 핸들러
+        $('#removeBookBtn').on('click', function() {
+            if (confirm('선택한 책 정보를 취소하시겠습니까?')) {
+                $('#removeBook').val('true');
+                $('#bookId').val(''); // bookId 초기화
+                $('#selectedBookInfo').hide();
+                $('#bookSearchBtnDiv').show();
+            }
+        });
         
         // 이미지 업로드 관리
         var selectedFiles = [];
@@ -559,6 +644,63 @@
         $('#images')[0].files = dataTransfer.files;
     }
 </script>
+
+<!-- 책 검색 모달 -->
+<div class="modal fade" id="bookSearchModal" tabindex="-1" aria-labelledby="bookSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookSearchModalLabel">
+                    <i class="bi bi-book"></i> 책 검색
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 검색 입력 -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="bookSearchInput" 
+                               placeholder="도서명, ISBN, 저자명으로 검색">
+                        <button class="btn btn-primary" type="button" id="bookSearchSubmit">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                    </div>
+                    <small class="text-muted">네이버 책 검색 API를 통해 도서 정보를 가져옵니다.</small>
+                </div>
+                
+                <!-- 로딩 표시 -->
+                <div id="bookSearchLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">검색 중...</span>
+                    </div>
+                    <p class="mt-2 text-muted">검색 중입니다...</p>
+                </div>
+                
+                <!-- 검색 결과 -->
+                <div id="bookSearchResults" style="display: none;">
+                    <div class="row g-3" id="bookResultsContainer">
+                        <!-- 검색 결과가 여기에 동적으로 추가됨 -->
+                    </div>
+                    
+                    <!-- 페이지네이션 -->
+                    <nav aria-label="Book search pagination" class="mt-4">
+                        <ul class="pagination justify-content-center" id="bookPagination">
+                        </ul>
+                    </nav>
+                </div>
+                
+                <!-- 검색 결과 없음 -->
+                <div id="noBookResults" class="text-center py-4" style="display: none;">
+                    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-2 text-muted">검색 결과가 없습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 책 검색 JavaScript -->
+<script src="/js/book-search.js"></script>
 
 <!-- 공통 Footer 포함 -->
 <footer th:replace="~{fragments/header :: footer}"></footer>

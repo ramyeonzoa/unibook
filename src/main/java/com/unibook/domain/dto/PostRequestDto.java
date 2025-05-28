@@ -32,6 +32,8 @@ public class PostRequestDto {
     
     private Long bookId; // 책 선택 (교재인 경우)
     
+    private boolean removeBook; // 책 연결 해제 플래그 (수정 시 사용)
+    
     private Post.TransactionMethod transactionMethod;
     
     @Size(max = 100, message = "거래 장소는 100자 이하여야 합니다")

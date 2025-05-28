@@ -143,8 +143,33 @@
                 <!-- 책 정보 -->
                 <div th:if="${post.book != null}" class="bg-light p-3 rounded">
                     <h5>📖 교재 정보</h5>
-                    <p th:if="${post.book.title}"><strong>제목:</strong> <span th:text="${post.book.title}"></span></p>
-                    <p th:if="${post.book.author}"><strong>저자:</strong> <span th:text="${post.book.author}"></span></p>
+                    <div class="d-flex align-items-start gap-3">
+                        <!-- 책 표지 이미지 -->
+                        <div style="width: 80px; height: 100px; flex-shrink: 0;">
+                            <img th:if="${post.book.imageUrl != null and !post.book.imageUrl.isEmpty()}" 
+                                 th:src="${post.book.imageUrl}" 
+                                 alt="Book cover" 
+                                 class="w-100 h-100 rounded border"
+                                 style="object-fit: cover;"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div th:unless="${post.book.imageUrl != null and !post.book.imageUrl.isEmpty()}"
+                                 class="w-100 h-100 bg-white border rounded d-flex align-items-center justify-content-center">
+                                <i class="bi bi-book text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                            <!-- 이미지 로드 실패 시 대체 아이콘 -->
+                            <div class="w-100 h-100 bg-white border rounded d-none align-items-center justify-content-center">
+                                <i class="bi bi-book text-muted" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- 책 정보 텍스트 -->
+                        <div class="flex-grow-1">
+                            <p th:if="${post.book.title}"><strong>제목:</strong> <span th:text="${post.book.title}"></span></p>
+                            <p th:if="${post.book.author}"><strong>저자:</strong> <span th:text="${post.book.author}"></span></p>
+                            <p th:if="${post.book.publisher}"><strong>출판사:</strong> <span th:text="${post.book.publisher}"></span></p>
+                            <p th:if="${post.book.isbn}"><strong>ISBN:</strong> <span th:text="${post.book.isbn}"></span></p>
+                        </div>
+                    </div>
                 </div>
                 
                 <p><strong>거래 방법:</strong> 

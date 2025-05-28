@@ -48,6 +48,8 @@ public class SecurityConfig {
                 .requestMatchers("/books", "/books/**").permitAll()
                 // 인증이 필요한 API 엔드포인트
                 .requestMatchers("/api/auth/resend-verification").authenticated()
+                // 책 API는 명시적으로 허용
+                .requestMatchers("/api/books/**").permitAll()
                 // 나머지 API 엔드포인트 허용
                 .requestMatchers("/api/**").permitAll()
                 // 회원가입, 로그인, 이메일 인증 관련 페이지 허용
@@ -77,6 +79,10 @@ public class SecurityConfig {
                 .sessionFixation().newSession()  // 로그인 시 새 세션 ID 발급
                 .maximumSessions(AppConstants.MAX_CONCURRENT_SESSIONS)
                 .maxSessionsPreventsLogin(true)  // 동시 로그인 차단
+            )
+            // CSRF 설정 - API 엔드포인트에서는 비활성화
+            .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/api/**")
             );
 
         return http.build();

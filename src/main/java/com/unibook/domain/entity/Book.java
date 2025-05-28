@@ -45,12 +45,14 @@ public class Book extends BaseEntity {
     @Column(nullable = false, length = 255)
     private String publisher;
 
-    @NotNull(message = "발행년도는 필수입니다")
-    @Column(nullable = false)
+    @Column
     private Integer publicationYear;
     
     @Column
     private Integer originalPrice;
+
+    @Column(length = 500)
+    private String imageUrl; // 책 표지 이미지 URL (네이버 API에서 제공)
 
     @OneToMany(mappedBy = "book")
     @Builder.Default

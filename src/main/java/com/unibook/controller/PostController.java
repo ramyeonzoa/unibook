@@ -1,5 +1,6 @@
 package com.unibook.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unibook.common.AppConstants;
 import com.unibook.common.Messages;
 import com.unibook.domain.dto.PostRequestDto;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ public class PostController {
     private final PostService postService;
     private final UserService userService;
     private final BookService bookService;
+    private final ObjectMapper objectMapper;
     
     private static final int DEFAULT_PAGE_SIZE = 12;
     private static final int MAX_IMAGES = 5;
@@ -149,11 +152,17 @@ public class PostController {
         }
         PostRequestDto postDto = new PostRequestDto();
         
+        // 새 게시글 작성 시 빈 Post 객체 생성 (템플릿 오류 방지)
+        Post emptyPost = Post.builder()
+                .postImages(new ArrayList<>()) // 빈 리스트로 초기화
+                .build();
+        
         model.addAttribute("postDto", postDto);
+        model.addAttribute("post", emptyPost);
         model.addAttribute("isEdit", false);
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-        model.addAttribute("books", bookService.getAllBooks()); // 책 선택을 위한 목록
+        model.addAttribute("selectedBookJson", "null"); // 새 게시글 작성 시에는 null
         model.addAttribute("maxImages", MAX_IMAGES);
         
         return "posts/form";
@@ -183,9 +192,15 @@ public class PostController {
         }
         
         if (bindingResult.hasErrors()) {
+            // 새 게시글 작성 시 빈 Post 객체 생성 (템플릿 오류 방지)
+            Post emptyPost = Post.builder()
+                    .postImages(new ArrayList<>()) // 빈 리스트로 초기화
+                    .build();
+            model.addAttribute("post", emptyPost);
+            model.addAttribute("isEdit", false);
             model.addAttribute("productTypes", Post.ProductType.values());
             model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-            model.addAttribute("books", bookService.getAllBooks());
+            model.addAttribute("selectedBookJson", "null"); // 새 게시글 작성 시에는 null
             model.addAttribute("maxImages", MAX_IMAGES);
             return "posts/form";
         }
@@ -245,9 +260,29 @@ public class PostController {
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("transactionMethods", Post.TransactionMethod.values());
         model.addAttribute("statuses", Post.PostStatus.values());
-        model.addAttribute("books", bookService.getAllBooks());
+        // model.addAttribute("books", bookService.getAllBooks()); // 임시 제거 - 책 검색 API 사용
         model.addAttribute("maxImages", MAX_IMAGES);
         model.addAttribute("isEdit", true);
+        
+        // 기존 책 정보 JSON으로 전달 (수정 시 표시용)
+        String bookJson = "null"; // 기본값
+        if (post.getBook() != null) {
+            try {
+                Map<String, Object> bookData = new HashMap<>();
+                bookData.put("bookId", post.getBook().getBookId());
+                bookData.put("title", post.getBook().getTitle());
+                bookData.put("author", post.getBook().getAuthor());
+                bookData.put("publisher", post.getBook().getPublisher());
+                bookData.put("isbn", post.getBook().getIsbn());
+                bookData.put("imageUrl", post.getBook().getImageUrl()); // 책 표지 이미지 URL 추가
+                
+                bookJson = objectMapper.writeValueAsString(bookData);
+            } catch (Exception e) {
+                log.error("책 정보 JSON 변환 실패", e);
+                // bookJson은 이미 "null"로 초기화되어 있음
+            }
+        }
+        model.addAttribute("selectedBookJson", bookJson);
         
         return "posts/form";
     }
@@ -295,9 +330,26 @@ public class PostController {
             model.addAttribute("productTypes", Post.ProductType.values());
             model.addAttribute("transactionMethods", Post.TransactionMethod.values());
             model.addAttribute("statuses", Post.PostStatus.values());
-            model.addAttribute("books", bookService.getAllBooks());
             model.addAttribute("maxImages", MAX_IMAGES);
             model.addAttribute("isEdit", true);
+            
+            // 기존 책 정보 다시 설정
+            String bookJson = "null";
+            if (existingPost.getBook() != null) {
+                try {
+                    Map<String, Object> bookData = new HashMap<>();
+                    bookData.put("bookId", existingPost.getBook().getBookId());
+                    bookData.put("title", existingPost.getBook().getTitle());
+                    bookData.put("author", existingPost.getBook().getAuthor());
+                    bookData.put("publisher", existingPost.getBook().getPublisher());
+                    bookData.put("isbn", existingPost.getBook().getIsbn());
+                    bookData.put("imageUrl", existingPost.getBook().getImageUrl()); // 책 표지 이미지 URL 추가
+                    bookJson = objectMapper.writeValueAsString(bookData);
+                } catch (Exception e) {
+                    log.error("책 정보 JSON 변환 실패", e);
+                }
+            }
+            model.addAttribute("selectedBookJson", bookJson);
             return "posts/form";
         }
         
@@ -315,9 +367,26 @@ public class PostController {
             model.addAttribute("productTypes", Post.ProductType.values());
             model.addAttribute("transactionMethods", Post.TransactionMethod.values());
             model.addAttribute("statuses", Post.PostStatus.values());
-            model.addAttribute("books", bookService.getAllBooks());
             model.addAttribute("maxImages", MAX_IMAGES);
             model.addAttribute("isEdit", true);
+            
+            // 기존 책 정보 다시 설정
+            String bookJson = "null";
+            if (existingPost.getBook() != null) {
+                try {
+                    Map<String, Object> bookData = new HashMap<>();
+                    bookData.put("bookId", existingPost.getBook().getBookId());
+                    bookData.put("title", existingPost.getBook().getTitle());
+                    bookData.put("author", existingPost.getBook().getAuthor());
+                    bookData.put("publisher", existingPost.getBook().getPublisher());
+                    bookData.put("isbn", existingPost.getBook().getIsbn());
+                    bookData.put("imageUrl", existingPost.getBook().getImageUrl()); // 책 표지 이미지 URL 추가
+                    bookJson = objectMapper.writeValueAsString(bookData);
+                } catch (Exception e2) {
+                    log.error("책 정보 JSON 변환 실패", e2);
+                }
+            }
+            model.addAttribute("selectedBookJson", bookJson);
             return "posts/form";
             
         } catch (Exception e) {

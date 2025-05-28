@@ -117,11 +117,15 @@ public class PostService {
             Post post = postDto.toEntity();
             post.setUser(user);
             
-            // 2. Book 연결 (교재인 경우)
-            if (postDto.getBookId() != null) {
-                Book book = bookRepository.findById(postDto.getBookId())
-                        .orElseThrow(() -> new ResourceNotFoundException("선택한 책을 찾을 수 없습니다."));
-                post.setBook(book);
+            // 2. Book 연결 (교재 타입인 경우만 처리)
+            if (postDto.getProductType().isTextbookType()) {
+                if (postDto.getBookId() != null) {
+                    Book book = bookRepository.findById(postDto.getBookId())
+                            .orElseThrow(() -> new ValidationException("선택하신 책 정보를 찾을 수 없습니다. 다시 검색해주세요."));
+                    post.setBook(book);
+                    log.debug("책 정보 연결: bookId={}, title={}", book.getBookId(), book.getTitle());
+                }
+                // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
             }
             
             // 3. Post 저장
@@ -157,13 +161,29 @@ public class PostService {
             // 1. 기본 정보 업데이트
             postDto.updateEntity(post);
             
-            // 2. Book 연결 업데이트
-            if (postDto.getBookId() != null) {
-                Book book = bookRepository.findById(postDto.getBookId())
-                        .orElseThrow(() -> new ResourceNotFoundException("선택한 책을 찾을 수 없습니다."));
-                post.setBook(book);
+            // 2. Book 연결 업데이트 (교재 타입인 경우만 처리)
+            if (postDto.getProductType().isTextbookType()) {
+                if (postDto.isRemoveBook()) {
+                    // 명시적으로 책 연결 해제 요청
+                    log.debug("책 연결 해제 요청");
+                    post.setBook(null);
+                } else if (postDto.getBookId() != null) {
+                    // 새로운 책으로 변경
+                    Book book = bookRepository.findById(postDto.getBookId())
+                            .orElseThrow(() -> new ValidationException("선택하신 책 정보를 찾을 수 없습니다. 다시 검색해주세요."));
+                    post.setBook(book);
+                    log.debug("책 정보 업데이트: bookId={}, title={}", book.getBookId(), book.getTitle());
+                } else {
+                    // bookId가 null이고 removeBook이 false면 기존 연결 유지
+                    log.debug("책 정보 유지: 기존 연결 유지");
+                }
+                // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
             } else {
-                post.setBook(null);
+                // 교재 타입이 아닌 경우 책 연결 해제
+                if (post.getBook() != null) {
+                    log.debug("상품 타입 변경으로 책 연결 해제");
+                    post.setBook(null);
+                }
             }
             
             // 3. 이미지 삭제 처리

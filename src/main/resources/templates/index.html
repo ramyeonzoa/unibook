@@ -75,8 +75,23 @@
             <div class="row" th:if="${!popularBooks.isEmpty()}">
                 <div class="col-md-3 mb-4" th:each="book : ${popularBooks}">
                     <div class="card h-100 shadow-sm">
-                        <img src="/images/book-placeholder.jpg" class="card-img-top" alt="Book cover"
-                             onerror="this.src='https://via.placeholder.com/200x250?text=No+Image'">
+                        <!-- 책 표지 이미지 또는 아이콘 -->
+                        <div class="position-relative" style="height: 250px;">
+                            <img th:if="${book.imageUrl != null and !book.imageUrl.isEmpty()}" 
+                                 th:src="${book.imageUrl}" 
+                                 class="card-img-top h-100" 
+                                 style="object-fit: cover;" 
+                                 alt="Book cover"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div th:unless="${book.imageUrl != null and !book.imageUrl.isEmpty()}"
+                                 class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <!-- 이미지 로드 실패 시 대체 아이콘 -->
+                            <div class="d-none align-items-center justify-content-center h-100 bg-light position-absolute top-0 start-0 w-100">
+                                <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
                         <div class="card-body">
                             <h6 class="card-title text-truncate" th:text="${book.title}">교재명</h6>
                             <p class="text-muted small mb-1" th:text="${book.author}">저자</p>
@@ -142,26 +157,37 @@
     
     <script>
     $(document).ready(function() {
-        // 학교 자동완성 기능
+        // 학교 자동완성 기능 (디바운싱 적용)
+        let searchTimeout;
         $("#schoolSearch").autocomplete({
             source: function(request, response) {
                 if (request.term.length >= 2) {
-                    $.ajax({
-                        url: "/api/schools/search",
-                        data: {
-                            keyword: request.term,
-                            limit: 10
-                        },
-                        success: function(data) {
-                            response($.map(data, function(item) {
-                                return {
-                                    label: item.text,
-                                    value: item.text,
-                                    id: item.id
-                                };
-                            }));
-                        }
-                    });
+                    // 이전 타이머 취소
+                    clearTimeout(searchTimeout);
+                    
+                    // 300ms 후에 검색 실행
+                    searchTimeout = setTimeout(function() {
+                        $.ajax({
+                            url: "/api/schools/search",
+                            data: {
+                                keyword: request.term,
+                                limit: 10
+                            },
+                            global: false, // 전역 로딩 이벤트 발생시키지 않음
+                            success: function(data) {
+                                response($.map(data, function(item) {
+                                    return {
+                                        label: item.text,
+                                        value: item.text,
+                                        id: item.id
+                                    };
+                                }));
+                            },
+                            error: function() {
+                                response([]);
+                            }
+                        });
+                    }, 300);
                 } else {
                     response([]);
                 }

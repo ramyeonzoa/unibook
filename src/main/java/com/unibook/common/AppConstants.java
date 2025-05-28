@@ -92,4 +92,20 @@ public final class AppConstants {
     
     /** 최대 파일 크기 (바이트) - 10MB */
     public static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+    
+    // ===== 네이버 API 관련 =====
+    /** 네이버 API 최대 재시도 횟수 */
+    public static final int NAVER_API_MAX_RETRY_ATTEMPTS = 3;
+    
+    /** 네이버 API 재시도 초기 지연 시간 (밀리초) */
+    public static final long NAVER_API_RETRY_DELAY = 500L;
+    
+    /** 네이버 API 재시도 지연 배수 */
+    public static final int NAVER_API_RETRY_MULTIPLIER = 2;
+    
+    /** 네이버 책 검색 기본 표시 개수 */
+    public static final int NAVER_BOOK_SEARCH_DEFAULT_DISPLAY = 10;
+    
+    /** 네이버 책 검색 최대 표시 개수 */
+    public static final int NAVER_BOOK_SEARCH_MAX_DISPLAY = 100;
 }

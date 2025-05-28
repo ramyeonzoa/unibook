@@ -6,7 +6,7 @@ Unibook: 대학생 맞춤형 교재 거래 플랫폼
 개발 기간: 2주 (1주차: 핵심 기능, 2주차: 고도화)
 기술 스택: Spring Boot 3.5.0, Java 21, MySQL 8.0+, JPA, Thymeleaf, Bootstrap 5
 
-📅 프로젝트 시작일: 2025년 1월 25일
+📅 프로젝트 시작일: 2025년 5월 25일
 👤 개발자: ramyeonzoa
 📍 GitHub: https://github.com/ramyeonzoa/unibook
 
@@ -91,7 +91,7 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
   - AppConstants: 재시도/Rate Limit 관련 상수 추가
   - verification-required.html: 대화형 도움말 아코디언, AJAX 재발송
 
-📋 Day 5 완료:
+📋 Day 5 완료 (2025년 5월 28일):
 - PostController 생성 (완전한 CRUD 엔드포인트)
   - 권한 체크: 작성자/관리자 구분
   - 이미지 업로드/삭제 처리
@@ -100,15 +100,15 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
 - PostRequestDto 생성 (게시글 폼 바인딩용 DTO)
   - Entity ↔ DTO 변환 메서드
   - 검증 어노테이션 포함
-  - bookTitle, bookAuthor 직접 입력 필드 제거 (MVP 단순화)
+  - bookId, removeBook 필드 추가 (네이버 API 연동용)
 - PostService 확장
   - 조회수 중복 방지 (30분 간격, 비동기 처리)
   - 이미지 처리 로직 (저장/삭제/순서)
   - 트랜잭션 격리 수준 설정 (READ_COMMITTED)
 - 게시글 템플릿 구현
-  - form.html: 기본 파일 업로드 (드래그앤드롭은 MVP 이후)
+  - form.html: 드래그앤드롭 이미지 업로드, 책 검색 모달 통합
   - list.html: 카드 레이아웃, 페이지네이션, 필터 UI (백엔드 미구현)
-  - detail.html: 단순화된 이미지 표시, 권한별 버튼 표시
+  - detail.html: Bootstrap Carousel 이미지 갤러리, 책 정보 표시
 - 파일 업로드 시스템
   - uploads/images/posts/ 자동 생성 (FileUploadUtil)
   - UUID 파일명, 정적 리소스 제공 (WebMvcConfig)
@@ -127,11 +127,42 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
   - Enum 비교 문제 해결 (toString() 사용)
   - 모든 페이지에서 일관된 배지 표시
   - 예약중 배지: bg-warning text-dark
-- Day 5 현재 문제점:
-  - 다중 이미지 업로드 미구현 (현재 단일 이미지만)
-  - 게시글 수정 시 이미지 변경 반영 안됨
-  - 게시글 삭제 시 이미지 파일이 서버에 잔존
-  - 도서 정보 API 미연동으로 책 선택 불가
+- 다중 이미지 업로드 구현 완료
+  - 최대 5개 이미지 동시 업로드
+  - 드래그앤드롭으로 이미지 순서 변경 (jQuery UI Sortable)
+  - 수정 시 기존/새 이미지 통합 관리
+  - 이미지별 삭제 기능
+  - 첫 번째 이미지가 대표 이미지 (썸네일)
+- Bootstrap Carousel로 이미지 갤러리 구현
+  - 수동 제어 (자동 슬라이드 제거)
+  - 개선된 네비게이션 버튼
+  - 반응형 디자인
+- 네이버 책 검색 API 연동 완료
+  - Client ID/Secret 설정 (application-local.yml)
+  - BookSearchService 구현 (@Cacheable, @Retryable 포함)
+  - 책 검색 모달 UI (명시적 검색, API 최적화)
+  - 선택한 책 정보를 Book 엔티티로 저장 (ISBN 중복 방지)
+  - 게시글과 Book 연동 처리
+- Book 연동 고도화
+  - ProductType.isTextbookType() 헬퍼 메서드 추가
+  - removeBook 플래그로 명시적 책 연결 해제
+  - 수정 시 기존 책 정보 유지 로직
+  - 교재 타입 변경 시 자동 해제
+  - ValidationException으로 사용자 친화적 에러 메시지
+- Book Entity 확장
+  - imageUrl 필드 추가 (네이버 API 썸네일 URL 저장)
+  - publicationYear nullable 처리 (API 데이터 일관성)
+  - BookService.findOrCreateBook() 중복 방지 로직
+- UI/UX 성능 최적화
+  - 자동완성 검색 디바운싱 (300ms)
+  - 로딩 인디케이터 개선 (검색 제외)
+  - 이미지 placeholder 404 루프 해결
+  - CSRF 토큰 통합 관리
+- 책 표지 이미지 시스템
+  - 메인 페이지: 인기 도서 썸네일 표시
+  - 게시글 폼: 선택한 책 미리보기
+  - 게시글 상세: 책 정보 섹션에 표지 이미지
+  - 조건부 표시: 이미지 URL 존재 시만
 
 📋 Development Schedule
 
@@ -139,7 +170,7 @@ Week 1: Core Features
 ✅ Day 1-2: Project setup + Entity classes + Basic CRUD
 ✅ Day 3: Authentication system (signup/login)
 ✅ Day 4: Email verification with university domain validation
-⏳ Day 5: Post CRUD with image upload (진행중)
+✅ Day 5: Post CRUD with image upload + Naver Book API (완료)
 ☐ Day 6: Advanced search functionality (PROJECT CORE)
 ☐ Day 7: Integration testing and UI improvement
 
@@ -150,6 +181,198 @@ Week 2: Advanced Features
 ☐ Day 12: UI/UX improvements
 ☐ Day 13: Testing and bug fixes
 ☐ Day 14: Deployment preparation (플랫폼 미정 - 구현 후 결정)
+
+📚 Day 5 네이버 책 검색 API 통합 세부사항:
+
+**1. BookSearchDto 구조**
+```java
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
+public class BookSearchDto {
+    public static class Request {
+        private String query;
+        @Builder.Default private int display = 10;
+        @Builder.Default private int start = 1;
+    }
+    
+    public static class Response {
+        private int total;
+        private int start;
+        private int display;
+        private List<Item> items;
+    }
+    
+    public static class Item {
+        private String title;        // HTML 태그 제거 필요
+        private String author;       // HTML 태그 제거 필요
+        private String publisher;
+        private String isbn;         // ISBN13 우선 사용
+        private String image;        // 책 표지 URL
+        private String pubdate;      // YYYYMMDD 형식
+        private String description;  // HTML 태그 제거 필요
+        
+        // cleanData() 메서드로 HTML 태그 제거
+    }
+}
+```
+
+**2. BookSearchService 구현**
+```java
+@Service
+@Slf4j
+public class BookSearchService {
+    @Cacheable(value = "bookSearch", key = "#query + '_' + #page + '_' + #size")
+    @Retryable(value = {ResourceAccessException.class, HttpServerErrorException.class}, 
+              maxAttempts = 3, backoff = @Backoff(delay = 1000, multiplier = 2))
+    public BookSearchDto.Response searchBooks(String query, int page, int size)
+    
+    @Recover
+    public BookSearchDto.Response recover(Exception ex, String query, int page, int size)
+}
+```
+
+**3. Book Entity 확장**
+```java
+@Entity
+public class Book extends BaseEntity {
+    @Column(length = 500)
+    private String imageUrl; // 네이버 API 썸네일 URL
+    
+    private Integer publicationYear; // nullable로 변경 (was @NotNull)
+    
+    // ProductType에 헬퍼 메서드 추가
+    public enum ProductType {
+        TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC;
+        
+        public boolean isTextbookType() {
+            return this == TEXTBOOK || this == CERTBOOK;
+        }
+    }
+}
+```
+
+**4. BookService.findOrCreateBook() 로직**
+```java
+@Transactional
+public Book findOrCreateBook(BookSearchDto.Item bookItem) {
+    String isbn13 = extractISBN13(bookItem.getIsbn());
+    
+    // 1. ISBN으로 기존 책 조회
+    Optional<Book> existing = bookRepository.findByIsbn(isbn13);
+    if (existing.isPresent()) {
+        Book book = existing.get();
+        // imageUrl이 없으면 업데이트
+        if (book.getImageUrl() == null && bookItem.getImage() != null) {
+            book.setImageUrl(bookItem.getImage());
+            return bookRepository.save(book);
+        }
+        return book;
+    }
+    
+    // 2. 새 책 생성
+    return Book.builder()
+        .title(bookItem.getTitle())
+        .author(bookItem.getAuthor())
+        .publisher(bookItem.getPublisher())
+        .isbn(isbn13)
+        .imageUrl(bookItem.getImage())
+        .publicationYear(parsePublicationYear(bookItem.getPubdate()))
+        .build();
+}
+```
+
+**5. API 엔드포인트**
+```java
+@RestController
+@RequestMapping("/api/books")
+public class BookApiController {
+    
+    @GetMapping("/search")
+    public ResponseEntity<BookSearchDto.Response> searchBooks(
+        @RequestParam String query,
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "10") int size)
+    
+    @PostMapping("/select") 
+    public ResponseEntity<Map<String, Object>> selectBook(
+        @RequestBody BookSearchDto.Item bookItem)
+}
+```
+
+**6. 프론트엔드 통합 (book-search.js)**
+```javascript
+// CSRF 토큰 설정
+const token = $('meta[name="_csrf"]').attr('content');
+const header = $('meta[name="_csrf_header"]').attr('content');
+
+$.ajaxSetup({
+    beforeSend: function(xhr) {
+        if (header && token) {
+            xhr.setRequestHeader(header, token);
+        }
+    }
+});
+
+// 책 검색 및 선택 로직
+function searchBooks() {
+    const query = $('#bookSearchQuery').val().trim();
+    if (!query) return;
+    
+    $.get('/api/books/search', { query: query, size: 10 })
+        .done(function(data) {
+            displaySearchResults(data.items);
+        });
+}
+
+function selectBook(bookData) {
+    $.post('/api/books/select', JSON.stringify(bookData), function(response) {
+        updateSelectedBook(response.book);
+        $('#bookSearchModal').modal('hide');
+    }, 'json');
+}
+```
+
+**7. 설정 파일**
+```yaml
+# application.yml
+naver:
+  book:
+    api:
+      url: https://openapi.naver.com/v1/search/book.json
+
+# application-local.yml  
+naver:
+  book:
+    api:
+      client-id: ${NAVER_CLIENT_ID}
+      client-secret: ${NAVER_CLIENT_SECRET}
+```
+
+**8. RestTemplateConfig**
+```java
+@Configuration
+public class RestTemplateConfig {
+    @Bean
+    public RestTemplate restTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);
+        factory.setReadTimeout(10000);
+        return new RestTemplate(factory);
+    }
+}
+```
+
+**9. SecurityConfig 수정**
+```java
+.csrf(csrf -> csrf
+    .ignoringRequestMatchers("/api/**") // API 엔드포인트 CSRF 제외
+)
+```
+
+**10. 성능 최적화 구현**
+- 캐싱: 동일 검색어 10분간 캐시
+- 재시도: 네트워크 오류 시 3회 재시도 (지수 백오프)
+- 디바운싱: 자동완성 검색 300ms 지연
+- API 호출 최소화: 명시적 검색만 (자동 검색 제거)
 
 🏗️ Current Project Structure
 unibook/
@@ -214,7 +437,7 @@ public abstract class BaseEntity {
 }
 ```
 
-2. **User Entity 핵심 변경사항**
+1. **User Entity 핵심 변경사항**
 - nickname → name으로 변경
 - phoneNumber 필드 추가 (필수)
 - User는 School 직접 참조 없음, Department를 통해서만 접근
@@ -222,17 +445,17 @@ public abstract class BaseEntity {
 - UserRole: ADMIN, USER (STUDENT 아님)
 - UserStatus: ACTIVE, SUSPENDED, WITHDRAWN (BANNED 아님)
 
-3. **Post Entity 필수 필드**
+1. **Post Entity 필수 필드**
 - productType (TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC)
 - status → PostStatus (AVAILABLE, RESERVED, COMPLETED)
 - transactionMethod, campusLocation, description 추가
 - postImages (List<PostImage>) - 이미지는 PostImage 엔티티로 관리
 
-4. **Book Entity**
+1. **Book Entity**
 - isbn, publicationYear, originalPrice 필드 필수
 - year → publicationYear으로 변경
 
-5. **PostImage Entity**
+1. **PostImage Entity**
 - postImageId (imageId 아님)
 - imageUrl (imagePath 아님)
 
@@ -335,30 +558,40 @@ logging:
 - 검색 엔진: MySQL Full-text search (Elasticsearch 대신)
 - 책 정보 입력: 네이버 책 검색 API를 통한 검색 → 선택 → DB 자동 저장
 
-☐ Day 5 잔여 작업:
-- 다중 이미지 업로드 구현
-- 게시글 수정 시 이미지 처리
-- 파일 삭제 로직 구현
-- 네이버 책 검색 API 연동 (Client ID/Secret 필요)
-- 책 검색 UI 구현 (모달 또는 자동완성)
+📌 Day 5 구현 완료 - 최종 점검 사항:
+✅ 책 검색 및 선택 기능 (네이버 API 통합)
+✅ 게시글 생성 시 책 연동 (ISBN 중복 방지)
+✅ 게시글 수정 시 책 정보 유지/변경/삭제
+✅ 다중 이미지 업로드 및 드래그앤드롭 순서 변경
+✅ 교재 타입 변경 시 책 연결 자동 해제
+✅ 네이버 API 에러 처리 (재시도, 캐싱)
+✅ 책 표지 이미지 전체 시스템 적용
+✅ UI/UX 성능 최적화 (디바운싱, 로딩 개선)
+✅ 모든 템플릿에서 일관된 디자인
 
-☐ Day 6에 필요한 설정:
+☐ Day 6 계획 - Advanced Search System (PROJECT CORE):
 - MySQL Full-text search 인덱스 설정
+- 책 상세 페이지 구현
+- "이 책을 사용하는 과목" 기능
+- 학교 → 학과 → 교수 → 과목 계층 구조 검색
+- "우리 학교만 보기" 필터
+- 검색 히스토리 관리
 
 ☐ 미정 사항:
-- 채팅 시스템: Firebase 또는 간단한 대안 (Day 9-10에서 결정)
+- 채팅 시스템: Firebase 확정 (Day 9-10)
 - 배포 플랫폼: AWS, NCP 등 (Day 14에서 결정)
 
 🎯 Key Features to Implement (Day 5-14)
 
-1. **Day 5: Post CRUD with Image Upload**
-- 게시글 작성 폼
-- 다중 이미지 업로드 (최대 5개)
-- 이미지 순서 변경
-- 썸네일 생성
-- 게시글 수정/삭제
+1. **✅ Day 5: Post CRUD with Image Upload (완료)**
+- 게시글 작성 폼 ✅
+- 다중 이미지 업로드 (최대 5개) ✅
+- 드래그앤드롭 이미지 순서 변경 ✅
+- Bootstrap Carousel 갤러리 ✅
+- 네이버 책 검색 API 연동 ✅
+- 게시글 수정/삭제 ✅
 
-3. **Day 6: Advanced Search System (PROJECT CORE)**
+2. **Day 6: Advanced Search System (PROJECT CORE)**
 - 교재 상세 페이지
 - "이 책을 사용하는 과목" 섹션
 - 학교 → 학과 → 교수 → 과목 계층 구조
@@ -366,43 +599,43 @@ logging:
 - 클릭 가능한 네비게이션
 - 검색 히스토리
 
-4. **Day 7: Integration Testing & UI**
+3. **Day 7: Integration Testing & UI**
 - 전체 기능 통합 테스트
 - UI/UX 개선
 - 반응형 디자인 점검
 - 성능 최적화
 
-5. **Day 8: Wishlist + Notification**
+4. **Day 8: Wishlist + Notification**
 - 찜하기 기능
 - 실시간 알림 (SSE 또는 WebSocket)
 - 알림 설정 페이지
 
-6. **Day 9-10: Real-time Chat**
+5. **Day 9-10: Real-time Chat**
 - Firebase 설정 (결정됨: Firebase 사용)
 - 1:1 채팅
 - 채팅방 목록
 - 읽음 표시
 - 이미지 전송
 
-7. **Day 11: Advanced Features**
+6. **Day 11: Advanced Features**
 - 조회수 증가 (중복 방지)
 - 사용자 프로필 페이지
 - 거래 후기
 - 신고 기능
 
-8. **Day 12: UI/UX Improvements**
+7. **Day 12: UI/UX Improvements**
 - 디자인 시스템 통일
 - 다크 모드
 - 접근성 개선
 - 로딩 상태 표시
 
-9. **Day 13: Testing & Bug Fixes**
+8. **Day 13: Testing & Bug Fixes**
 - 단위 테스트
 - 통합 테스트
 - 버그 수정
 - 보안 점검
 
-10. **Day 14: Deployment Preparation**
+9. **Day 14: Deployment Preparation**
 - 프로덕션 설정
 - 도커라이징
 - CI/CD 파이프라인
@@ -587,17 +820,16 @@ public void validateFile(MultipartFile file) {
 
 ✅ Day 5 완료된 기능:
 - 게시글 기본 CRUD ✅
-- 단일 이미지 업로드 ✅
-- 공통 헤더/푸터 ✅
-- 권한별 UI ✅
-- 상태 변경 기능 ✅
-- 비로그인 사용자 게시글 조회 ✅
-
-❌ Day 5 미완성 기능:
-- 다중 이미지 업로드 (현재 1개만 가능)
-- 게시글 수정 시 이미지 변경 반영
-- 게시글/이미지 삭제 시 실제 파일 삭제
-- 네이버 책 검색 API 연동 (현재 책 선택 불가)
+- 다중 이미지 업로드 (최대 5개, 드래그앤드롭 순서 변경) ✅
+- 네이버 책 검색 API 연동 (ISBN 중복 방지, 캐싱, 재시도) ✅
+- Book Entity 확장 (imageUrl, nullable publicationYear) ✅
+- 공통 헤더/푸터 (Bootstrap 5.3.0) ✅
+- 권한별 UI (작성자/로그인/비로그인 구분) ✅
+- 상태 변경 기능 (AJAX) ✅
+- Bootstrap Carousel 이미지 갤러리 ✅
+- 책 표지 이미지 시스템 (메인/폼/상세 페이지) ✅
+- UI/UX 성능 최적화 (디바운싱, 로딩 개선) ✅
+- CSRF 토큰 통합 관리 ✅
 
 💡 핵심 원칙
 1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
@@ -608,15 +840,15 @@ public void validateFile(MultipartFile file) {
 6. 예외는 구체적으로 (커스텀 예외 사용)
 7. 상수는 중앙 관리 (AppConstants, Messages)
 
-🚀 Day 5 시작 명령어
+🚀 Day 6 시작 명령어
 ```bash
 cd /mnt/c/dev/unibook
-claude-code "Day 4까지 완료된 상태야. CLAUDE.md 참고해서 Day 5 작업을 시작해줘:
-1. Post Entity 및 PostImage Entity 검토
-2. PostController 생성 (CRUD)
-3. 다중 이미지 업로드 구현
-4. 이미지 리사이징 처리
-5. 게시글 목록/상세 페이지 UI"
+claude-code "Day 5까지 완료된 상태야. CLAUDE.md 참고해서 Day 6 작업을 시작해줘:
+1. MySQL Full-text search 인덱스 설정
+2. 책 상세 페이지 구현 (/books/{id})
+3. '이 책을 사용하는 과목' 기능
+4. 학교→학과→교수→과목 계층 구조 검색
+5. '우리 학교만 보기' 필터 구현"
 ```
 
 📝 추가 고려사항

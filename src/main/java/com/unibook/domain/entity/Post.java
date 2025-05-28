@@ -91,7 +91,12 @@ public class Post extends BaseEntity {
 
     // Enum 정의
     public enum ProductType {
-        TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC
+        TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC;
+        
+        // 교재 타입인지 확인하는 헬퍼 메서드
+        public boolean isTextbookType() {
+            return this == TEXTBOOK || this == CERTBOOK;
+        }
     }
 
     public enum PostStatus {

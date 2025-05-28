@@ -30,6 +30,7 @@ spring:
     cache-names:
       - schools
       - schoolSearch
+      - bookSearch
   servlet:
     multipart:
       enabled: true
@@ -82,3 +83,10 @@ app:
       base-url: http://localhost:8080  # 프로덕션에서는 실제 도메인으로 변경
     password-reset:
       expiration-hours: 1  # 비밀번호 재설정 토큰 유효 시간 (1시간)
+
+# Naver API configuration
+naver:
+  api:
+    client-id: ${NAVER_CLIENT_ID:your-client-id}  # application-local.yml에 실제 값 설정
+    client-secret: ${NAVER_CLIENT_SECRET:your-client-secret}  # application-local.yml에 실제 값 설정
+    book-search-url: https://openapi.naver.com/v1/search/book.json

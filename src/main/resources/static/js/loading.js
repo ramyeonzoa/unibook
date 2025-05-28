@@ -50,7 +50,7 @@ const LoadingUtil = {
     }
 };
 
-// AJAX 요청 시 자동 로딩 표시
+// AJAX 요청 시 자동 로딩 표시 (global: false인 요청 제외)
 if (typeof $ !== 'undefined') {
     $(document).ajaxStart(function() {
         LoadingUtil.show();

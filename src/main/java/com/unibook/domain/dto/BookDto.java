@@ -18,6 +18,7 @@ public class BookDto {
     private String publisher;
     private Integer publicationYear;
     private Integer originalPrice;
+    private String imageUrl; // 책 표지 이미지 URL
     
     public static BookDto from(Book book) {
         return BookDto.builder()
@@ -28,6 +29,7 @@ public class BookDto {
                 .publisher(book.getPublisher())
                 .publicationYear(book.getPublicationYear())
                 .originalPrice(book.getOriginalPrice())
+                .imageUrl(book.getImageUrl())
                 .build();
     }
 }
