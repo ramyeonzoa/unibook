@@ -164,6 +164,71 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
   - 게시글 상세: 책 정보 섹션에 표지 이미지
   - 조건부 표시: 이미지 URL 존재 시만
 
+📋 Day 6 완료 (2025년 5월 29일) - 과목-교수 연동 시스템 구현 & Subject-Post 직접 연결:
+- **핵심 설계 원칙 확정**:
+  - 과목 선택 시에만 학교 제약: 게시글 조회는 전체, 과목 입력은 본인 학교만
+  - 사용자 중심 UX: 과목명 우선 → 교수명 보조 (교수 우선 아님)  
+  - 데이터 신뢰성: 사용자는 본인 학교 교수/과목만 연결 가능 (타 학교 교재 판매 방지)
+  - 교양과목 특별 처리: SubjectType.GENERAL은 "교양학부" 소속으로 자동 관리
+  
+- **게시글-과목 연동 설계 최종 결정** (2025년 5월 29일):
+  - **모든 상품 타입**: 과목 선택 가능 (선택사항, 게시글당 최대 1개)
+  - **교재 타입 (전공교재, 자격증교재)**: 과목 + 책 선택 모두 가능 (독립적)
+  - **Subject Entity 확장**: year, semester 필드 추가 (학기별 별도 Subject)
+  - **Post → Subject 직접 연결**: nullable ManyToOne
+  - **SubjectBook 연결**: 과목+책 모두 선택 시에만 생성, year/semester는 Subject에서 참조
+  - **정규화 원칙**: "2024년 1학기 데이터구조"와 "2024년 2학기 데이터구조"는 다른 Subject
+
+- **Entity 및 DTO 구현**:
+  - Subject Entity에 SubjectType enum 추가 (MAJOR, GENERAL)
+  - **Subject Entity에 year, semester 필드 추가** (SubjectBook에서 제거)
+  - **Post Entity에 Subject 직접 연결 추가** (nullable ManyToOne)
+  - ProfessorDto, SubjectDto, SubjectBookDto 생성
+  - SubjectWithProfessorRequest DTO: 과목+교수 통합 생성용
+
+- **Service 계층 구현**:
+  - ProfessorService: 학교별 교수 검색/생성, QueryNormalizer 적용
+  - SubjectService: 학교별 과목 검색/생성, findOrCreateSubjectWithProfessor
+  - SubjectBookService: 연도/학기별 교재 연동 관리
+  - UserService: getSchoolIdByUserId 메서드 추가
+
+- **Repository 최적화**:
+  - find...ByNameAndSchool 메서드들로 학교 경계 적용
+  - LOWER() 함수로 대소문자 무관 검색
+  - 메서드 네이밍을 find... 형태로 통일 (Spring Data JPA 컨벤션)
+  - DepartmentRepository에 교양학부 조회 메서드 추가
+
+- **API 컨트롤러 구현**:
+  - ProfessorApiController: /api/professors/search/my-school
+  - SubjectApiController: /api/subjects/search/my-school, /api/subjects/create-with-professor
+  - UserApiController: /api/users/me (현재 사용자 정보 조회)
+  - 학교 내 검색으로 데이터 신뢰성 확보
+
+- **프론트엔드 UX 전면 개편**:
+  - subject-search-v2.js: 과목명 우선 검색 플로우
+  - 기존 교수→과목 순서에서 과목→교수 순서로 변경
+  - 검색 결과 없을 시 바로 새 과목 생성 폼 표시
+  - 교양과목 선택 시 학과 선택 필드 자동 숨김
+  - 사용자 소속 학교의 학과 목록 동적 로드
+
+- **교양과목 처리 시스템**:
+  - DataInitializer에서 모든 학교에 "교양학부" 자동 생성
+  - 교양과목 선택 시 departmentId null → 자동 교양학부 배정
+  - 전공과목은 학과 선택 필수, 교양과목은 학과 선택 불필요
+  - 교수 검색 범위는 전공/교양 무관하게 사용자 소속 학교 내로 제한
+
+- **Subject-Post 직접 연결 구현** (2025년 5월 29일 Phase 2):
+  - Subject Entity 정규화: year, semester 필드를 SubjectBook에서 Subject로 이동
+  - Post Entity에 subject 필드 추가 (ManyToOne, nullable)
+  - 모든 상품 타입에서 과목 선택 가능 (필기노트, 족보 등도 포함)
+  - SubjectBook은 과목+책 모두 선택 시에만 생성
+  - posts/form.html: 과목 선택 UI를 모든 상품 타입에서 표시
+  - posts/detail.html: 과목 정보 섹션 추가 (과목명, 교수, 학과, 연도/학기)
+  - 같은 과목의 다른 자료 섹션 추가 (getRelatedPostsBySubject)
+  - SubjectRepository, SubjectBookRepository 쿼리 메서드 업데이트
+  - SubjectService, PostService에 year/semester 처리 로직 추가
+  - subject-search-v2.js: 연도/학기 자동 설정 및 표시 기능 추가
+
 📋 Development Schedule
 
 Week 1: Core Features
@@ -171,7 +236,12 @@ Week 1: Core Features
 ✅ Day 3: Authentication system (signup/login)
 ✅ Day 4: Email verification with university domain validation
 ✅ Day 5: Post CRUD with image upload + Naver Book API (완료)
-☐ Day 6: Advanced search functionality (PROJECT CORE)
+✅ Day 6: Advanced search functionality (PROJECT CORE) - 과목-교수 연동 시스템 완료
+✅ Day 6 Phase 2 완료: Subject-Post 직접 연결 시스템
+  - Subject Entity에 year, semester 필드 추가 (완료)
+  - Post Entity에 Subject 직접 연결 추가 (완료)
+  - 모든 상품 타입에서 과목 선택 가능하도록 UI/Service 확장 (완료)
+  - 게시글 상세 페이지에 과목 정보 및 같은 과목 자료 표시 (완료)
 ☐ Day 7: Integration testing and UI improvement
 
 Week 2: Advanced Features
@@ -450,6 +520,8 @@ public abstract class BaseEntity {
 - status → PostStatus (AVAILABLE, RESERVED, COMPLETED)
 - transactionMethod, campusLocation, description 추가
 - postImages (List<PostImage>) - 이미지는 PostImage 엔티티로 관리
+- **subject (ManyToOne, nullable)** - 모든 타입에서 과목 선택 가능
+- Subject에서 연도/학기 정보 획득 (정규화)
 
 1. **Book Entity**
 - isbn, publicationYear, originalPrice 필드 필수
@@ -569,13 +641,51 @@ logging:
 ✅ UI/UX 성능 최적화 (디바운싱, 로딩 개선)
 ✅ 모든 템플릿에서 일관된 디자인
 
-☐ Day 6 계획 - Advanced Search System (PROJECT CORE):
-- MySQL Full-text search 인덱스 설정
-- 책 상세 페이지 구현
-- "이 책을 사용하는 과목" 기능
-- 학교 → 학과 → 교수 → 과목 계층 구조 검색
-- "우리 학교만 보기" 필터
-- 검색 히스토리 관리
+📋 Day 6 진행중 - Advanced Search System (PROJECT CORE):
+
+🚨 **핵심 설계 원칙** (Day 6 확정):
+1. **과목 선택 시에만 학교 제약**: 게시글 조회는 전체, 과목 입력은 본인 학교만
+2. **사용자 중심 UX**: 과목명 우선 → 교수명 보조 (교수 우선 아님)  
+3. **데이터 신뢰성**: 사용자는 본인 학교 교수/과목만 연결 가능 (타 학교 교재 판매 방지)
+4. **교양과목 특별 처리**: SubjectType.GENERAL은 "교양학부" 소속으로 자동 관리
+5. **Subject 정규화**: year, semester 필드로 학기별 과목 관리 ("2024년 1학기 데이터구조" ≠ "2024년 2학기 데이터구조")
+6. **모든 상품 타입 과목 연결**: 필기노트, 족보 등 모든 타입에서 과목 선택 가능
+
+🎯 **Day 6 구현 완료**:
+- ✅ 과목 선택: 학교 내 제한 (서울대 학생 → 서울대 교수/과목만)
+- ✅ 게시글 조회: 전체 학교 (서울대 학생도 연세대 학생 게시글 볼 수 있음)
+- ✅ 과목명 우선 검색 → 교수 선택/생성 플로우
+- ✅ 학교별 과목/교수 검색 API 구현
+
+🔧 **구현된 API 설계**:
+- ✅ 과목/교수 검색 API: /api/.../search/my-school (사용자 소속 학교만)
+- ✅ 게시글 검색 API: 전체 학교 대상 (schoolId 제약 없음)
+- ✅ 교양과목: 자동으로 "교양학부" 소속으로 처리
+- ✅ 검색 우선순위: 본인 학과 우선 → 타 학과 순서
+
+📝 **Day 6 구현 현황**:
+
+**✅ Phase 1 완료 - 과목-교수 연동 시스템**:
+- ✅ SubjectService.findOrCreateSubjectWithProfessor() - 학교 제약 적용
+- ✅ ProfessorService.findOrCreateProfessor() - 학교 내 검색 제한
+- ✅ API 엔드포인트 - schoolId 기반 필터링 완료
+- ✅ subject-search-v2.js - 과목명 우선 검색 UX 완료
+- ✅ 교양과목 자동 처리 시스템 완료
+
+**✅ Phase 2 완료 - Subject-Post 직접 연결**:
+- ✅ Subject Entity 정규화 (year, semester 필드 이동)
+- ✅ Post → Subject 직접 연결 구현
+- ✅ 모든 상품 타입에서 과목 선택 가능
+- ✅ 게시글 상세 페이지에 과목 정보 표시
+- ✅ 같은 과목의 다른 자료 섹션 구현
+
+**☐ Phase 3 남은 작업 - Advanced Search Features**:
+- ☐ 교재 상세 페이지 구현 (/books/{id})
+- ☐ "이 책을 사용하는 과목" 섹션
+- ☐ 학교 → 학과 → 교수 → 과목 계층 구조 네비게이션
+- ☐ "우리 학교만 보기" 필터 토글
+- ☐ 클릭 가능한 브레드크럼 네비게이션
+- ☐ 검색 히스토리 기능
 
 ☐ 미정 사항:
 - 채팅 시스템: Firebase 확정 (Day 9-10)
@@ -793,7 +903,7 @@ public void validateFile(MultipartFile file) {
    - 또는 Windows 터미널에서 gradlew bootRun
    - WSL에서는 실행하지 말 것!
 
-📌 현재 프로젝트 상태 (Day 5 진행중)
+📌 현재 프로젝트 상태 (Day 6 완료)
 
 ✅ Day 1-3 완료된 기능:
 - 전체 인증 시스템 (회원가입/로그인/로그아웃)
@@ -831,6 +941,17 @@ public void validateFile(MultipartFile file) {
 - UI/UX 성능 최적화 (디바운싱, 로딩 개선) ✅
 - CSRF 토큰 통합 관리 ✅
 
+✅ Day 6 완료된 기능:
+- 과목-교수 연동 시스템 (학교 내 제한) ✅
+- Subject Entity 정규화 (year, semester 필드 추가) ✅
+- Post → Subject 직접 연결 구현 ✅
+- 모든 상품 타입에서 과목 선택 가능 ✅
+- 과목명 우선 검색 UX (subject-search-v2.js) ✅
+- 게시글 상세 페이지 과목 정보 표시 ✅
+- 같은 과목의 다른 자료 섹션 ✅
+- SubjectBook 관계 정리 (year/semester 제거) ✅
+- API 엔드포인트 year/semester 지원 ✅
+
 💡 핵심 원칙
 1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
 2. 모든 설정값은 application.yml에서 관리
@@ -840,15 +961,15 @@ public void validateFile(MultipartFile file) {
 6. 예외는 구체적으로 (커스텀 예외 사용)
 7. 상수는 중앙 관리 (AppConstants, Messages)
 
-🚀 Day 6 시작 명령어
+🚀 Day 7 시작 명령어
 ```bash
 cd /mnt/c/dev/unibook
-claude-code "Day 5까지 완료된 상태야. CLAUDE.md 참고해서 Day 6 작업을 시작해줘:
-1. MySQL Full-text search 인덱스 설정
-2. 책 상세 페이지 구현 (/books/{id})
-3. '이 책을 사용하는 과목' 기능
-4. 학교→학과→교수→과목 계층 구조 검색
-5. '우리 학교만 보기' 필터 구현"
+claude-code "Day 6까지 완료된 상태야. CLAUDE.md 참고해서 Day 7 작업을 시작해줘:
+1. 게시글 수정 시 기존 과목 정보 표시 및 수정 기능
+2. 게시글 목록에 과목 정보 표시 옵션
+3. 과목별 게시글 검색 기능
+4. 전체 기능 통합 테스트
+5. UI/UX 개선 및 반응형 디자인 점검"
 ```
 
 📝 추가 고려사항

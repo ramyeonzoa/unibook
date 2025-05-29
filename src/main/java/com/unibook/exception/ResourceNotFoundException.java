@@ -1,22 +1,35 @@
 package com.unibook.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * 리소스를 찾을 수 없을 때 발생하는 예외
  */
+@ResponseStatus(HttpStatus.NOT_FOUND)
 public class ResourceNotFoundException extends BusinessException {
     
+    private final ErrorCode errorCode;
+    
     public ResourceNotFoundException(String message) {
-        super(message, HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND");
+        this(ErrorCode.RESOURCE_NOT_FOUND, message);
+    }
+    
+    public ResourceNotFoundException(ErrorCode errorCode, String message) {
+        super(message, HttpStatus.NOT_FOUND, errorCode.getCode());
+        this.errorCode = errorCode;
     }
     
     public ResourceNotFoundException(String resourceType, Long id) {
-        super(resourceType + "을(를) 찾을 수 없습니다. ID: " + id, HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND");
+        this(ErrorCode.RESOURCE_NOT_FOUND, resourceType + "을(를) 찾을 수 없습니다. ID: " + id);
     }
     
     public ResourceNotFoundException(String resourceType, String identifier) {
-        super(resourceType + "을(를) 찾을 수 없습니다: " + identifier, HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND");
+        this(ErrorCode.RESOURCE_NOT_FOUND, resourceType + "을(를) 찾을 수 없습니다: " + identifier);
+    }
+    
+    public ErrorCode getBusinessErrorCode() {
+        return errorCode;
     }
     
     // 구체적인 리소스 예외들

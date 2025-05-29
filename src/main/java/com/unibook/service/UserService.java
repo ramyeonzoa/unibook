@@ -217,4 +217,34 @@ public class UserService {
     public Optional<User> findById(Long userId) {
         return userRepository.findById(userId);
     }
+    
+    /**
+     * 사용자의 소속 학교 ID 조회 (Day 6 추가 - 학교 경계 엄격 적용)
+     * 과목/교수 검색 시 학교 제약을 위해 사용
+     * 
+     * @param userId 사용자 ID
+     * @return 소속 학교 ID
+     * @throws ResourceNotFoundException 사용자를 찾을 수 없거나 학과 정보가 없는 경우
+     */
+    public Long getSchoolIdByUserId(Long userId) {
+        if (userId == null) {
+            throw new ValidationException("사용자 ID는 필수입니다.");
+        }
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다: " + userId));
+        
+        if (user.getDepartment() == null) {
+            throw new ResourceNotFoundException("사용자의 학과 정보가 없습니다: " + user.getEmail());
+        }
+        
+        if (user.getDepartment().getSchool() == null) {
+            throw new ResourceNotFoundException("사용자의 소속 학교 정보가 없습니다: " + user.getEmail());
+        }
+        
+        Long schoolId = user.getDepartment().getSchool().getSchoolId();
+        log.debug("사용자 소속 학교 조회: userId={}, schoolId={}", userId, schoolId);
+        
+        return schoolId;
+    }
 }

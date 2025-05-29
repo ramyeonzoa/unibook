@@ -37,6 +37,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN FETCH u.department d " +
            "LEFT JOIN FETCH d.school " +
            "LEFT JOIN FETCH p.book " +
+           "LEFT JOIN FETCH p.subject " +
            "WHERE p.postId = :postId")
     Optional<Post> findByIdWithDetails(Long postId);
     
@@ -48,6 +49,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN FETCH u.department d " +
            "LEFT JOIN FETCH d.school " +
            "LEFT JOIN FETCH p.book " +
+           "LEFT JOIN FETCH p.subject " +
            "WHERE p.status = :status " +
            "ORDER BY p.createdAt DESC")
     List<Post> findByStatusWithDetails(@Param("status") Post.PostStatus status);
@@ -58,6 +60,21 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN FETCH u.department d " +
            "LEFT JOIN FETCH d.school " +
            "LEFT JOIN FETCH p.book " +
+           "LEFT JOIN FETCH p.subject " +
            "ORDER BY p.createdAt DESC")
     List<Post> findAllWithDetails();
+    
+    // Subject 관련 조회 메서드 추가
+    List<Post> findBySubject_SubjectId(Long subjectId);
+    List<Post> findBySubject_SubjectIdAndStatus(Long subjectId, Post.PostStatus status);
+    
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.user u " +
+           "LEFT JOIN FETCH u.department d " +
+           "LEFT JOIN FETCH d.school " +
+           "LEFT JOIN FETCH p.book " +
+           "LEFT JOIN FETCH p.subject " +
+           "WHERE p.subject.subjectId = :subjectId " +
+           "ORDER BY p.createdAt DESC")
+    List<Post> findBySubject_SubjectIdWithDetails(@Param("subjectId") Long subjectId);
 }

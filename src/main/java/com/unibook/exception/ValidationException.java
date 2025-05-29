@@ -1,18 +1,32 @@
 package com.unibook.exception;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
  * 유효성 검증 실패 예외
  */
+@ResponseStatus(HttpStatus.BAD_REQUEST)
 public class ValidationException extends BusinessException {
     
+    private final ErrorCode errorCode;
+    
     public ValidationException(String message) {
-        super(message, HttpStatus.BAD_REQUEST, "VALIDATION_ERROR");
+        this(ErrorCode.INVALID_INPUT, message);
     }
     
-    public ValidationException(String message, String errorCode) {
-        super(message, HttpStatus.BAD_REQUEST, errorCode);
+    public ValidationException(ErrorCode errorCode, String message) {
+        super(message, HttpStatus.BAD_REQUEST, errorCode.getCode());
+        this.errorCode = errorCode;
+    }
+    
+    public ValidationException(String message, String legacyErrorCode) {
+        super(message, HttpStatus.BAD_REQUEST, legacyErrorCode);
+        this.errorCode = ErrorCode.INVALID_INPUT; // 기본값
+    }
+    
+    public ErrorCode getBusinessErrorCode() {
+        return errorCode;
     }
     
     // 구체적인 검증 예외들

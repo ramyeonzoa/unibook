@@ -172,6 +172,28 @@
                     </div>
                 </div>
                 
+                <!-- 과목 정보 -->
+                <div th:if="${post.subject}" class="bg-light p-3 rounded">
+                    <h6><i class="bi bi-mortarboard"></i> 과목 정보</h6>
+                    <p class="mb-1"><strong>과목명:</strong> <span th:text="${post.subject.subjectName}"></span></p>
+                    <p class="mb-1"><strong>교수:</strong> <span th:text="${post.subject.professor.professorName}"></span></p>
+                    <p class="mb-1"><strong>학과:</strong> <span th:text="${post.subject.professor.department.departmentName}"></span></p>
+                    <p class="mb-1" th:if="${post.takenYear != null and post.takenSemester != null}">
+                        <strong>수강 시기:</strong> 
+                        <span th:text="${post.takenYear}"></span>년 
+                        <span th:text="${post.takenSemester.toString() == 'SPRING' ? '1학기' : 
+                                        post.takenSemester.toString() == 'FALL' ? '2학기' : 
+                                        post.takenSemester.toString() == 'SUMMER' ? '여름학기' : 
+                                        '겨울학기'}"></span>
+                    </p>
+                    <p class="mb-0">
+                        <span class="badge" 
+                              th:classappend="${post.subject.type.toString() == 'MAJOR' ? 'bg-primary' : 'bg-info'}">
+                            <span th:text="${post.subject.type.toString() == 'MAJOR' ? '전공' : '교양'}"></span>
+                        </span>
+                    </p>
+                </div>
+                
                 <p><strong>거래 방법:</strong> 
                     <span th:if="${post.transactionMethod == 'DIRECT'}">직거래</span>
                     <span th:if="${post.transactionMethod == 'PARCEL'}">택배</span>
@@ -260,6 +282,115 @@
                         로그인 후 판매자에게 문의하거나 찜하기를 할 수 있습니다.
                     </p>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 같은 책의 다른 게시글 -->
+<div th:if="${relatedPosts != null and !relatedPosts.isEmpty()}" class="container mt-5 mb-4">
+    <h5><i class="bi bi-book"></i> 같은 책의 다른 게시글</h5>
+    <div class="row mt-3">
+        <div th:each="relatedPost : ${relatedPosts}" class="col-md-3 mb-3">
+            <div class="card h-100">
+                <!-- 상태 배지 -->
+                <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                    <span th:if="${relatedPost.status.toString() == 'AVAILABLE'}" 
+                          class="badge bg-success">판매중</span>
+                    <span th:if="${relatedPost.status.toString() == 'RESERVED'}" 
+                          class="badge bg-warning text-dark">예약중</span>
+                    <span th:if="${relatedPost.status.toString() == 'COMPLETED'}" 
+                          class="badge bg-secondary">거래완료</span>
+                </div>
+                
+                <!-- 이미지 -->
+                <div th:if="${relatedPost.postImages != null and !relatedPost.postImages.isEmpty()}" 
+                     class="card-img-top" style="height: 200px; overflow: hidden;">
+                    <img th:src="${relatedPost.postImages[0].imageUrl}" 
+                         class="w-100 h-100" 
+                         style="object-fit: cover;"
+                         th:alt="${relatedPost.title}">
+                </div>
+                <div th:unless="${relatedPost.postImages != null and !relatedPost.postImages.isEmpty()}" 
+                     class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                     style="height: 200px;">
+                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                </div>
+                
+                <!-- 카드 본문 -->
+                <div class="card-body">
+                    <h6 class="card-title text-truncate" th:text="${relatedPost.title}"></h6>
+                    <p class="card-text text-primary fw-bold mb-1" 
+                       th:text="${#numbers.formatDecimal(relatedPost.price, 1, 'COMMA', 0, 'POINT')} + '원'"></p>
+                    <p class="card-text text-muted small mb-0">
+                        <i class="bi bi-calendar"></i> 
+                        <span th:text="${#temporals.format(relatedPost.createdAt, 'MM.dd')}"></span>
+                    </p>
+                </div>
+                
+                <!-- 링크 -->
+                <a th:href="@{/posts/{id}(id=${relatedPost.postId})}" 
+                   class="stretched-link"></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 같은 과목의 다른 게시글 -->
+<div th:if="${subjectRelatedPosts != null and !subjectRelatedPosts.isEmpty()}" class="container mt-4 mb-4">
+    <h5><i class="bi bi-mortarboard"></i> 같은 과목의 다른 자료</h5>
+    <div class="row mt-3">
+        <div th:each="relatedPost : ${subjectRelatedPosts}" class="col-md-3 mb-3">
+            <div class="card h-100">
+                <!-- 상태 배지 -->
+                <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
+                    <span th:if="${relatedPost.status.toString() == 'AVAILABLE'}" 
+                          class="badge bg-success">판매중</span>
+                    <span th:if="${relatedPost.status.toString() == 'RESERVED'}" 
+                          class="badge bg-warning text-dark">예약중</span>
+                    <span th:if="${relatedPost.status.toString() == 'COMPLETED'}" 
+                          class="badge bg-secondary">거래완료</span>
+                </div>
+                
+                <!-- 상품 타입 배지 -->
+                <div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
+                    <span class="badge bg-info text-dark" style="font-size: 0.75rem;">
+                        <span th:if="${relatedPost.productType.toString() == 'TEXTBOOK'}">전공교재</span>
+                        <span th:if="${relatedPost.productType.toString() == 'CERTBOOK'}">자격증</span>
+                        <span th:if="${relatedPost.productType.toString() == 'NOTE'}">필기노트</span>
+                        <span th:if="${relatedPost.productType.toString() == 'PASTEXAM'}">족보</span>
+                        <span th:if="${relatedPost.productType.toString() == 'ETC'}">기타</span>
+                    </span>
+                </div>
+                
+                <!-- 이미지 -->
+                <div th:if="${relatedPost.postImages != null and !relatedPost.postImages.isEmpty()}" 
+                     class="card-img-top" style="height: 200px; overflow: hidden;">
+                    <img th:src="${relatedPost.postImages[0].imageUrl}" 
+                         class="w-100 h-100" 
+                         style="object-fit: cover;"
+                         th:alt="${relatedPost.title}">
+                </div>
+                <div th:unless="${relatedPost.postImages != null and !relatedPost.postImages.isEmpty()}" 
+                     class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                     style="height: 200px;">
+                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                </div>
+                
+                <!-- 카드 본문 -->
+                <div class="card-body">
+                    <h6 class="card-title text-truncate" th:text="${relatedPost.title}"></h6>
+                    <p class="card-text text-primary fw-bold mb-1" 
+                       th:text="${#numbers.formatDecimal(relatedPost.price, 1, 'COMMA', 0, 'POINT')} + '원'"></p>
+                    <p class="card-text text-muted small mb-0">
+                        <i class="bi bi-calendar"></i> 
+                        <span th:text="${#temporals.format(relatedPost.createdAt, 'MM.dd')}"></span>
+                    </p>
+                </div>
+                
+                <!-- 링크 -->
+                <a th:href="@{/posts/{id}(id=${relatedPost.postId})}" 
+                   class="stretched-link"></a>
             </div>
         </div>
     </div>

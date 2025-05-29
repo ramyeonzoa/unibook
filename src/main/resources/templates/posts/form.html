@@ -228,6 +228,30 @@
                             </div>
                         </div>
                         
+                        <!-- 과목 선택 (모든 상품 타입에서 가능) -->
+                        <div class="mb-3" id="subjectSelectDiv">
+                            <label class="form-label">과목 정보 <small class="text-muted">(선택사항)</small></label>
+                            <input type="hidden" th:field="*{subjectId}" id="subjectId">
+                            <input type="hidden" th:field="*{takenYear}" id="takenYear">
+                            <input type="hidden" th:field="*{takenSemester}" id="takenSemester">
+                            <input type="hidden" id="removeSubject" name="removeSubject" value="false">
+                            
+                            <!-- 선택된 과목 정보 표시 -->
+                            <div id="selectedSubjectDisplay">
+                                <!-- 과목 선택 시 여기에 표시됨 -->
+                            </div>
+                            
+                            <!-- 과목 검색 버튼 -->
+                            <div id="subjectSearchBtnDiv">
+                                <button type="button" class="btn btn-outline-secondary" id="subjectSearchBtn">
+                                    <i class="bi bi-person-workspace"></i> 과목 선택하기
+                                </button>
+                                <small class="form-text text-muted d-block mt-1">
+                                    교수님과 과목을 선택하면 다른 학생들이 찾기 쉬워집니다.
+                                </small>
+                            </div>
+                        </div>
+                        
                         <!-- 제목 -->
                         <div class="mb-3">
                             <label for="title" class="form-label">제목 <span class="text-danger">*</span></label>
@@ -354,7 +378,7 @@
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script th:inline="javascript">
     $(document).ready(function() {
-        // 상품 유형에 따른 책 선택 표시/숨김
+        // 상품 유형에 따른 책 선택 표시/숨김 (과목 선택은 항상 가능)
         $('#productType').on('change', function() {
             var type = $(this).val();
             if (type === 'TEXTBOOK' || type === 'CERTBOOK') {
@@ -362,7 +386,11 @@
             } else {
                 $('#bookSelectDiv').hide();
                 $('#bookId').val('');
+                // 책 정보 초기화
+                $('#selectedBookInfo').hide();
+                $('#bookSearchBtnDiv').show();
             }
+            // 과목 선택은 항상 표시 (모든 상품 타입에서 가능)
         });
         
         // 거래 방법에 따른 거래 장소 표시/숨김
@@ -419,6 +447,64 @@
             }
         } catch (e) {
             console.error('책 정보 처리 중 오류:', e);
+        }
+        
+        // 수정 모드일 때 기존 과목 정보 표시
+        try {
+            var selectedSubjectStr = /*[[${selectedSubjectJson}]]*/ 'null';
+            var selectedSubject = null;
+            
+            if (selectedSubjectStr && selectedSubjectStr !== 'null') {
+                selectedSubject = typeof selectedSubjectStr === 'string' ? JSON.parse(selectedSubjectStr) : selectedSubjectStr;
+            }
+            
+            if (selectedSubject && typeof selectedSubject === 'object') {
+                // 과목 정보를 hidden 필드에 설정
+                $('#subjectId').val(selectedSubject.subjectId || '');
+                $('#takenYear').val(selectedSubject.year || '');
+                $('#takenSemester').val(selectedSubject.semester || '');
+                $('#removeSubject').val('false');
+                
+                // 학기 표시 텍스트 변환
+                var semesterText = '';
+                switch(selectedSubject.semester) {
+                    case 'SPRING': semesterText = '1학기'; break;
+                    case 'FALL': semesterText = '2학기'; break;
+                    case 'SUMMER': semesterText = '여름학기'; break;
+                    case 'WINTER': semesterText = '겨울학기'; break;
+                    default: semesterText = selectedSubject.semester;
+                }
+                
+                // 과목 정보 표시
+                $('#selectedSubjectDisplay').html(`
+                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-book"></i> <strong>${selectedSubject.subjectName}</strong>
+                            <span class="text-muted ms-2">${selectedSubject.professorName} 교수</span>
+                            <span class="text-muted ms-2">${selectedSubject.year || ''}년 ${semesterText}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeSubjectBtn">
+                            <i class="bi bi-x-circle"></i> 선택 취소
+                        </button>
+                    </div>
+                `);
+                
+                $('#subjectSearchBtnDiv').hide(); // 과목 선택 버튼 숨기기
+                
+                // 제거 버튼 이벤트 추가
+                $('#removeSubjectBtn').on('click', function() {
+                    if (confirm('선택한 과목 정보를 취소하시겠습니까?')) {
+                        $('#subjectId').val('');
+                        $('#takenYear').val('');
+                        $('#takenSemester').val('');
+                        $('#removeSubject').val('true');
+                        $('#selectedSubjectDisplay').empty();
+                        $('#subjectSearchBtnDiv').show();
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('과목 정보 처리 중 오류:', e);
         }
         
         // 책 선택 취소 버튼 핸들러
@@ -699,8 +785,151 @@
     </div>
 </div>
 
+<!-- 과목 선택 모달 (과목명 우선 검색) -->
+<div class="modal fade" id="subjectSearchModal" tabindex="-1" aria-labelledby="subjectSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subjectSearchModalLabel">
+                    <i class="bi bi-book"></i> 과목 선택
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 과목 검색 섹션 -->
+                <div class="mb-4">
+                    <h6 class="mb-3">
+                        <i class="bi bi-search"></i> 과목명으로 검색
+                        <small class="text-muted ms-2">우리 학교 과목만 검색됩니다</small>
+                    </h6>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="subjectSearchInput" 
+                               placeholder="과목명을 입력하세요 (예: 경영학원론, 데이터구조)">
+                        <button class="btn btn-primary" type="button" id="subjectSearchSubmit">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                    </div>
+                    <small class="text-muted">2글자 이상 입력하세요. 검색 결과가 없으면 새 과목을 생성할 수 있습니다.</small>
+                </div>
+                
+                <!-- 검색 결과 또는 새 과목 생성 -->
+                <div id="subjectResults"></div>
+                
+                <!-- 새 과목 생성 섹션 (처음엔 숨김) -->
+                <div class="card d-none" id="createNewSubjectSection">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-plus-circle"></i> 새 과목 생성
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="newSubjectName" class="form-label">과목명 *</label>
+                                    <input type="text" class="form-control" id="newSubjectName" 
+                                           placeholder="예: 경영학원론">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="newProfessorName" class="form-label">교수명 *</label>
+                                    <input type="text" class="form-control" id="newProfessorName" 
+                                           placeholder="예: 김철수">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="newSubjectType" class="form-label">과목 타입 *</label>
+                                    <select class="form-select" id="newSubjectType">
+                                        <option value="">과목 타입을 선택하세요</option>
+                                        <option value="MAJOR">전공과목</option>
+                                        <option value="GENERAL">교양과목</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="departmentSelectGroup">
+                                <div class="mb-3">
+                                    <label for="newDepartmentId" class="form-label">학과 선택</label>
+                                    <select class="form-select" id="newDepartmentId">
+                                        <option value="">학과를 선택하세요</option>
+                                        <!-- 학과 옵션들이 JavaScript로 동적 로드됨 -->
+                                    </select>
+                                    <small class="text-muted">전공과목은 학과 선택이 필요합니다</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-success" id="createNewSubjectBtn">
+                                <i class="bi bi-plus-circle"></i> 과목 생성
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 선택된 과목 정보 -->
+                <div id="selectedInfo" class="d-none mt-4">
+                    <div id="selectedSubjectInfo"></div>
+                </div>
+                
+                <!-- 수강 시기 입력 섹션 (과목 선택 후 표시) -->
+                <div id="subjectTakenYearSection" class="d-none mt-4">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-calendar-check"></i> 언제 수강하신 과목인가요?
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="subjectTakenYear" class="form-label">수강 연도 *</label>
+                                        <select class="form-select" id="subjectTakenYear">
+                                            <option value="">연도를 선택하세요</option>
+                                            <!-- 연도 옵션들이 JavaScript로 동적 생성됨 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="subjectTakenSemester" class="form-label">수강 학기 *</label>
+                                        <select class="form-select" id="subjectTakenSemester">
+                                            <option value="">학기를 선택하세요</option>
+                                            <option value="SPRING">1학기</option>
+                                            <option value="FALL">2학기</option>
+                                            <option value="SUMMER">여름학기</option>
+                                            <option value="WINTER">겨울학기</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                기본값으로 현재 학기가 선택되어 있습니다. 필요시 수정해주세요.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="confirmSubjectSelection" disabled>
+                    <i class="bi bi-check-circle"></i> 선택 완료
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <!-- 책 검색 JavaScript -->
 <script src="/js/book-search.js"></script>
+
+<!-- 과목 선택 JavaScript (과목명 우선 검색) -->
+<script src="/js/subject-search-v2.js"></script>
 
 <!-- 공통 Footer 포함 -->
 <footer th:replace="~{fragments/header :: footer}"></footer>

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,9 +44,14 @@ public class DataInitializer implements CommandLineRunner {
     public void initializeData() throws Exception {
         log.info("=== Starting Data Initialization ===");
         
-        // Check if data already exists
-        if (schoolRepository.count() > 0) {
-            log.info("Schools already exist in database. Skipping initialization.");
+        // Check if schools already exist
+        boolean schoolsExist = schoolRepository.count() > 0;
+        
+        if (schoolsExist) {
+            log.info("Schools already exist in database. Skipping school and department initialization.");
+            // 교양학부는 별도로 확인하고 생성
+            createGeneralEducationDepartments();
+            log.info("General education departments check completed.");
             return;
         }
         
@@ -57,6 +63,10 @@ public class DataInitializer implements CommandLineRunner {
             // Load departments from department CSV
             int departmentCount = loadDepartmentsFromCsv();
             log.info("Successfully loaded {} departments", departmentCount);
+            
+            // Create general education departments for each school
+            createGeneralEducationDepartments();
+            log.info("Successfully created general education departments");
             
             // Verify data integrity
             verifyDataIntegrity();
@@ -225,5 +235,96 @@ public class DataInitializer implements CommandLineRunner {
         }
         
         log.info(Messages.LOG_DATA_INTEGRITY_PASSED);
+    }
+    
+    /**
+     * 모든 학교에 교양학부를 추가하는 메서드
+     * 각 학교별로 교양 과목들을 관리하기 위한 기본 학과 생성
+     * 
+     * 성능 최적화:
+     * 1. findAll()로 한 번에 모든 학교 조회 (N+1 쿼리 방지)
+     * 2. ID 기반 exists 체크로 프록시 로딩 방지
+     * 3. 배치 저장 후 한 번에 flush
+     */
+    @Transactional
+    public void createGeneralEducationDepartments() {
+        log.info("교양학부 생성 시작...");
+        int createdCount = 0;
+        int existingCount = 0;
+        int errorCount = 0;
+        
+        // 모든 학교를 한 번에 조회 (네트워크 호출 1회)
+        List<School> schools = schoolRepository.findAll();
+        log.info("총 {}개 학교에 대해 교양학부 생성 검토", schools.size());
+        
+        List<Department> newDepartments = new ArrayList<>();
+        
+        for (School school : schools) {
+            try {
+                // ID 기반 존재 확인 (프록시 로딩 없음)
+                boolean exists = departmentRepository.existsBySchool_SchoolIdAndDepartmentName(
+                        school.getSchoolId(), AppConstants.GENERAL_EDUCATION_DEPT_NAME);
+                
+                if (exists) {
+                    existingCount++;
+                    log.trace("{} - 교양학부가 이미 존재함", school.getSchoolName());
+                    continue;
+                }
+                
+                // 교양학부 생성 (메모리에만 저장)
+                Department generalDept = Department.builder()
+                        .departmentName(AppConstants.GENERAL_EDUCATION_DEPT_NAME)
+                        .school(school)
+                        .build();
+                
+                newDepartments.add(generalDept);
+                createdCount++;
+                log.debug("{} - 교양학부 생성 예정", school.getSchoolName());
+                
+            } catch (Exception e) {
+                errorCount++;
+                log.error("학교 {}에 대한 교양학부 생성 준비 실패: {}", 
+                         school.getSchoolName(), e.getMessage());
+            }
+        }
+        
+        // 배치로 한 번에 저장
+        if (!newDepartments.isEmpty()) {
+            try {
+                departmentRepository.saveAll(newDepartments);
+                departmentRepository.flush(); // 제약조건 위반 즉시 감지
+                log.info("교양학부 {}개 배치 저장 완료", newDepartments.size());
+                
+            } catch (DataIntegrityViolationException e) {
+                // 동시성 문제 발생 시 개별 저장으로 fallback
+                log.warn("배치 저장 실패, 개별 저장으로 전환: {}", e.getMessage());
+                createdCount = 0; // 재계산
+                
+                for (Department dept : newDepartments) {
+                    try {
+                        // 다시 한 번 존재 확인 후 저장
+                        boolean stillNotExists = !departmentRepository.existsBySchool_SchoolIdAndDepartmentName(
+                                dept.getSchool().getSchoolId(), dept.getDepartmentName());
+                        
+                        if (stillNotExists) {
+                            departmentRepository.saveAndFlush(dept);
+                            createdCount++;
+                        } else {
+                            existingCount++;
+                        }
+                    } catch (DataIntegrityViolationException ignored) {
+                        // 다른 트랜잭션에서 이미 생성됨
+                        existingCount++;
+                    }
+                }
+            }
+        }
+        
+        log.info("교양학부 생성 완료 - 생성: {}개, 기존: {}개, 오류: {}개", 
+                createdCount, existingCount, errorCount);
+        
+        if (errorCount > 0) {
+            log.warn("일부 학교의 교양학부 생성에 실패했습니다. 로그를 확인하세요.");
+        }
     }
 }

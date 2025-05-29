@@ -20,7 +20,58 @@ import java.util.Map;
 public class GlobalExceptionHandler {
     
     /**
-     * 비즈니스 예외 처리 (모든 커스텀 예외의 부모)
+     * 리소스를 찾을 수 없는 경우 (404) - ErrorCode 지원
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException e) {
+        log.warn("Resource not found: {}", e.getMessage());
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.NOT_FOUND.value());
+        errorResponse.put("error", "Not Found");
+        errorResponse.put("message", e.getMessage());
+        errorResponse.put("errorCode", e.getBusinessErrorCode() != null ? e.getBusinessErrorCode().getCode() : "RESOURCE_NOT_FOUND");
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+    
+    /**
+     * 입력값 검증 실패 (400) - ErrorCode 지원
+     */
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(ValidationException e) {
+        log.warn("Validation failed: {}", e.getMessage());
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", e.getMessage());
+        errorResponse.put("errorCode", e.getBusinessErrorCode() != null ? e.getBusinessErrorCode().getCode() : "VALIDATION_ERROR");
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+    
+    /**
+     * 리소스 중복 (409) - ErrorCode 지원
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateResourceException(DuplicateResourceException e) {
+        log.warn("Resource duplicate: {}", e.getMessage());
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.CONFLICT.value());
+        errorResponse.put("error", "Conflict");
+        errorResponse.put("message", e.getMessage());
+        errorResponse.put("errorCode", e.getBusinessErrorCode() != null ? e.getBusinessErrorCode().getCode() : "DUPLICATE_RESOURCE");
+        
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+    
+    /**
+     * 비즈니스 예외 처리 (모든 커스텀 예외의 부모) - 레거시 지원
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Map<String, Object>> handleBusinessException(BusinessException e) {

@@ -3,6 +3,7 @@ package com.unibook.domain.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(name = "subject_books")
@@ -11,6 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 @ToString
+@BatchSize(size = 10)
 public class SubjectBook extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,4 +29,23 @@ public class SubjectBook extends BaseEntity {
     @JoinColumn(name = "book_id", nullable = false)
     @ToString.Exclude
     private Book book;
+
+    @Column(name = "active_post_count", nullable = false)
+    @Builder.Default
+    private Integer activePostCount = 0;
+    
+    // Reference count 관리 메서드
+    public void incrementActivePostCount() {
+        this.activePostCount++;
+    }
+    
+    public void decrementActivePostCount() {
+        if (this.activePostCount > 0) {
+            this.activePostCount--;
+        }
+    }
+    
+    public boolean hasActivePosts() {
+        return this.activePostCount > 0;
+    }
 }

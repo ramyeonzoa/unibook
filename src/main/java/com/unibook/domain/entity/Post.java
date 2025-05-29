@@ -44,6 +44,19 @@ public class Post extends BaseEntity {
     @ToString.Exclude
     private Book book;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subject_id")
+    @ToString.Exclude
+    private Subject subject;
+    
+    // 수강 시기 정보 (과목 선택 시에만 입력)
+    @Column(name = "taken_year")
+    private Integer takenYear;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "taken_semester", length = 20)
+    private Subject.Semester takenSemester;
+
     @NotBlank(message = "제목은 필수입니다")
     @Size(max = 255, message = "제목은 255자 이하여야 합니다")
     @Column(nullable = false, length = 255)

@@ -35,4 +35,45 @@ public class Subject extends BaseEntity {
     @Builder.Default
     @ToString.Exclude
     private List<SubjectBook> subjectBooks = new ArrayList<>();
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "subject_type", nullable = false, length = 20)
+    @Builder.Default
+    private SubjectType type = SubjectType.MAJOR;
+    
+    // year, semester 필드 제거됨 - Post 엔티티에서 관리
+    
+    // 과목 타입 열거형
+    public enum SubjectType {
+        MAJOR("전공"),     // 전공과목
+        GENERAL("교양");   // 교양과목
+        
+        private final String displayName;
+        
+        SubjectType(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
+    
+    // 학기 열거형 (SubjectBook에서 이동)
+    public enum Semester {
+        SPRING("1학기"),
+        FALL("2학기"),
+        SUMMER("여름학기"),
+        WINTER("겨울학기");
+        
+        private final String displayName;
+        
+        Semester(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        public String getDisplayName() {
+            return displayName;
+        }
+    }
 }

@@ -131,10 +131,16 @@ public class PostController {
                 postService.getRelatedPosts(post.getBook().getBookId(), id, 4) : 
                 List.of();
         
+        // 같은 과목의 다른 게시글 (현재 게시글 제외)
+        List<Post> subjectRelatedPosts = post.getSubject() != null ?
+                postService.getRelatedPostsBySubject(post.getSubject().getSubjectId(), id, 4) :
+                List.of();
+        
         model.addAttribute("post", post);
         model.addAttribute("isOwner", isOwner);
         model.addAttribute("canEdit", canEdit);
         model.addAttribute("relatedPosts", relatedPosts);
+        model.addAttribute("subjectRelatedPosts", subjectRelatedPosts);
         
         return "posts/detail";
     }
@@ -284,6 +290,27 @@ public class PostController {
         }
         model.addAttribute("selectedBookJson", bookJson);
         
+        // 기존 과목 정보 JSON으로 전달 (수정 시 표시용)
+        String subjectJson = "null"; // 기본값
+        if (post.getSubject() != null) {
+            try {
+                Map<String, Object> subjectData = new HashMap<>();
+                subjectData.put("subjectId", post.getSubject().getSubjectId());
+                subjectData.put("subjectName", post.getSubject().getSubjectName());
+                subjectData.put("professorName", post.getSubject().getProfessor().getProfessorName());
+                subjectData.put("departmentName", post.getSubject().getProfessor().getDepartment().getDepartmentName());
+                subjectData.put("year", post.getTakenYear());
+                subjectData.put("semester", post.getTakenSemester() != null ? post.getTakenSemester().name() : null);
+                subjectData.put("type", post.getSubject().getType().name());
+                
+                subjectJson = objectMapper.writeValueAsString(subjectData);
+            } catch (Exception e) {
+                log.error("과목 정보 JSON 변환 실패", e);
+                // subjectJson은 이미 "null"로 초기화되어 있음
+            }
+        }
+        model.addAttribute("selectedSubjectJson", subjectJson);
+        
         return "posts/form";
     }
     
@@ -350,6 +377,25 @@ public class PostController {
                 }
             }
             model.addAttribute("selectedBookJson", bookJson);
+            
+            // 기존 과목 정보 다시 설정
+            String subjectJson = "null";
+            if (existingPost.getSubject() != null) {
+                try {
+                    Map<String, Object> subjectData = new HashMap<>();
+                    subjectData.put("subjectId", existingPost.getSubject().getSubjectId());
+                    subjectData.put("subjectName", existingPost.getSubject().getSubjectName());
+                    subjectData.put("professorName", existingPost.getSubject().getProfessor().getProfessorName());
+                    subjectData.put("departmentName", existingPost.getSubject().getProfessor().getDepartment().getDepartmentName());
+                    subjectData.put("year", existingPost.getTakenYear());
+                    subjectData.put("semester", existingPost.getTakenSemester() != null ? existingPost.getTakenSemester().name() : null);
+                    subjectData.put("type", existingPost.getSubject().getType().name());
+                    subjectJson = objectMapper.writeValueAsString(subjectData);
+                } catch (Exception e) {
+                    log.error("과목 정보 JSON 변환 실패", e);
+                }
+            }
+            model.addAttribute("selectedSubjectJson", subjectJson);
             return "posts/form";
         }
         
@@ -387,6 +433,25 @@ public class PostController {
                 }
             }
             model.addAttribute("selectedBookJson", bookJson);
+            
+            // 기존 과목 정보 다시 설정
+            String subjectJson = "null";
+            if (existingPost.getSubject() != null) {
+                try {
+                    Map<String, Object> subjectData = new HashMap<>();
+                    subjectData.put("subjectId", existingPost.getSubject().getSubjectId());
+                    subjectData.put("subjectName", existingPost.getSubject().getSubjectName());
+                    subjectData.put("professorName", existingPost.getSubject().getProfessor().getProfessorName());
+                    subjectData.put("departmentName", existingPost.getSubject().getProfessor().getDepartment().getDepartmentName());
+                    subjectData.put("year", existingPost.getTakenYear());
+                    subjectData.put("semester", existingPost.getTakenSemester() != null ? existingPost.getTakenSemester().name() : null);
+                    subjectData.put("type", existingPost.getSubject().getType().name());
+                    subjectJson = objectMapper.writeValueAsString(subjectData);
+                } catch (Exception e2) {
+                    log.error("과목 정보 JSON 변환 실패", e2);
+                }
+            }
+            model.addAttribute("selectedSubjectJson", subjectJson);
             return "posts/form";
             
         } catch (Exception e) {

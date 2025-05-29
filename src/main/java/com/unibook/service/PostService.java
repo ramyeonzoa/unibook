@@ -5,10 +5,12 @@ import com.unibook.domain.dto.PostRequestDto;
 import com.unibook.domain.dto.PostResponseDto;
 import com.unibook.domain.entity.*;
 import com.unibook.exception.BusinessException;
+import com.unibook.exception.DuplicateResourceException;
 import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.repository.BookRepository;
 import com.unibook.repository.PostRepository;
+import com.unibook.repository.SubjectRepository;
 import com.unibook.util.FileUploadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +37,9 @@ public class PostService {
     
     private final PostRepository postRepository;
     private final BookRepository bookRepository;
+    private final SubjectRepository subjectRepository;
     private final FileUploadUtil fileUploadUtil;
+    private final SubjectBookService subjectBookService;
     
     // 조회수 중복 방지를 위한 캐시 (userId/sessionId -> postId -> lastViewTime)
     private final Map<String, Map<Long, LocalDateTime>> viewCache = new ConcurrentHashMap<>();
@@ -77,6 +81,20 @@ public class PostService {
      */
     public List<Post> getRelatedPosts(Long bookId, Long excludePostId, int limit) {
         return postRepository.findByBook_BookId(bookId).stream()
+                .filter(post -> !post.getPostId().equals(excludePostId))
+                .filter(post -> post.getStatus() == Post.PostStatus.AVAILABLE)
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 같은 과목의 다른 게시글 조회 (현재 게시글 제외)
+     */
+    public List<Post> getRelatedPostsBySubject(Long subjectId, Long excludePostId, int limit) {
+        if (subjectId == null) {
+            return List.of();
+        }
+        return postRepository.findBySubject_SubjectIdWithDetails(subjectId).stream()
                 .filter(post -> !post.getPostId().equals(excludePostId))
                 .filter(post -> post.getStatus() == Post.PostStatus.AVAILABLE)
                 .limit(limit)
@@ -128,10 +146,27 @@ public class PostService {
                 // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
             }
             
-            // 3. Post 저장
+            // 3. Subject 연결 (모든 상품 타입에서 가능)
+            if (postDto.getSubjectId() != null) {
+                Subject subject = subjectRepository.findById(postDto.getSubjectId())
+                        .orElseThrow(() -> new ValidationException("선택하신 과목 정보를 찾을 수 없습니다."));
+                post.setSubject(subject);
+                post.setTakenYear(postDto.getTakenYear());
+                post.setTakenSemester(postDto.getTakenSemester());
+                log.debug("과목 정보 연결: subjectId={}, name={}, year={}, semester={}", 
+                        subject.getSubjectId(), subject.getSubjectName(), 
+                        postDto.getTakenYear(), postDto.getTakenSemester());
+            }
+            
+            // 4. Post 저장
             Post savedPost = postRepository.save(post);
             
-            // 4. 이미지 처리
+            // 5. SubjectBook 연결 처리 (과목과 책이 모두 연결된 경우)
+            if (savedPost.getSubject() != null && savedPost.getBook() != null) {
+                handleSubjectBookConnection(savedPost);
+            }
+            
+            // 6. 이미지 처리
             if (images != null && !images.isEmpty()) {
                 processImages(savedPost, images);
             }
@@ -158,6 +193,11 @@ public class PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
         try {
+            // 기존 SubjectBook 연결 정보 저장 (reference count 관리용)
+            Long oldSubjectId = post.getSubject() != null ? post.getSubject().getSubjectId() : null;
+            Long oldBookId = post.getBook() != null ? post.getBook().getBookId() : null;
+            boolean hadSubjectBookConnection = (oldSubjectId != null && oldBookId != null);
+            
             // 1. 기본 정보 업데이트
             postDto.updateEntity(post);
             
@@ -186,6 +226,43 @@ public class PostService {
                 }
             }
             
+            // 3. Subject 연결 업데이트 (모든 상품 타입에서 가능)
+            if (postDto.isRemoveSubject()) {
+                // 명시적으로 과목 연결 해제 요청
+                log.debug("과목 연결 해제 요청");
+                post.setSubject(null);
+                post.setTakenYear(null);
+                post.setTakenSemester(null);
+            } else if (postDto.getSubjectId() != null) {
+                // 새로운 과목으로 변경
+                Subject subject = subjectRepository.findById(postDto.getSubjectId())
+                        .orElseThrow(() -> new ValidationException("선택하신 과목 정보를 찾을 수 없습니다."));
+                post.setSubject(subject);
+                post.setTakenYear(postDto.getTakenYear());
+                post.setTakenSemester(postDto.getTakenSemester());
+                log.debug("과목 정보 업데이트: subjectId={}, name={}, year={}, semester={}", 
+                        subject.getSubjectId(), subject.getSubjectName(),
+                        postDto.getTakenYear(), postDto.getTakenSemester());
+            }
+            
+            // 4. SubjectBook reference count 관리
+            Long newSubjectId = post.getSubject() != null ? post.getSubject().getSubjectId() : null;
+            Long newBookId = post.getBook() != null ? post.getBook().getBookId() : null;
+            boolean hasNewSubjectBookConnection = (newSubjectId != null && newBookId != null);
+            
+            // 기존 연결과 새 연결이 다른 경우 reference count 업데이트
+            if (hadSubjectBookConnection && 
+                (!hasNewSubjectBookConnection || !oldSubjectId.equals(newSubjectId) || !oldBookId.equals(newBookId))) {
+                // 기존 연결 해제 (reference count 감소)
+                subjectBookService.decrementPostCount(oldSubjectId, oldBookId);
+            }
+            
+            if (hasNewSubjectBookConnection && 
+                (!hadSubjectBookConnection || !oldSubjectId.equals(newSubjectId) || !oldBookId.equals(newBookId))) {
+                // 새 연결 생성 (reference count 증가)
+                subjectBookService.incrementPostCount(newSubjectId, newBookId);
+            }
+            
             // 3. 이미지 삭제 처리
             if (deleteImageIds != null && !deleteImageIds.isEmpty()) {
                 deleteImages(post, deleteImageIds);
@@ -200,6 +277,8 @@ public class PostService {
             if (imageOrders != null && !imageOrders.isEmpty()) {
                 updateImageOrders(post, imageOrders);
             }
+            
+            // Note: SubjectBook reference count는 위에서 이미 처리됨
             
             Post updatedPost = postRepository.save(post);
             log.info("게시글 수정 완료: postId={}", postId);
@@ -221,6 +300,21 @@ public class PostService {
         
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
+        
+        // SubjectBook reference count 감소 (게시글 삭제 전에 처리)
+        if (post.getSubject() != null && post.getBook() != null) {
+            try {
+                subjectBookService.decrementPostCount(
+                    post.getSubject().getSubjectId(), 
+                    post.getBook().getBookId()
+                );
+                log.info("게시글 삭제로 인한 SubjectBook 참조 카운트 감소 완료: postId={}, subjectId={}, bookId={}", 
+                        postId, post.getSubject().getSubjectId(), post.getBook().getBookId());
+            } catch (Exception e) {
+                log.warn("SubjectBook 참조 카운트 감소 실패 (게시글 삭제는 계속 진행): postId={}, error={}", 
+                        postId, e.getMessage());
+            }
+        }
         
         // 이미지 파일 삭제
         for (PostImage image : post.getPostImages()) {
@@ -449,5 +543,31 @@ public class PostService {
         return getRecentPosts(limit).stream()
                 .map(PostResponseDto::listFrom)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * SubjectBook 연결 처리 및 reference count 증가
+     * 책임 분리: productType 체크는 호출부에서, 여기서는 순수 매핑 처리만
+     */
+    private void handleSubjectBookConnection(Post post) {
+        // 사전 조건: 과목과 책이 모두 연결되어 있음
+        // (호출부에서 체크 완료)
+        
+        try {
+            // SubjectBook 연결 찾기/생성 및 reference count 증가
+            subjectBookService.incrementPostCount(
+                post.getSubject().getSubjectId(), 
+                post.getBook().getBookId()
+            );
+            
+            log.info("SubjectBook 연결 및 참조 카운트 증가 완료: postId={}, subjectId={}, bookId={}", 
+                    post.getPostId(), post.getSubject().getSubjectId(), post.getBook().getBookId());
+                    
+        } catch (ResourceNotFoundException | ValidationException | DuplicateResourceException e) {
+            // 예상 가능한 비즈니스 예외만 처리 - 경고 로그 후 계속 진행
+            log.warn("SubjectBook 연결 실패 (게시글 처리는 계속 진행): postId={}, subjectId={}, bookId={}, error={}", 
+                    post.getPostId(), post.getSubject().getSubjectId(), post.getBook().getBookId(), e.getMessage());
+        }
+        // NPE, 프로그래밍 오류 등은 상위로 전파하여 개발자가 인지할 수 있도록 함
     }
 }

@@ -101,8 +101,8 @@ public class PostResponseDto {
             builder.user(userBuilder.build());
         }
         
-        // Book 정보 설정 (TEXTBOOK인 경우만)
-        if (post.getProductType() == Post.ProductType.TEXTBOOK && post.getBook() != null) {
+        // Book 정보 설정 (교재 타입인 경우만 - TEXTBOOK, CERTBOOK 포함)
+        if (post.getProductType().isTextbookType() && post.getBook() != null) {
             builder.book(BookDto.builder()
                     .bookId(post.getBook().getBookId())
                     .title(post.getBook().getTitle())

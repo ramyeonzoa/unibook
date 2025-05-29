@@ -108,4 +108,15 @@ public final class AppConstants {
     
     /** 네이버 책 검색 최대 표시 개수 */
     public static final int NAVER_BOOK_SEARCH_MAX_DISPLAY = 100;
+    
+    // ===== 학과 관련 =====
+    /** 교양학부 학과명 */
+    public static final String GENERAL_EDUCATION_DEPT_NAME = "교양학부";
+    
+    // ===== 페이징 관련 =====
+    /** 최대 페이지 크기 */
+    public static final int MAX_PAGE_SIZE = 100;
+    
+    /** 기본 페이지 크기 */
+    public static final int DEFAULT_PAGE_SIZE = 20;
 }
