@@ -61,6 +61,7 @@ public class PostController {
             @RequestParam(required = false) Post.ProductType productType,
             @RequestParam(required = false) Post.PostStatus status,
             @RequestParam(required = false) Long schoolId,
+            @RequestParam(required = false) String sortBy,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
@@ -69,7 +70,30 @@ public class PostController {
             size = DEFAULT_PAGE_SIZE;
         }
         
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        // sortBy 기본값 설정: 검색어가 있으면 RELEVANCE, 없으면 NEWEST
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = (search != null && !search.trim().isEmpty()) ? "RELEVANCE" : "NEWEST";
+        }
+        
+        // 로깅 추가 (디버깅용)
+        log.debug("검색어: '{}', 정렬: '{}'", search, sortBy);
+        
+        // 정렬 옵션에 따른 Pageable 생성
+        Pageable pageable;
+        if (search != null && !search.trim().isEmpty()) {
+            // 검색어가 있는 경우 Sort 제거 (서비스 레이어에서 처리)
+            pageable = PageRequest.of(page, size);
+        } else {
+            // 검색어가 없는 경우에만 정렬 옵션 적용
+            Sort sort = switch (sortBy) {
+                case "PRICE_ASC" -> Sort.by("price").ascending();
+                case "PRICE_DESC" -> Sort.by("price").descending();
+                case "VIEW_COUNT" -> Sort.by("viewCount").descending();
+                case "NEWEST" -> Sort.by("createdAt").descending();
+                default -> Sort.by("createdAt").descending();
+            };
+            pageable = PageRequest.of(page, size, sort);
+        }
         
         // 로그인한 사용자의 학교 ID
         Long userSchoolId = null;
@@ -80,7 +104,7 @@ public class PostController {
             }
         }
         
-        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId);
+        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId, sortBy);
         
         // Post 엔티티를 PostResponseDto로 변환하여 Hibernate proxy 문제 방지
         Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
@@ -93,6 +117,14 @@ public class PostController {
         model.addAttribute("userSchoolId", userSchoolId);
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("statuses", Post.PostStatus.values());
+        model.addAttribute("sortBy", sortBy);
+        
+        // 검색어 하이라이팅을 위해 정규화된 키워드 배열 전달
+        if (search != null && !search.trim().isEmpty()) {
+            String normalized = search.trim().toLowerCase();
+            String[] keywords = normalized.split("\\s+");
+            model.addAttribute("searchKeywords", keywords);
+        }
         
         return "posts/list";
     }

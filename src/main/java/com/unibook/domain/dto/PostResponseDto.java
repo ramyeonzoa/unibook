@@ -33,8 +33,17 @@ public class PostResponseDto {
     // 책 정보 (productType이 TEXTBOOK인 경우)
     private BookDto book;
     
+    // 과목 정보
+    private SubjectDto subject;
+    
     // 이미지 정보
     private List<ImageDto> images;
+    
+    // 검색 하이라이팅용 Flat 필드
+    private String subjectName;
+    private String professorName;
+    private String bookTitle;
+    private String bookAuthor;
     
     // User 정보를 담는 내부 DTO
     @Data
@@ -58,6 +67,17 @@ public class PostResponseDto {
         private String isbn;
         private Integer publicationYear;
         private Integer originalPrice;
+    }
+    
+    // Subject 정보를 담는 내부 DTO
+    @Data
+    @Builder
+    public static class SubjectDto {
+        private Long subjectId;
+        private String subjectName;
+        private String professorName;
+        private String departmentName;
+        private String type;  // MAJOR, GENERAL
     }
     
     // Image 정보를 담는 내부 DTO
@@ -103,7 +123,7 @@ public class PostResponseDto {
         
         // Book 정보 설정 (교재 타입인 경우만 - TEXTBOOK, CERTBOOK 포함)
         if (post.getProductType().isTextbookType() && post.getBook() != null) {
-            builder.book(BookDto.builder()
+            BookDto bookDto = BookDto.builder()
                     .bookId(post.getBook().getBookId())
                     .title(post.getBook().getTitle())
                     .author(post.getBook().getAuthor())
@@ -111,7 +131,36 @@ public class PostResponseDto {
                     .isbn(post.getBook().getIsbn())
                     .publicationYear(post.getBook().getPublicationYear())
                     .originalPrice(post.getBook().getOriginalPrice())
-                    .build());
+                    .build();
+            builder.book(bookDto);
+            
+            // 검색용 Flat 필드 설정
+            builder.bookTitle(post.getBook().getTitle());
+            builder.bookAuthor(post.getBook().getAuthor());
+        }
+        
+        // Subject 정보 설정
+        if (post.getSubject() != null) {
+            SubjectDto.SubjectDtoBuilder subjectBuilder = SubjectDto.builder()
+                    .subjectId(post.getSubject().getSubjectId())
+                    .subjectName(post.getSubject().getSubjectName())
+                    .type(post.getSubject().getType().name());
+            
+            if (post.getSubject().getProfessor() != null) {
+                subjectBuilder.professorName(post.getSubject().getProfessor().getProfessorName());
+                
+                if (post.getSubject().getProfessor().getDepartment() != null) {
+                    subjectBuilder.departmentName(post.getSubject().getProfessor().getDepartment().getDepartmentName());
+                }
+                
+                // 검색용 Flat 필드 설정
+                builder.professorName(post.getSubject().getProfessor().getProfessorName());
+            }
+            
+            builder.subject(subjectBuilder.build());
+            
+            // 검색용 Flat 필드 설정
+            builder.subjectName(post.getSubject().getSubjectName());
         }
         
         // Image 정보 설정
@@ -155,6 +204,27 @@ public class PostResponseDto {
                     .name(post.getUser().getName())
                     .schoolName(schoolName)
                     .build());
+        }
+        
+        // Subject 정보 설정 (목록용이므로 간략하게)
+        if (post.getSubject() != null) {
+            SubjectDto.SubjectDtoBuilder subjectBuilder = SubjectDto.builder()
+                    .subjectId(post.getSubject().getSubjectId())
+                    .subjectName(post.getSubject().getSubjectName());
+            
+            if (post.getSubject().getProfessor() != null) {
+                subjectBuilder.professorName(post.getSubject().getProfessor().getProfessorName());
+                builder.professorName(post.getSubject().getProfessor().getProfessorName());
+            }
+            
+            builder.subject(subjectBuilder.build());
+            builder.subjectName(post.getSubject().getSubjectName());
+        }
+        
+        // Book 정보 설정 (검색용 Flat 필드만)
+        if (post.getProductType().isTextbookType() && post.getBook() != null) {
+            builder.bookTitle(post.getBook().getTitle());
+            builder.bookAuthor(post.getBook().getAuthor());
         }
         
         // 대표 이미지만

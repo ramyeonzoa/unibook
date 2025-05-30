@@ -48,20 +48,19 @@
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <form action="/search" method="get" class="d-flex gap-2">
-                        <div class="position-relative" style="width: 250px;">
-                            <input type="text" id="schoolSearch" class="form-control" 
-                                   placeholder="학교명 검색..." autocomplete="off">
-                            <input type="hidden" name="schoolId" id="selectedSchoolId">
-                            <small class="text-muted position-absolute" style="top: 100%; left: 0;">
-                                2글자 이상 입력하세요
+                    <form action="/posts" method="get">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control form-control-lg" 
+                                   placeholder="제목, 내용, 과목, 교수로 검색">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-search"></i> 검색
+                            </button>
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                예: "데이터구조", "김교수", "컴퓨터개론"
                             </small>
                         </div>
-                        <input type="text" name="keyword" class="form-control" 
-                               placeholder="교재명, ISBN, 저자로 검색">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-search"></i> 검색
-                        </button>
                     </form>
                 </div>
             </div>

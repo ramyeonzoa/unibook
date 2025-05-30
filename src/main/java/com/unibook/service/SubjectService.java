@@ -11,6 +11,7 @@ import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.repository.ProfessorRepository;
 import com.unibook.repository.SubjectRepository;
+import com.unibook.util.PageableUtils;
 import com.unibook.util.QueryNormalizer;
 
 import java.time.LocalDate;
@@ -18,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,11 +69,8 @@ public class SubjectService {
             return Page.empty();
         }
         
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("과목 검색: query='{}', normalized='{}', professorId={}, page={}, size={}", 
                  query, normalizedQuery, professorId, page, size);
@@ -97,11 +94,8 @@ public class SubjectService {
      * @return 과목 목록
      */
     public Page<SubjectDto> findSubjectsByProfessor(Long professorId, int page, int size) {
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("교수별 과목 조회: professorId={}, page={}, size={}", professorId, page, size);
         
@@ -334,11 +328,8 @@ public class SubjectService {
             return Page.empty();
         }
         
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("과목명 검색: query='{}', normalized='{}', departmentId={}, page={}, size={}", 
                  query, normalizedQuery, departmentId, page, size);
@@ -364,11 +355,8 @@ public class SubjectService {
             return Page.empty();
         }
         
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("학교별 과목 검색: query='{}', normalized='{}', schoolId={}, page={}, size={}", 
                  query, normalizedQuery, schoolId, page, size);

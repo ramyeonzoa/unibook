@@ -42,6 +42,7 @@ public class PostRequestDto {
     
     private boolean removeSubject; // 과목 연결 해제 플래그 (수정 시 사용)
     
+    @NotNull(message = "거래 방법을 선택해주세요")
     private Post.TransactionMethod transactionMethod;
     
     @Size(max = 100, message = "거래 장소는 100자 이하여야 합니다")

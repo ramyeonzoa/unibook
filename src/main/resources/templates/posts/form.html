@@ -273,24 +273,25 @@
                         
                         <!-- 거래 방법 -->
                         <div class="mb-3">
-                            <label class="form-label">거래 방법</label>
+                            <label class="form-label">거래 방법 <span class="text-danger">*</span></label>
                             <div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="transactionMethod" 
-                                           id="direct" value="DIRECT" th:field="*{transactionMethod}">
+                                           id="direct" value="DIRECT" th:field="*{transactionMethod}" required>
                                     <label class="form-check-label" for="direct">직거래</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="transactionMethod" 
-                                           id="parcel" value="PARCEL" th:field="*{transactionMethod}">
+                                           id="parcel" value="PARCEL" th:field="*{transactionMethod}" required>
                                     <label class="form-check-label" for="parcel">택배</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="transactionMethod" 
-                                           id="both" value="BOTH" th:field="*{transactionMethod}">
+                                           id="both" value="BOTH" th:field="*{transactionMethod}" required>
                                     <label class="form-check-label" for="both">모두 가능</label>
                                 </div>
                             </div>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('transactionMethod')}" th:errors="*{transactionMethod}"></div>
                         </div>
                         
                         <!-- 거래 장소 -->

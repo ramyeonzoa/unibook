@@ -11,10 +11,13 @@ import com.unibook.exception.ValidationException;
 import com.unibook.repository.BookRepository;
 import com.unibook.repository.PostRepository;
 import com.unibook.repository.SubjectRepository;
+import com.unibook.repository.projection.PostSearchProjection;
 import com.unibook.util.FileUploadUtil;
+import com.unibook.util.QueryNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
@@ -28,6 +31,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -47,12 +51,106 @@ public class PostService {
     
     /**
      * 게시글 페이지 조회 (필터링 포함)
+     * Full-text 검색 및 필터링 지원
      */
     public Page<Post> getPostsPage(Pageable pageable, String search, 
-                                  Post.ProductType productType, Post.PostStatus status, Long schoolId) {
-        // TODO: QueryDSL 또는 Specification을 사용한 동적 쿼리 구현
-        // 현재는 기본 페이징만 제공
-        return postRepository.findAllByOrderByCreatedAtDesc(pageable);
+                                  Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy) {
+        
+        // 검색어가 있는 경우
+        if (search != null && !search.trim().isEmpty()) {
+            String normalized = QueryNormalizer.normalize(search);
+            
+            // 최소 2글자 이상만 검색 (ngram_token_size=2)
+            if (normalized.length() >= 2) {
+                log.info("Full-text 검색 실행: query='{}', normalized='{}', productType={}, status={}, schoolId={}", 
+                        search, normalized, productType, status, schoolId);
+                
+                // OR 검색을 기본으로 사용 (더 유연한 검색 결과)
+                // "선형대수학 김선형" → "선형대수학 김선형" (각 단어 중 하나라도 포함)
+                // QueryNormalizer가 이미 특수문자를 제거했으므로 안전함
+                String booleanQuery = normalized;
+                
+                // Full-text 검색 실행
+                Page<PostSearchProjection> searchResults = postRepository.searchPostsWithFulltext(
+                        booleanQuery,
+                        status != null ? status.name() : null,
+                        productType != null ? productType.name() : null,
+                        schoolId,
+                        pageable
+                );
+                
+                // 검색 결과가 있으면 Post 엔티티로 변환
+                if (!searchResults.isEmpty()) {
+                    // 관련도 점수 로깅 (디버그용)
+                    if (log.isDebugEnabled()) {
+                        searchResults.getContent().forEach(result -> 
+                            log.debug("Post ID: {}, Score: {}", result.getPostId(), result.getTotalScore())
+                        );
+                    }
+                    List<Long> postIds = searchResults.getContent().stream()
+                            .map(PostSearchProjection::getPostId)
+                            .collect(Collectors.toList());
+                    
+                    // ID로 Post 엔티티들을 조회 (Fetch Join)
+                    List<Post> posts = postRepository.findAllByIdInWithDetails(postIds);
+                    
+                    // 검색 결과의 순서를 유지하기 위해 Map으로 변환 후 정렬
+                    Map<Long, Post> postMap = posts.stream()
+                            .collect(Collectors.toMap(Post::getPostId, post -> post));
+                    
+                    List<Post> orderedPosts;
+                    
+                    // 정렬 옵션에 따라 재정렬
+                    if ("RELEVANCE".equals(sortBy)) {
+                        // 관련도순 - 검색 결과 순서 유지
+                        orderedPosts = postIds.stream()
+                                .map(postMap::get)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toList());
+                    } else {
+                        // 다른 정렬 옵션 적용
+                        Stream<Post> postStream = postMap.values().stream();
+                        
+                        switch (sortBy) {
+                            case "PRICE_ASC":
+                                postStream = postStream.sorted(Comparator.comparing(Post::getPrice));
+                                break;
+                            case "PRICE_DESC":
+                                postStream = postStream.sorted(Comparator.comparing(Post::getPrice).reversed());
+                                break;
+                            case "VIEW_COUNT":
+                                postStream = postStream.sorted(Comparator.comparing(Post::getViewCount, 
+                                        Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+                                break;
+                            case "NEWEST":
+                            default:
+                                postStream = postStream.sorted(Comparator.comparing(Post::getCreatedAt).reversed());
+                                break;
+                        }
+                        
+                        orderedPosts = postStream.collect(Collectors.toList());
+                    }
+                    
+                    // 페이징 처리
+                    int start = (int) pageable.getOffset();
+                    int end = Math.min(start + pageable.getPageSize(), orderedPosts.size());
+                    
+                    List<Post> pagedPosts = orderedPosts.subList(start, Math.min(end, orderedPosts.size()));
+                    
+                    // Page 객체로 변환하여 반환
+                    return new PageImpl<>(pagedPosts, pageable, searchResults.getTotalElements());
+                }
+                
+                return Page.empty(pageable);
+            } else {
+                log.info("검색어가 너무 짧음: '{}' (최소 2글자)", normalized);
+                // 검색어가 짧을 때도 필터링은 적용
+            }
+        }
+        
+        // 검색어가 없거나 너무 짧은 경우 - 필터링만 적용
+        log.info("필터링 조회: productType={}, status={}, schoolId={}", productType, status, schoolId);
+        return postRepository.findByFilters(status, productType, schoolId, pageable);
     }
     
     /**

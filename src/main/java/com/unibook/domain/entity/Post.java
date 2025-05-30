@@ -76,8 +76,9 @@ public class Post extends BaseEntity {
     @Builder.Default
     private PostStatus status = PostStatus.AVAILABLE;
     
+    @NotNull(message = "거래 방법은 필수입니다")
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
+    @Column(nullable = false, length = 20)
     private TransactionMethod transactionMethod;
     
     @Column(length = 100)

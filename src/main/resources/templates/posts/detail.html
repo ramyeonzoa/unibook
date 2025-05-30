@@ -195,13 +195,20 @@
                 </div>
                 
                 <p><strong>거래 방법:</strong> 
-                    <span th:if="${post.transactionMethod == 'DIRECT'}">직거래</span>
-                    <span th:if="${post.transactionMethod == 'PARCEL'}">택배</span>
-                    <span th:if="${post.transactionMethod == 'BOTH'}">직거래/택배</span>
+                    <span class="badge bg-secondary" th:if="${post.transactionMethod.toString() == 'DIRECT'}">
+                        <i class="bi bi-person-check"></i> 직거래
+                    </span>
+                    <span class="badge bg-secondary" th:if="${post.transactionMethod.toString() == 'PARCEL'}">
+                        <i class="bi bi-box-seam"></i> 택배
+                    </span>
+                    <span class="badge bg-secondary" th:if="${post.transactionMethod.toString() == 'BOTH'}">
+                        <i class="bi bi-person-check"></i> 직거래 / <i class="bi bi-box-seam"></i> 택배
+                    </span>
                 </p>
                 
-                <p th:if="${post.campusLocation}">
-                    <strong>거래 장소:</strong> <span th:text="${post.campusLocation}"></span>
+                <p th:if="${post.campusLocation != null and !post.campusLocation.isEmpty() and post.transactionMethod.toString() != 'PARCEL'}">
+                    <strong>거래 장소:</strong> 
+                    <i class="bi bi-geo-alt"></i> <span th:text="${post.campusLocation}"></span>
                 </p>
                 
                 <p><strong>조회수:</strong> <span th:text="${post.viewCount}">0</span></p>

@@ -9,11 +9,11 @@ import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.repository.DepartmentRepository;
 import com.unibook.repository.ProfessorRepository;
+import com.unibook.util.PageableUtils;
 import com.unibook.util.QueryNormalizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,11 +53,8 @@ public class ProfessorService {
             return Page.empty();
         }
         
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("교수 검색: query='{}', normalized='{}', departmentId={}, page={}, size={}", 
                  query, normalizedQuery, departmentId, page, size);
@@ -84,11 +81,8 @@ public class ProfessorService {
         
         // schoolId null 체크는 컨트롤러에서 처리됨
         
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("학교별 교수 검색: query='{}', normalized='{}', schoolId={}, page={}, size={}", 
                  query, normalizedQuery, schoolId, page, size);
@@ -106,11 +100,8 @@ public class ProfessorService {
      * @return 교수 목록
      */
     public Page<ProfessorDto> findProfessorsByDepartment(Long departmentId, int page, int size) {
-        // 페이징 파라미터 방어
-        page = Math.max(page, 0);
-        size = Math.min(Math.max(size, 1), AppConstants.MAX_PAGE_SIZE);
-        
-        Pageable pageable = PageRequest.of(page, size);
+        // PageableUtils 사용
+        Pageable pageable = PageableUtils.createPageable(page, size);
         
         log.debug("학과별 교수 조회: departmentId={}, page={}, size={}", departmentId, page, size);
         
