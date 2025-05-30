@@ -26,12 +26,13 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     /**
      * 특정 사용자의 모든 Wishlist 찾기 (페이징)
      */
-    @Query("SELECT w FROM Wishlist w " +
-           "JOIN FETCH w.post p " +
-           "JOIN FETCH p.user u " +
-           "LEFT JOIN FETCH p.postImages " +
-           "WHERE w.user.userId = :userId " +
-           "ORDER BY w.createdAt DESC")
+    @Query(value = "SELECT w FROM Wishlist w " +
+                   "JOIN FETCH w.post p " +
+                   "JOIN FETCH p.user u " +
+                   "LEFT JOIN FETCH p.postImages " +
+                   "WHERE w.user.userId = :userId " +
+                   "ORDER BY w.createdAt DESC",
+           countQuery = "SELECT COUNT(w) FROM Wishlist w WHERE w.user.userId = :userId")
     Page<Wishlist> findByUserIdWithPost(@Param("userId") Long userId, Pageable pageable);
     
     /**

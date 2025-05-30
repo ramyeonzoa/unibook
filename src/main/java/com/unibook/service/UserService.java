@@ -247,4 +247,32 @@ public class UserService {
         
         return schoolId;
     }
+    
+    /**
+     * 비밀번호 변경
+     */
+    @Transactional
+    public void updatePassword(Long userId, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        log.info("Password updated for user: {}", user.getEmail());
+    }
+    
+    /**
+     * 전화번호 수정
+     */
+    @Transactional
+    public void updatePhoneNumber(Long userId, String phoneNumber) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+        
+        user.setPhoneNumber(phoneNumber);
+        userRepository.save(user);
+        
+        log.info("Phone number updated for user: {}", user.getEmail());
+    }
 }

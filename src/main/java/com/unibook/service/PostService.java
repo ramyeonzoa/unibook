@@ -200,11 +200,10 @@ public class PostService {
     }
     
     /**
-     * 사용자별 게시글 조회
+     * 사용자별 게시글 조회 (Fetch Join으로 N+1 방지)
      */
     public Page<Post> getPostsByUserId(Long userId, Pageable pageable) {
-        // TODO: 사용자별 게시글 조회 쿼리 구현
-        return Page.empty();
+        return postRepository.findByUserIdWithDetails(userId, pageable);
     }
     
     /**

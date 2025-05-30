@@ -167,4 +167,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                             @Param("productType") Post.ProductType productType,
                             @Param("schoolId") Long schoolId,
                             Pageable pageable);
+    
+    /**
+     * 사용자가 찜한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
+     */
+    @Query(value = "SELECT p FROM Wishlist w " +
+                   "JOIN w.post p " +
+                   "JOIN FETCH p.user u " +
+                   "LEFT JOIN FETCH u.department d " +
+                   "LEFT JOIN FETCH d.school " +
+                   "LEFT JOIN FETCH p.postImages " +
+                   "WHERE w.user.userId = :userId",
+           countQuery = "SELECT COUNT(w) FROM Wishlist w WHERE w.user.userId = :userId")
+    Page<Post> findWishlistedPostsByUser(@Param("userId") Long userId, Pageable pageable);
+    
+    /**
+     * 사용자가 작성한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
+     */
+    @Query(value = "SELECT p FROM Post p " +
+                   "JOIN FETCH p.user u " +
+                   "LEFT JOIN FETCH u.department d " +
+                   "LEFT JOIN FETCH d.school " +
+                   "LEFT JOIN FETCH p.postImages " +
+                   "WHERE p.user.userId = :userId",
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.user.userId = :userId")
+    Page<Post> findByUserIdWithDetails(@Param("userId") Long userId, Pageable pageable);
 }

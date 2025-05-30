@@ -30,6 +30,16 @@ public class WishlistApiController {
             Long userId = userPrincipal.getUserId();
             log.info("찜하기 토글 요청: userId={}, postId={}", userId, postId);
             
+            // 이메일 인증 확인
+            if (!userPrincipal.isVerified()) {
+                log.warn("이메일 미인증 사용자의 찜하기 시도: {}", userPrincipal.getEmail());
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "이메일 인증이 필요합니다. 인증 후 다시 시도해주세요 📧",
+                        "needVerification", true
+                ));
+            }
+            
             boolean isWishlisted = wishlistService.toggleWishlist(userId, postId);
             
             return ResponseEntity.ok(Map.of(

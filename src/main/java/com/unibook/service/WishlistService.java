@@ -81,6 +81,13 @@ public class WishlistService {
     }
     
     /**
+     * 사용자의 찜한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
+     */
+    public Page<Post> getUserWishlistPosts(Long userId, Pageable pageable) {
+        return postRepository.findWishlistedPostsByUser(userId, pageable);
+    }
+    
+    /**
      * 찜하기 제거 (특정)
      */
     @Transactional

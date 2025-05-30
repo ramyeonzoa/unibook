@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title>마이페이지 - Unibook</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .profile-header {
+            background-color: #f8f9fa;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .profile-card {
+            border: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .profile-info {
+            padding: 2rem;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            width: 120px;
+            display: inline-block;
+        }
+        
+        .tab-content {
+            padding: 2rem 0;
+        }
+        
+        .form-section {
+            background-color: #f8f9fa;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .password-requirements {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .password-requirements small {
+            color: #6c757d;
+            transition: color 0.3s ease;
+        }
+        
+        .password-requirements small.valid {
+            color: #198754;
+            font-weight: 500;
+        }
+        
+        .requirement-icon {
+            font-size: 0.8rem;
+            margin-right: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+<!-- 공통 헤더 포함 -->
+<nav th:replace="~{fragments/header :: header}"></nav>
+
+<!-- 공통 메시지 포함 -->
+<div th:replace="~{fragments/header :: messages}"></div>
+
+<!-- 프로필 헤더 -->
+<div class="profile-header">
+    <div class="container">
+        <h2><i class="bi bi-person-circle"></i> 마이페이지</h2>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- 사용자 정보 카드 -->
+            <div class="card profile-card">
+                <div class="profile-info">
+                    <h4 class="mb-4">기본 정보</h4>
+                    <div class="mb-3">
+                        <span class="info-label">이름</span>
+                        <span th:text="${user.name}">이름</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">이메일</span>
+                        <span th:text="${user.email}">이메일</span>
+                        <span th:if="${user.verified}" class="badge bg-success ms-2">
+                            <i class="bi bi-check-circle"></i> 인증됨
+                        </span>
+                        <span th:unless="${user.verified}" class="badge bg-warning text-dark ms-2">
+                            <i class="bi bi-exclamation-circle"></i> 미인증
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">학교</span>
+                        <span th:text="${user.department?.school?.schoolName ?: '정보 없음'}">학교</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">학과</span>
+                        <span th:text="${user.department?.departmentName ?: '정보 없음'}">학과</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">전화번호</span>
+                        <span th:text="${user.phoneNumber}">전화번호</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">가입일</span>
+                        <span th:text="${#temporals.format(user.createdAt, 'yyyy년 MM월 dd일')}">가입일</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 탭 메뉴 -->
+            <ul class="nav nav-tabs" id="profileTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" th:classappend="${passwordError ? '' : 'active'}" 
+                            id="info-tab" data-bs-toggle="tab" data-bs-target="#info" 
+                            type="button" role="tab" aria-controls="info" 
+                            th:aria-selected="${!passwordError}">
+                        <i class="bi bi-person"></i> 정보 수정
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" th:classappend="${passwordError ? 'active' : ''}" 
+                            id="password-tab" data-bs-toggle="tab" data-bs-target="#password" 
+                            type="button" role="tab" aria-controls="password" 
+                            th:aria-selected="${passwordError}">
+                        <i class="bi bi-lock"></i> 비밀번호 변경
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- 탭 컨텐츠 -->
+            <div class="tab-content" id="profileTabContent">
+                <!-- 정보 수정 탭 -->
+                <div class="tab-pane fade" th:classappend="${passwordError ? '' : 'show active'}" 
+                     id="info" role="tabpanel" aria-labelledby="info-tab">
+                    <div class="form-section">
+                        <h5 class="mb-4">정보 수정</h5>
+                        <form th:action="@{/profile/info}" method="post" th:object="${infoUpdateForm}">
+                            <div class="mb-3">
+                                <label for="infoCurrentPassword" class="form-label">현재 비밀번호</label>
+                                <input type="password" class="form-control" id="infoCurrentPassword" 
+                                       th:field="*{currentPassword}" 
+                                       placeholder="보안을 위해 현재 비밀번호를 입력해주세요">
+                                <div th:if="${#fields.hasErrors('currentPassword')}" 
+                                     class="text-danger mt-1" th:errors="*{currentPassword}">에러</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" id="phoneNumber" 
+                                       th:field="*{phoneNumber}" 
+                                       placeholder="010-0000-0000">
+                                <div th:if="${#fields.hasErrors('phoneNumber')}" 
+                                     class="text-danger mt-1" th:errors="*{phoneNumber}">에러</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> 정보 수정
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 비밀번호 변경 탭 -->
+                <div class="tab-pane fade" th:classappend="${passwordError ? 'show active' : ''}" 
+                     id="password" role="tabpanel" aria-labelledby="password-tab">
+                    <div class="form-section">
+                        <h5 class="mb-4">비밀번호 변경</h5>
+                        <form th:action="@{/profile/password}" method="post" th:object="${passwordChangeForm}">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">현재 비밀번호</label>
+                                <input type="password" class="form-control" id="currentPassword" 
+                                       th:field="*{currentPassword}">
+                                <div th:if="${#fields.hasErrors('currentPassword')}" 
+                                     class="text-danger mt-1" th:errors="*{currentPassword}">에러</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">새 비밀번호</label>
+                                <input type="password" class="form-control" id="newPassword" 
+                                       th:field="*{newPassword}">
+                                <div class="password-requirements" id="passwordRequirements">
+                                    <small class="d-block" id="lengthCheck">
+                                        <span class="requirement-icon">❌</span> 8자 이상
+                                    </small>
+                                    <small class="d-block" id="letterCheck">
+                                        <span class="requirement-icon">❌</span> 영문 포함
+                                    </small>
+                                    <small class="d-block" id="numberCheck">
+                                        <span class="requirement-icon">❌</span> 숫자 포함
+                                    </small>
+                                    <small class="d-block" id="specialCheck">
+                                        <span class="requirement-icon">❌</span> 특수문자 포함
+                                    </small>
+                                </div>
+                                <div th:if="${#fields.hasErrors('newPassword')}" 
+                                     class="text-danger mt-1" th:errors="*{newPassword}">에러</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPasswordConfirm" class="form-label">새 비밀번호 확인</label>
+                                <input type="password" class="form-control" id="newPasswordConfirm" 
+                                       th:field="*{newPasswordConfirm}">
+                                <div th:if="${#fields.hasErrors('newPasswordConfirm')}" 
+                                     class="text-danger mt-1" th:errors="*{newPasswordConfirm}">에러</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-lock"></i> 비밀번호 변경
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- 공통 푸터 포함 -->
+<footer th:replace="~{fragments/header :: footer}"></footer>
+
+<!-- 공통 스크립트 포함 -->
+<div th:replace="~{fragments/header :: scripts}"></div>
+
+<script>
+$(document).ready(function() {
+    // 전화번호 자동 포맷팅
+    $('#phoneNumber').on('input', function() {
+        let value = $(this).val().replace(/[^0-9]/g, '');
+        let formattedValue = '';
+        
+        if (value.length >= 3) {
+            formattedValue = value.substring(0, 3);
+            if (value.length >= 7) {
+                formattedValue += '-' + value.substring(3, 7);
+                if (value.length >= 11) {
+                    formattedValue += '-' + value.substring(7, 11);
+                } else if (value.length > 7) {
+                    formattedValue += '-' + value.substring(7);
+                }
+            } else if (value.length > 3) {
+                formattedValue += '-' + value.substring(3);
+            }
+        } else {
+            formattedValue = value;
+        }
+        
+        $(this).val(formattedValue);
+    });
+    
+    // 새 비밀번호 실시간 검증 (회원가입과 동일)
+    $("#newPassword").on("input", function() {
+        const password = $(this).val();
+        
+        // 길이 체크
+        if (password.length >= 8) {
+            $("#lengthCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#lengthCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 영문 체크
+        if (/[A-Za-z]/.test(password)) {
+            $("#letterCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#letterCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 숫자 체크
+        if (/\d/.test(password)) {
+            $("#numberCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#numberCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 특수문자 체크 (@ $ ! % * # ? & _)
+        if (/[@$!%*#?&_]/.test(password)) {
+            $("#specialCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#specialCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 비밀번호 확인 필드가 있으면 재검증
+        if ($("#newPasswordConfirm").val()) {
+            checkPasswordMatch();
+        }
+    });
+    
+    // 비밀번호 확인 체크
+    function checkPasswordMatch() {
+        const password = $("#newPassword").val();
+        const passwordConfirm = $("#newPasswordConfirm").val();
+        
+        if (passwordConfirm && password !== passwordConfirm) {
+            $("#newPasswordConfirm").addClass("is-invalid");
+            // 기존 에러 메시지 제거 후 새로 추가
+            $("#newPasswordConfirm").siblings(".text-danger").remove();
+            $("#newPasswordConfirm").after('<div class="text-danger mt-1">비밀번호가 일치하지 않습니다.</div>');
+        } else if (passwordConfirm) {
+            $("#newPasswordConfirm").removeClass("is-invalid");
+            $("#newPasswordConfirm").siblings(".text-danger").remove();
+        }
+    }
+    
+    $("#newPasswordConfirm").on("input", checkPasswordMatch);
+});
+</script>
+
+</body>
+</html>

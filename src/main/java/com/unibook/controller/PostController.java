@@ -102,9 +102,11 @@ public class PostController {
         // 로그인한 사용자의 학교 ID
         Long userSchoolId = null;
         if (userPrincipal != null) {
-            User user = userService.findById(userPrincipal.getUserId()).orElse(null);
-            if (user != null && user.getDepartment() != null && user.getDepartment().getSchool() != null) {
-                userSchoolId = user.getDepartment().getSchool().getSchoolId();
+            try {
+                userSchoolId = userService.getSchoolIdByUserId(userPrincipal.getUserId());
+            } catch (Exception e) {
+                // 학교 정보 없음 (정상 케이스)
+                log.debug("사용자의 학교 정보 없음: userId={}", userPrincipal.getUserId());
             }
         }
         
@@ -579,13 +581,92 @@ public class PostController {
     }
     
     /**
-     * 내 게시글 목록 (AJAX)
+     * 내 게시글 목록
      */
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")
-    @ResponseBody
-    public Page<Post> myPosts(@AuthenticationPrincipal UserPrincipal userPrincipal,
-                             Pageable pageable) {
-        return postService.getPostsByUserId(userPrincipal.getUserId(), pageable);
+    public String myPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String sortBy,
+            Model model,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        
+        // 페이지 크기 검증
+        if (size > 100) {
+            size = DEFAULT_PAGE_SIZE;
+        }
+        
+        // 정렬 옵션 설정
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "NEWEST";
+        }
+        
+        Sort sort = switch (sortBy) {
+            case "PRICE_ASC" -> Sort.by("price").ascending();
+            case "PRICE_DESC" -> Sort.by("price").descending();
+            case "VIEW_COUNT" -> Sort.by("viewCount").descending();
+            default -> Sort.by("createdAt").descending();
+        };
+        
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        // 내 게시글 조회
+        Page<Post> posts = postService.getPostsByUserId(userPrincipal.getUserId(), pageable);
+        Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
+        
+        model.addAttribute("posts", postDtos);
+        model.addAttribute("productTypes", Post.ProductType.values());
+        model.addAttribute("statuses", Post.PostStatus.values());
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("pageTitle", "내 게시글");
+        model.addAttribute("pageType", "my"); // 페이지 타입 구분용
+        
+        return "posts/list";
+    }
+    
+    /**
+     * 찜한 게시글 목록
+     */
+    @GetMapping("/wishlist")
+    @PreAuthorize("isAuthenticated()")
+    public String wishlistPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String sortBy,
+            Model model,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        
+        // 페이지 크기 검증
+        if (size > 100) {
+            size = DEFAULT_PAGE_SIZE;
+        }
+        
+        // 정렬 옵션 설정
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "NEWEST";
+        }
+        
+        Sort sort = switch (sortBy) {
+            case "PRICE_ASC" -> Sort.by("p.price").ascending();
+            case "PRICE_DESC" -> Sort.by("p.price").descending();
+            case "VIEW_COUNT" -> Sort.by("p.viewCount").descending();
+            default -> Sort.by("w.createdAt").descending(); // 찜한 시간 기준
+        };
+        
+        Pageable pageable = PageRequest.of(page, size, sort);
+        
+        // 찜한 게시글 조회
+        Page<Post> posts = wishlistService.getUserWishlistPosts(userPrincipal.getUserId(), pageable);
+        Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
+        
+        model.addAttribute("posts", postDtos);
+        model.addAttribute("productTypes", Post.ProductType.values());
+        model.addAttribute("statuses", Post.PostStatus.values());
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("pageTitle", "찜한 게시글");
+        model.addAttribute("pageType", "wishlist"); // 페이지 타입 구분용
+        
+        return "posts/list";
     }
 }

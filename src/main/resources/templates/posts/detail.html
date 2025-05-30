@@ -433,8 +433,8 @@
 <!-- 공통 Footer 포함 -->
 <footer th:replace="~{fragments/header :: footer}"></footer>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- 공통 스크립트 포함 -->
+<div th:replace="~{fragments/header :: scripts}"></div>
 <script th:inline="javascript">
 /*<![CDATA[*/
 var postId = /*[[${post.postId}]]*/ 0;
@@ -540,7 +540,12 @@ function toggleWishlist() {
             console.error('찜하기 에러:', xhr.status, xhr.responseText);
             if (xhr.status === 400) {
                 var response = xhr.responseJSON;
-                alert(response.message || '찜하기 처리에 실패했습니다.');
+                if (response.needVerification) {
+                    // 이메일 인증 필요한 경우 노란색 Toast
+                    showToast(response.message || '이메일 인증이 필요합니다.');
+                } else {
+                    alert(response.message || '찜하기 처리에 실패했습니다.');
+                }
             } else {
                 alert('찜하기 처리 중 오류가 발생했습니다.');
             }
@@ -584,7 +589,7 @@ function showToast(message) {
     // 기존 토스트 제거
     $('.toast-container').remove();
     
-    var isWarning = message.includes('자신의 게시글');
+    var isWarning = message.includes('자신의 게시글') || message.includes('이메일 인증');
     var backgroundColor = isWarning ? 'rgba(255, 193, 7, 0.9)' : 'rgba(25, 135, 84, 0.9)'; // 투명도 90%
     var textColor = isWarning ? '#664d03' : '#ffffff';
     
