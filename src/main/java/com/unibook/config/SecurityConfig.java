@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .requestMatchers("/books", "/books/**").permitAll()
                 // 인증이 필요한 API 엔드포인트
                 .requestMatchers("/api/auth/resend-verification").authenticated()
+                .requestMatchers("/api/wishlist/**").authenticated()
                 // 책 API는 명시적으로 허용
                 .requestMatchers("/api/books/**").permitAll()
                 // 나머지 API 엔드포인트 허용

@@ -839,70 +839,6 @@ List<Post> findByBook_Subjects_Professor_Department_DepartmentId(Long department
 List<Post> findByBook_Subjects_Professor_Department_School_SchoolId(Long schoolId);
 ```
 
-🛠️ 유용한 코드 스니펫
-
-**자동완성 검색 구현**
-```javascript
-$("#departmentSearch").autocomplete({
-    source: "/api/departments/search",
-    minLength: 2,
-    select: function(event, ui) {
-        $("#departmentId").val(ui.item.id);
-        $("#selectedDepartment").html(
-            '<div class="alert alert-info">' + ui.item.text + '</div>'
-        );
-    }
-});
-```
-
-**실시간 비밀번호 검증**
-```javascript
-$("#password").on("input", function() {
-    const password = $(this).val();
-    
-    // 각 규칙별 체크
-    if (password.length >= 8) {
-        $("#lengthCheck").addClass("valid").find(".requirement-icon").text("✅");
-    } else {
-        $("#lengthCheck").removeClass("valid").find(".requirement-icon").text("❌");
-    }
-    // ... 다른 규칙들
-});
-```
-
-**파일 업로드 유틸리티 (Day 5)**
-```java
-public void validateFile(MultipartFile file) {
-    if (file.isEmpty()) {
-        throw new IllegalArgumentException("파일이 비어있습니다.");
-    }
-    if (file.getSize() > maxFileSize) {
-        throw new IllegalArgumentException("파일 크기가 10MB를 초과합니다.");
-    }
-    String extension = getFileExtension(file.getOriginalFilename());
-    if (!allowedExtensions.contains(extension.toLowerCase())) {
-        throw new IllegalArgumentException("허용되지 않은 파일 형식입니다.");
-    }
-}
-```
-
-🔄 Development Workflow
-
-1. **Entity 변경 시**
-   - ddl-auto: create로 변경
-   - 애플리케이션 실행 (테이블 재생성)
-   - 데이터 확인 후 ddl-auto: update로 복원
-
-2. **빌드 에러 시**
-   - gradlew clean build
-   - IntelliJ: File → Invalidate Caches and Restart
-   - Annotation Processing 확인
-
-3. **실행 방법**
-   - IntelliJ에서 UnibookApplication 실행 (권장)
-   - 또는 Windows 터미널에서 gradlew bootRun
-   - WSL에서는 실행하지 말 것!
-
 📌 현재 프로젝트 상태 (Day 6 완료)
 
 ✅ Day 1-3 완료된 기능:
@@ -952,6 +888,13 @@ public void validateFile(MultipartFile file) {
 - SubjectBook 관계 정리 (year/semester 제거) ✅
 - API 엔드포인트 year/semester 지원 ✅
 
+✅ Day 7 완료된 기능:
+  - MySQL Full-text Search 구현: 한글 검색 지원, 통합 검색 ✅
+  - 검색 결과 하이라이팅: 검색어 강조 표시 ✅
+  - 정렬 기능: 관련도순, 최신순, 가격순, 조회수순 ✅
+  - UI/UX 개선: 메인 페이지 검색, 정렬 옵션 텍스트 링크화 ✅
+  - 버그 수정: Enum 비교, null 체크, 거래 방법 필수화 ✅
+
 💡 핵심 원칙
 1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
 2. 모든 설정값은 application.yml에서 관리
@@ -961,16 +904,6 @@ public void validateFile(MultipartFile file) {
 6. 예외는 구체적으로 (커스텀 예외 사용)
 7. 상수는 중앙 관리 (AppConstants, Messages)
 
-🚀 Day 7 시작 명령어
-```bash
-cd /mnt/c/dev/unibook
-claude-code "Day 6까지 완료된 상태야. CLAUDE.md 참고해서 Day 7 작업을 시작해줘:
-1. 게시글 수정 시 기존 과목 정보 표시 및 수정 기능
-2. 게시글 목록에 과목 정보 표시 옵션
-3. 과목별 게시글 검색 기능
-4. 전체 기능 통합 테스트
-5. UI/UX 개선 및 반응형 디자인 점검"
-```
 
 📝 추가 고려사항
 - 모바일 반응형 디자인 (Day 7, 12)

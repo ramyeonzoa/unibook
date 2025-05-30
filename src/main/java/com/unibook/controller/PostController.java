@@ -14,6 +14,7 @@ import com.unibook.security.UserPrincipal;
 import com.unibook.service.BookService;
 import com.unibook.service.PostService;
 import com.unibook.service.UserService;
+import com.unibook.service.WishlistService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -45,6 +48,7 @@ public class PostController {
     private final PostService postService;
     private final UserService userService;
     private final BookService bookService;
+    private final WishlistService wishlistService;
     private final ObjectMapper objectMapper;
     
     private static final int DEFAULT_PAGE_SIZE = 12;
@@ -168,9 +172,16 @@ public class PostController {
                 postService.getRelatedPostsBySubject(post.getSubject().getSubjectId(), id, 4) :
                 List.of();
         
+        // 찜 상태 확인
+        boolean isWishlisted = false;
+        if (userPrincipal != null && !isOwner) {
+            isWishlisted = wishlistService.isWishlisted(userPrincipal.getUserId(), id);
+        }
+        
         model.addAttribute("post", post);
         model.addAttribute("isOwner", isOwner);
         model.addAttribute("canEdit", canEdit);
+        model.addAttribute("isWishlisted", isWishlisted);
         model.addAttribute("relatedPosts", relatedPosts);
         model.addAttribute("subjectRelatedPosts", subjectRelatedPosts);
         
