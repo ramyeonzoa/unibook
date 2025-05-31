@@ -46,9 +46,15 @@ public class SecurityConfig {
                 // 게시글 작성/수정/삭제는 인증 필요
                 .requestMatchers("/posts/new", "/posts/*/edit", "/posts/*/delete", "/posts/*/status").authenticated()
                 .requestMatchers("/books", "/books/**").permitAll()
+                // 채팅 관련 페이지는 인증 필요
+                .requestMatchers("/chat", "/chat/**").authenticated()
                 // 인증이 필요한 API 엔드포인트
                 .requestMatchers("/api/auth/resend-verification").authenticated()
                 .requestMatchers("/api/wishlist/**").authenticated()
+                // 글로벌 채팅 리스너용 엔드포인트는 인증 없이 허용
+                .requestMatchers("/api/chat/rooms/by-firebase-id/**").permitAll()
+                .requestMatchers("/api/chat/**").authenticated()
+                .requestMatchers("/api/notifications/**").authenticated()
                 // 책 API는 명시적으로 허용
                 .requestMatchers("/api/books/**").permitAll()
                 // 나머지 API 엔드포인트 허용

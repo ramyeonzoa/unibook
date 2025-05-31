@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채팅 목록 - Unibook</title>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- 채팅 스타일 -->
+    <style>
+        .chat-item {
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .chat-item:hover {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .chat-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .chat-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #2c3e50;
+        }
+        
+        .chat-last-message {
+            color: #6c757d;
+            font-size: 14px;
+            margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .chat-post-info {
+            font-size: 12px;
+            color: #868e96;
+        }
+        
+        .chat-meta {
+            text-align: right;
+            min-width: 80px;
+        }
+        
+        .chat-time {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        
+        .unread-badge {
+            background: #dc3545;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .post-thumbnail {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #dee2e6;
+        }
+        
+        .total-unread {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav th:replace="~{fragments/header :: header}"></nav>
+    
+    <!-- Messages -->
+    <div th:replace="~{fragments/header :: messages}"></div>
+    
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                
+                <!-- 페이지 헤더 -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="mb-1">
+                            <i class="bi bi-chat-dots text-primary me-2"></i>
+                            채팅 목록
+                        </h2>
+                        <p class="text-muted mb-0">진행 중인 채팅을 확인하세요</p>
+                    </div>
+                    <a href="/posts" class="btn btn-outline-primary">
+                        <i class="bi bi-search me-1"></i>
+                        상품 찾기
+                    </a>
+                </div>
+                
+                <!-- 총 읽지 않은 메시지 수 -->
+                <div th:if="${totalUnreadCount > 0}" class="total-unread">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-bell-fill me-2"></i>
+                        <span>읽지 않은 메시지 <strong th:text="${totalUnreadCount}">0</strong>개</span>
+                    </div>
+                </div>
+                
+                <!-- 채팅방 목록 -->
+                <div th:if="${!chatRooms.isEmpty()}" class="chat-list">
+                    <div th:each="chat : ${chatRooms}" 
+                         class="chat-item p-3 mb-3"
+                         th:onclick="|location.href='/chat/rooms/${chat.chatRoomId}'|">
+                        
+                        <div class="d-flex align-items-center">
+                            <!-- 사용자 아바타 -->
+                            <div class="chat-avatar me-3" 
+                                 th:text="${#strings.substring(chat.otherUserName, 0, 1)}">A</div>
+                            
+                            <!-- 게시글 썸네일 -->
+                            <div class="me-3" th:if="${chat.postThumbnail}">
+                                <img th:src="${chat.postThumbnail}" 
+                                     alt="상품 이미지" 
+                                     class="post-thumbnail"
+                                     onerror="this.style.display='none'">
+                            </div>
+                            
+                            <!-- 채팅 내용 -->
+                            <div class="chat-content">
+                                <div class="chat-title" th:text="${chat.otherUserName}">상대방 이름</div>
+                                
+                                <div class="chat-last-message" 
+                                     th:text="${chat.lastMessage ?: '아직 메시지가 없습니다.'}">
+                                    마지막 메시지 내용
+                                </div>
+                                
+                                <div class="chat-post-info">
+                                    <i class="bi bi-tag me-1"></i>
+                                    <span th:text="${chat.postTitle}">게시글 제목</span>
+                                </div>
+                            </div>
+                            
+                            <!-- 메타 정보 -->
+                            <div class="chat-meta">
+                                <div class="chat-time" 
+                                     th:text="${chat.lastMessageTime != null ? 
+                                               #temporals.format(chat.lastMessageTime, 'MM/dd HH:mm') : 
+                                               #temporals.format(chat.createdAt, 'MM/dd HH:mm')}">
+                                    시간
+                                </div>
+                                
+                                <div th:if="${chat.unreadCount > 0}" 
+                                     class="unread-badge" 
+                                     th:text="${chat.unreadCount}">
+                                    3
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 빈 상태 -->
+                <div th:if="${chatRooms.isEmpty()}" class="empty-state">
+                    <i class="bi bi-chat-square-dots"></i>
+                    <h4>진행 중인 채팅이 없습니다</h4>
+                    <p class="mb-4">관심 있는 상품에 문의해보세요!</p>
+                    <a href="/posts" class="btn btn-primary">
+                        <i class="bi bi-search me-2"></i>
+                        상품 둘러보기
+                    </a>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer th:replace="~{fragments/header :: footer}"></footer>
+    
+    <!-- Scripts -->
+    <div th:replace="~{fragments/header :: scripts}"></div>
+    <script th:src="@{/js/chat-list.js}"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Firebase 초기화
+            if (typeof initializeFirebase === 'function') {
+                initializeFirebase();
+            }
+            
+            // 채팅방 클릭 이벤트 (이미 onclick으로 처리됨)
+            
+            // 기존 주기적 새로고침 제거 (실시간 업데이트로 대체)
+            // setInterval(function() {
+            //     if (!document.hidden) {
+            //         location.reload();
+            //     }
+            // }, 30000);
+        });
+    </script>
+</body>
+</html>

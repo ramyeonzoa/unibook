@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase 채팅 데이터 삭제</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <h1>Firebase 채팅 데이터 삭제 도구</h1>
+    
+    <button onclick="clearAllChatData()" style="background: red; color: white; padding: 10px 20px; margin: 10px;">
+        ⚠️ 모든 채팅 데이터 삭제
+    </button>
+    
+    <button onclick="listAllChatRooms()" style="background: blue; color: white; padding: 10px 20px; margin: 10px;">
+        📋 채팅방 목록 보기
+    </button>
+    
+    <div id="status" style="margin-top: 20px; padding: 20px; border: 1px solid #ccc;"></div>
+    
+    <script>
+        // Firebase 설정 (firebase-config.js와 동일)
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-Bg-4gJmAE0EFSR1ggdMDKLFGz1v3Qm0",
+            authDomain: "uniboook.firebaseapp.com",
+            projectId: "uniboook",
+            storageBucket: "uniboook.firebasestorage.app",
+            messagingSenderId: "425119774030",
+            appId: "1:425119774030:web:76f7b6bd7b8bb36d717693"
+        };
+        
+        // Firebase 초기화
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        const db = firebase.firestore();
+        
+        function updateStatus(message) {
+            document.getElementById('status').innerHTML += '<p>' + new Date().toLocaleTimeString() + ': ' + message + '</p>';
+            console.log(message);
+        }
+        
+        // 모든 채팅 데이터 삭제
+        async function clearAllChatData() {
+            if (!confirm('⚠️ 정말로 모든 채팅 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다!')) {
+                return;
+            }
+            
+            updateStatus('🗑️ 채팅 데이터 삭제 시작...');
+            
+            try {
+                // 1. 모든 채팅방 조회
+                const chatroomsSnapshot = await db.collection('chatrooms').get();
+                updateStatus(`📂 발견된 채팅방: ${chatroomsSnapshot.size}개`);
+                
+                let deletedMessages = 0;
+                let deletedChatrooms = 0;
+                
+                // 2. 각 채팅방의 메시지들 삭제
+                for (const chatroomDoc of chatroomsSnapshot.docs) {
+                    const chatroomId = chatroomDoc.id;
+                    updateStatus(`🔍 채팅방 ${chatroomId}의 메시지 삭제 중...`);
+                    
+                    // 해당 채팅방의 모든 메시지 조회 및 삭제
+                    const messagesSnapshot = await db.collection('chatrooms').doc(chatroomId).collection('messages').get();
+                    
+                    if (messagesSnapshot.size > 0) {
+                        updateStatus(`📨 채팅방 ${chatroomId}에서 ${messagesSnapshot.size}개 메시지 발견`);
+                        
+                        // 배치 삭제
+                        const batch = db.batch();
+                        messagesSnapshot.docs.forEach(messageDoc => {
+                            batch.delete(messageDoc.ref);
+                        });
+                        
+                        await batch.commit();
+                        deletedMessages += messagesSnapshot.size;
+                        updateStatus(`✅ 채팅방 ${chatroomId}의 ${messagesSnapshot.size}개 메시지 삭제 완료`);
+                    }
+                    
+                    // 채팅방 문서 삭제
+                    await chatroomDoc.ref.delete();
+                    deletedChatrooms++;
+                    updateStatus(`🗑️ 채팅방 ${chatroomId} 삭제 완료`);
+                }
+                
+                updateStatus(`🎉 삭제 완료! 채팅방: ${deletedChatrooms}개, 메시지: ${deletedMessages}개`);
+                updateStatus('💡 이제 MySQL의 chat_room 테이블도 수동으로 정리하세요.');
+                
+            } catch (error) {
+                updateStatus(`❌ 오류 발생: ${error.message}`);
+                console.error('삭제 중 오류:', error);
+            }
+        }
+        
+        // 채팅방 목록 조회
+        async function listAllChatRooms() {
+            updateStatus('📋 채팅방 목록 조회 중...');
+            
+            try {
+                const chatroomsSnapshot = await db.collection('chatrooms').get();
+                updateStatus(`📂 총 ${chatroomsSnapshot.size}개 채팅방 발견`);
+                
+                for (const chatroomDoc of chatroomsSnapshot.docs) {
+                    const chatroomId = chatroomDoc.id;
+                    const messagesSnapshot = await db.collection('chatrooms').doc(chatroomId).collection('messages').get();
+                    
+                    updateStatus(`📁 채팅방 ID: ${chatroomId} (메시지 ${messagesSnapshot.size}개)`);
+                }
+                
+            } catch (error) {
+                updateStatus(`❌ 오류 발생: ${error.message}`);
+                console.error('조회 중 오류:', error);
+            }
+        }
+        
+        // 페이지 로드 시 상태 표시
+        updateStatus('🚀 Firebase 채팅 데이터 삭제 도구 준비 완료');
+        updateStatus('⚠️ 이 도구는 Firebase Firestore의 모든 채팅 데이터를 삭제합니다');
+        updateStatus('💡 삭제 후에는 MySQL의 chat_room 테이블도 수동으로 정리해야 합니다');
+    </script>
+</body>
+</html>

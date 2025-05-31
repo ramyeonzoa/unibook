@@ -15,7 +15,7 @@ $(document).ready(function() {
     });
     
     // 로그인한 사용자만 알림 시스템 초기화
-    if ($('#notificationDropdown').length) {
+    if ($('#notificationDropdownMobile').length || $('#notificationDropdownDesktop').length) {
         initNotificationSystem();
     }
 });
@@ -30,13 +30,13 @@ function initNotificationSystem() {
     // 초기 알림 카운트 로드
     loadNotificationCount();
     
-    // 드롭다운 열릴 때 알림 목록 로드
-    $('#notificationDropdown').on('show.bs.dropdown', function() {
+    // 드롭다운 열릴 때 알림 목록 로드 (모바일 + 데스크톱)
+    $('#notificationDropdownMobile, #notificationDropdownDesktop').on('show.bs.dropdown', function() {
         loadUnreadNotifications();
     });
     
-    // 모두 읽음 버튼 클릭 이벤트
-    $('#markAllReadBtn').on('click', function(e) {
+    // 모두 읽음 버튼 클릭 이벤트 (클래스 기반)
+    $('.mark-all-read-btn').on('click', function(e) {
         e.preventDefault();
         markAllNotificationsAsRead();
     });
@@ -49,12 +49,11 @@ function connectSSE() {
     const eventSource = new EventSource('/api/notifications/stream');
     
     eventSource.addEventListener('connect', function(event) {
-        console.log('SSE 연결 성공:', event.data);
+        // SSE 연결 성공
     });
     
     eventSource.addEventListener('notification', function(event) {
         const notification = JSON.parse(event.data);
-        console.log('새 알림:', notification);
         
         // 알림 카운트 증가
         incrementNotificationCount();
@@ -77,7 +76,6 @@ function connectSSE() {
     });
     
     eventSource.onerror = function(error) {
-        console.error('SSE 연결 오류:', error);
         eventSource.close();
         
         // 5초 후 재연결 시도
@@ -112,7 +110,7 @@ function loadUnreadNotifications() {
         })
         .fail(function(xhr) {
             console.error('알림 목록 로드 실패:', xhr);
-            $('#notificationList').html(
+            $('.notification-list').html(
                 '<li class="text-center py-3">' +
                 '<span class="text-danger">알림을 불러올 수 없습니다.</span>' +
                 '</li>'
@@ -124,10 +122,10 @@ function loadUnreadNotifications() {
  * 알림 목록 표시
  */
 function displayNotifications(notifications) {
-    const $list = $('#notificationList');
+    const $lists = $('.notification-list');
     
     if (notifications.length === 0) {
-        $list.html(
+        $lists.html(
             '<li class="empty-state">' +
             '<i class="bi bi-bell-slash"></i>' +
             '<p>새로운 알림이 없습니다</p>' +
@@ -141,7 +139,7 @@ function displayNotifications(notifications) {
         html += createNotificationItem(notification);
     });
     
-    $list.html(html);
+    $lists.html(html);
     
     // 알림 아이템 클릭 이벤트
     $('.notification-item').on('click', function() {
@@ -251,23 +249,23 @@ function markAllNotificationsAsRead() {
 }
 
 /**
- * 알림 배지 업데이트
+ * 알림 배지 업데이트 (모바일 + 데스크톱 모두)
  */
 function updateNotificationBadge(count) {
-    const $badge = $('#notificationBadge');
-    const $count = $('#notificationCount');
+    const $badges = $('.notification-badge'); // 클래스 기반
+    const $counts = $('.notification-count'); // 클래스 기반
     
     if (count > 0) {
-        $count.text(count > 99 ? '99+' : count);
-        $badge.show();
+        $counts.text(count > 99 ? '99+' : count);
+        $badges.show();
         
         // 새 알림이 있으면 pulse 애니메이션
-        if (!$badge.hasClass('pulse')) {
-            $badge.addClass('pulse');
+        if (!$badges.hasClass('pulse')) {
+            $badges.addClass('pulse');
         }
     } else {
-        $badge.hide();
-        $badge.removeClass('pulse');
+        $badges.hide();
+        $badges.removeClass('pulse');
     }
 }
 
@@ -275,7 +273,7 @@ function updateNotificationBadge(count) {
  * 알림 카운트 증가
  */
 function incrementNotificationCount() {
-    const currentCount = parseInt($('#notificationCount').text()) || 0;
+    const currentCount = parseInt($('.notification-count').first().text()) || 0;
     updateNotificationBadge(currentCount + 1);
 }
 

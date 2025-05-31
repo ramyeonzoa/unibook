@@ -19,6 +19,9 @@
     <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
 </head>
 <body>
     <!-- 공통 헤더 포함 -->

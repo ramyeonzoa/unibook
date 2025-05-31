@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="|${chatRoom.otherUserName}님과의 채팅 - Unibook|">채팅 - Unibook</title>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- 공통 스타일 -->
+    <div th:replace="~{fragments/header :: styles}"></div>
+    
+    <!-- 채팅 스타일 -->
+    <style>
+        .chat-container {
+            height: calc(100vh - 200px);
+            min-height: 500px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .chat-header h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .post-info {
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            padding: 15px 20px;
+        }
+        
+        .post-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .message-wrapper {
+            margin-bottom: 15px;
+        }
+        
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        
+        .message-sent {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+        }
+        
+        .message-received {
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #e9ecef;
+        }
+        
+        .message-content {
+            margin-bottom: 4px;
+        }
+        
+        .message-info {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+        
+        .message-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .chat-input-container {
+            background: white;
+            border-top: 1px solid #e9ecef;
+            padding: 20px;
+        }
+        
+        .chat-input {
+            border: 1px solid #e9ecef;
+            border-radius: 20px;
+            padding: 10px 20px;
+            resize: none;
+            max-height: 100px;
+        }
+        
+        .chat-input:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+        
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.2s ease;
+        }
+        
+        .send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.2s ease;
+        }
+        
+        .back-btn:hover {
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .post-status-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        
+        .status-available { background: #d4edda; color: #155724; }
+        .status-reserved { background: #fff3cd; color: #856404; }
+        .status-completed { background: #d1ecf1; color: #0c5460; }
+        
+        /* 스크롤바 스타일 */
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .messages-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: calc(100vh - 120px);
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .chat-header {
+                padding: 15px;
+            }
+            
+            .post-info {
+                padding: 10px 15px;
+            }
+            
+            .messages-container {
+                padding: 15px;
+            }
+            
+            .chat-input-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav th:replace="~{fragments/header :: header}"></nav>
+    
+    <div class="container-fluid mt-3">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                
+                <div class="chat-container">
+                    <!-- 채팅 헤더 -->
+                    <div class="chat-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 th:text="${chatRoom.otherUserName}">상대방 이름</h5>
+                                <small class="opacity-75">
+                                    <i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i>
+                                    온라인
+                                </small>
+                            </div>
+                            <a href="/chat" class="back-btn">
+                                <i class="bi bi-arrow-left fs-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- 게시글 정보 -->
+                    <div class="post-info">
+                        <div class="d-flex align-items-center">
+                            <div th:if="${chatRoom.postThumbnail}" class="me-3">
+                                <img th:src="${chatRoom.postThumbnail}" 
+                                     alt="상품 이미지" 
+                                     class="post-thumbnail"
+                                     onerror="this.style.display='none'">
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1" th:text="${chatRoom.postTitle}">게시글 제목</h6>
+                                        <div class="text-muted small">
+                                            <span th:text="${#numbers.formatInteger(chatRoom.postPrice, 0, 'COMMA')}">가격</span>원
+                                        </div>
+                                    </div>
+                                    <span class="post-status-badge"
+                                          th:classappend="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'status-available' : 
+                                                         chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 'status-completed'}"
+                                          th:text="${chatRoom.postStatus.toString() == 'AVAILABLE' ? '판매중' : 
+                                                   chatRoom.postStatus.toString() == 'RESERVED' ? '예약중' : '거래완료'}">
+                                        상태
+                                    </span>
+                                </div>
+                                <a th:href="@{'/posts/' + ${chatRoom.postId}}" 
+                                   class="btn btn-sm btn-outline-primary mt-2">
+                                    <i class="bi bi-eye me-1"></i>상품 보기
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 메시지 컨테이너 -->
+                    <div class="messages-container" id="messagesContainer">
+                        <!-- 메시지들이 여기에 동적으로 추가됩니다 -->
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-chat-dots fs-1 mb-3 d-block"></i>
+                            <p>채팅을 시작해보세요!</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 메시지 입력 -->
+                    <div class="chat-input-container">
+                        <form onsubmit="return false;" class="d-flex align-items-end gap-3">
+                            <div class="flex-grow-1">
+                                <textarea class="form-control chat-input" 
+                                         id="messageInput"
+                                         placeholder="메시지를 입력하세요..."
+                                         rows="1"
+                                         maxlength="1000"></textarea>
+                            </div>
+                            <button type="button" 
+                                    class="send-btn" 
+                                    id="sendBtn"
+                                    onclick="sendMessage()">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
+                        </form>
+                        
+                        <div class="mt-2 text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Enter로 전송, Shift+Enter로 줄바꿈
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <div th:replace="~{fragments/header :: scripts}"></div>
+    <script th:src="@{/js/firebase-chat.js}"></script>
+    
+    <script th:inline="javascript">
+        $(document).ready(function() {
+            // Firebase 초기화
+            if (typeof initializeFirebase === 'function') {
+                initializeFirebase();
+            }
+            
+            // 채팅 데이터
+            const firebaseRoomId = /*[[${chatRoom.firebaseRoomId}]]*/ '';
+            const currentUserId = /*[[${currentUserId}]]*/ 0;
+            const currentUserName = /*[[${currentUserName}]]*/ '';
+            const otherUserId = /*[[${chatRoom.otherUserId}]]*/ 0;
+            const otherUserName = /*[[${chatRoom.otherUserName}]]*/ '';
+            const chatRoomId = /*[[${chatRoom.chatRoomId}]]*/ 0;
+            
+            // 구매자 여부 판단: 현재 사용자가 게시글 작성자가 아니면 구매자
+            const postOwnerId = /*[[${chatRoom.postOwnerId}]]*/ 0;
+            const isBuyer = currentUserId !== postOwnerId;
+            
+            console.log('채팅방 데이터:', {
+                firebaseRoomId: firebaseRoomId,
+                currentUserId: currentUserId,
+                currentUserName: currentUserName,
+                postOwnerId: postOwnerId,
+                isBuyer: isBuyer
+            });
+            
+            // 채팅 초기화 (Firebase 초기화 후)
+            function initChatWhenReady() {
+                if (typeof firebase !== 'undefined' && typeof initializeChat === 'function') {
+                    console.log('Firebase와 채팅 함수 준비됨, 채팅 초기화 시작');
+                    try {
+                        initializeChat(firebaseRoomId, currentUserId, currentUserName, isBuyer, otherUserId, otherUserName, chatRoomId);
+                        
+                        // 채팅방 진입 시 읽음 처리
+                        if (window.chatNotificationManager) {
+                            window.chatNotificationManager.clearChatRoomUnread(chatRoomId);
+                        }
+                        
+                        // 글로벌 리스너에 현재 채팅방의 모든 메시지를 처리됨으로 표시
+                        if (window.globalChatListener) {
+                            window.globalChatListener.markChatRoomMessagesAsProcessed(firebaseRoomId);
+                            // 채팅방 진입 시간 업데이트
+                            window.globalChatListener.notifyCurrentChatRoomChanged(chatRoomId);
+                        }
+                    } catch (error) {
+                        console.error('채팅 초기화 오류:', error);
+                        alert('채팅 초기화에 실패했습니다: ' + error.message);
+                    }
+                } else {
+                    console.log('Firebase 또는 채팅 함수 대기 중...');
+                    setTimeout(initChatWhenReady, 500);
+                }
+            }
+            
+            // 초기화 시작
+            setTimeout(initChatWhenReady, 500);
+            
+            // 메시지 입력창 이벤트
+            $('#messageInput').on('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // 자동 크기 조절
+            $('#messageInput').on('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+            });
+            
+            // 페이지 포커스 이벤트 (읽음 처리용)
+            $(window).on('focus', function() {
+                if (window.chatManager) {
+                    // 포커스 시 읽음 처리 (실제 구현은 firebase-chat.js에서)
+                }
+            });
+        });
+        
+        // 전역 메시지 전송 함수는 firebase-chat.js에 정의됨
+    </script>
+</body>
+</html>

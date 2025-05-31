@@ -12,6 +12,9 @@
     <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
     <style>
         .main-image {
             width: 100%;
@@ -299,8 +302,11 @@
                 <!-- 비작성자 버튼 (로그인 사용자) -->
                 <div th:if="${!isOwner}" sec:authorize="isAuthenticated()" class="d-grid gap-2">
                     <button class="btn btn-primary btn-lg" 
+                            id="startChatBtn"
+                            th:data-post-id="${post.postId}"
                             th:disabled="${post.status.toString() == 'COMPLETED'}">
-                        <i class="bi bi-chat-dots"></i> 문의하기
+                        <i class="bi bi-chat-dots"></i> 
+                        <span th:text="${post.status.toString() == 'COMPLETED' ? '거래완료된 상품입니다' : '채팅으로 문의하기'}">채팅으로 문의하기</span>
                     </button>
                     <button class="btn btn-outline-danger d-flex align-items-center justify-content-center" id="wishlistBtn" 
                             th:data-post-id="${post.postId}">
@@ -484,6 +490,11 @@ $(document).ready(function() {
     $('#wishlistBtn').on('click', function() {
         toggleWishlist();
     });
+    
+    // 채팅 시작 버튼 클릭 이벤트
+    $('#startChatBtn').on('click', function() {
+        startChat();
+    });
 });
 
 // 찜하기 상태 로드
@@ -584,6 +595,58 @@ function updateWishlistCount(isWishlisted) {
     var currentCount = parseInt(countElement.text()) || 0;
     var newCount = isWishlisted ? currentCount + 1 : Math.max(0, currentCount - 1);
     countElement.text(newCount);
+}
+
+// 채팅 시작
+function startChat() {
+    var postId = $('#startChatBtn').data('post-id');
+    if (!postId) return;
+    
+    // 버튼 비활성화 (중복 클릭 방지)
+    $('#startChatBtn').prop('disabled', true).html('<i class="bi bi-chat-dots"></i> 채팅방 생성 중...');
+    
+    $.ajax({
+        url: '/api/chat/rooms',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            postId: postId,
+            initialMessage: null
+        }),
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+            var csrfToken = $('meta[name="_csrf"]').attr('content');
+            if (csrfHeader && csrfToken) {
+                xhr.setRequestHeader(csrfHeader, csrfToken);
+            }
+        },
+        success: function(response) {
+            if (response.success) {
+                // 채팅방으로 이동
+                window.location.href = '/chat/rooms/' + response.data.chatRoomId;
+            } else {
+                alert(response.message || '채팅방 생성에 실패했습니다.');
+            }
+        },
+        error: function(xhr) {
+            console.error('채팅 시작 에러:', xhr.status, xhr.responseText);
+            if (xhr.status === 400) {
+                var response = xhr.responseJSON;
+                if (response.needVerification) {
+                    showToast(response.message || '이메일 인증이 필요합니다.');
+                } else {
+                    alert(response.message || '채팅방 생성에 실패했습니다.');
+                }
+            } else {
+                alert('채팅방 생성 중 오류가 발생했습니다.');
+            }
+        },
+        complete: function() {
+            // 버튼 다시 활성화
+            $('#startChatBtn').prop('disabled', false).html('<i class="bi bi-chat-dots"></i> 채팅으로 문의하기');
+        }
+    });
 }
 
 // 간단한 토스트 메시지

@@ -3,25 +3,85 @@
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 <body>
     <!-- 공통 헤더 Fragment -->
-    <nav th:fragment="header" class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav th:fragment="header" class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-primary" href="/">
                 <i class="bi bi-book"></i> Unibook
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/posts">게시글</a>
+            
+            <!-- 모바일에서도 보이는 핵심 아이콘들 (로그인 사용자만) -->
+            <div class="d-flex align-items-center d-md-none" sec:authorize="isAuthenticated()">
+                <!-- 채팅 아이콘 -->
+                <a class="nav-link position-relative me-2" href="/chat">
+                    <i class="bi bi-chat-dots fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger chat-badge"
+                          style="display: none;">
+                        <span class="chat-count">0</span>
+                        <span class="visually-hidden">새 메시지</span>
+                    </span>
+                </a>
+                <!-- 알림 아이콘 -->
+                <a class="nav-link position-relative me-2" href="#" id="notificationDropdownMobile" role="button"
+                   data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-bell fs-5"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge"
+                          style="display: none;">
+                        <span class="notification-count">0</span>
+                        <span class="visually-hidden">새 알림</span>
+                    </span>
+                </a>
+                <!-- 모바일 알림 드롭다운 -->
+                <ul class="dropdown-menu dropdown-menu-end notification-dropdown" 
+                    aria-labelledby="notificationDropdownMobile" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                    <li class="dropdown-header d-flex justify-content-between align-items-center">
+                        <span>알림</span>
+                        <button class="btn btn-link btn-sm text-decoration-none p-0 mark-all-read-btn">
+                            모두 읽음
+                        </button>
                     </li>
-                    <li class="nav-item" sec:authorize="isAuthenticated()">
-                        <a class="nav-link" href="/posts/new">
-                            <i class="bi bi-pencil-square"></i> 글쓰기
+                    <li><hr class="dropdown-divider"></li>
+                    <div class="notification-list">
+                        <li class="text-center py-3">
+                            <span class="text-muted">알림을 불러오는 중...</span>
+                        </li>
+                    </div>
+                    <li><hr class="dropdown-divider"></li>
+                    <li class="text-center">
+                        <a href="/profile#notifications" class="btn btn-link btn-sm text-decoration-none">
+                            모든 알림 보기
                         </a>
                     </li>
                 </ul>
+                <!-- 글쓰기 버튼 -->
+                <a class="btn btn-primary btn-sm me-2" href="/posts/new">
+                    <i class="bi bi-plus"></i>
+                </a>
+            </div>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/posts">
+                            <i class="bi bi-list-ul d-md-none"></i>
+                            <span>게시글</span>
+                        </a>
+                    </li>
+                    <li class="nav-item d-md-block d-none" sec:authorize="isAuthenticated()">
+                        <a class="nav-link position-relative" href="/chat">
+                            <i class="bi bi-chat-dots"></i> 채팅
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger chat-badge"
+                                  style="display: none;">
+                                <span class="chat-count">0</span>
+                                <span class="visually-hidden">새 메시지</span>
+                            </span>
+                        </a>
+                    </li>
+                </ul>
+                
                 <ul class="navbar-nav ms-auto">
                     <!-- 로그인하지 않은 사용자에게만 표시 -->
                     <li class="nav-item" sec:authorize="!isAuthenticated()">
@@ -31,27 +91,27 @@
                         <a class="btn btn-primary btn-sm" href="/signup">회원가입</a>
                     </li>
                     
-                    <!-- 알림 아이콘 (로그인한 사용자만) -->
-                    <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
-                        <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button"
+                    <!-- 데스크톱에서만 보이는 알림 아이콘 -->
+                    <li class="nav-item dropdown d-none d-md-block" sec:authorize="isAuthenticated()">
+                        <a class="nav-link position-relative" href="#" id="notificationDropdownDesktop" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                  id="notificationBadge" style="display: none;">
-                                <span id="notificationCount">0</span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge"
+                                  style="display: none;">
+                                <span class="notification-count">0</span>
                                 <span class="visually-hidden">새 알림</span>
                             </span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end notification-dropdown" 
-                            aria-labelledby="notificationDropdown" style="width: 350px; max-height: 400px; overflow-y: auto;">
+                            aria-labelledby="notificationDropdownDesktop" style="width: 350px; max-height: 400px; overflow-y: auto;">
                             <li class="dropdown-header d-flex justify-content-between align-items-center">
                                 <span>알림</span>
-                                <button class="btn btn-link btn-sm text-decoration-none p-0" id="markAllReadBtn">
+                                <button class="btn btn-link btn-sm text-decoration-none p-0 mark-all-read-btn">
                                     모두 읽음
                                 </button>
                             </li>
                             <li><hr class="dropdown-divider"></li>
-                            <div id="notificationList">
+                            <div class="notification-list">
                                 <li class="text-center py-3">
                                     <span class="text-muted">알림을 불러오는 중...</span>
                                 </li>
@@ -65,12 +125,12 @@
                         </ul>
                     </li>
                     
-                    <!-- 로그인한 사용자에게만 표시 -->
+                    <!-- 사용자 프로필 드롭다운 -->
                     <li class="nav-item dropdown" sec:authorize="isAuthenticated()">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i>
-                            <span sec:authentication="principal.name">사용자</span>
+                            <span class="d-none d-lg-inline" sec:authentication="principal.name">사용자</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                             <li>
@@ -84,6 +144,12 @@
                             </a></li>
                             <li><a class="dropdown-item" href="/posts/wishlist">
                                 <i class="bi bi-heart"></i> 찜 목록
+                            </a></li>
+                            <li><a class="dropdown-item d-md-none" href="/chat">
+                                <i class="bi bi-chat-dots"></i> 채팅
+                            </a></li>
+                            <li><a class="dropdown-item" href="/posts/new">
+                                <i class="bi bi-pencil-square"></i> 글쓰기
                             </a></li>
                             <li><a class="dropdown-item" href="/profile">
                                 <i class="bi bi-person-gear"></i> 마이페이지
@@ -99,10 +165,11 @@
                         </ul>
                     </li>
                     
-                    <!-- 게시글 작성 버튼 (로그인한 사용자만) -->
-                    <li class="nav-item ms-2" sec:authorize="isAuthenticated()">
+                    <!-- 데스크톱에서만 보이는 글쓰기 버튼 -->
+                    <li class="nav-item ms-2 d-none d-md-block" sec:authorize="isAuthenticated()">
                         <a class="btn btn-primary btn-sm" href="/posts/new">
-                            <i class="bi bi-plus-circle"></i> 판매글 작성
+                            <i class="bi bi-plus-circle"></i> 
+                            <span class="d-none d-lg-inline">판매글 작성</span>
                         </a>
                     </li>
                 </ul>
@@ -160,8 +227,27 @@
     <div th:fragment="scripts">
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+        
+        <!-- Firebase 설정 -->
+        <script th:src="@{/js/firebase-config.js}"></script>
+        
+        <!-- 기존 스크립트 -->
         <script th:src="@{/js/email-resend.js}"></script>
         <script th:src="@{/js/notification.js}"></script>
+        <script th:src="@{/js/chat-notification.js}"></script>
+        <script th:src="@{/js/firebase-global-chat-listener.js}"></script>
+    </div>
+    
+    <!-- 사용자 정보 메타 태그 Fragment -->
+    <div th:fragment="user-meta" sec:authorize="isAuthenticated()">
+        <meta name="user-id" th:content="${#authentication.principal.userId}">
+        <meta name="user-name" th:content="${#authentication.principal.name}">
+        <meta name="user-email" th:content="${#authentication.principal.email}">
     </div>
 </body>
 </html>
