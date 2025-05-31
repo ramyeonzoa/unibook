@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -39,4 +40,12 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
      * 특정 사용자와 게시글로 Wishlist 삭제
      */
     void deleteByUserUserIdAndPostPostId(Long userId, Long postId);
+    
+    /**
+     * 특정 게시글을 찜한 모든 사용자의 Wishlist 찾기
+     */
+    @Query("SELECT w FROM Wishlist w " +
+           "JOIN FETCH w.user u " +
+           "WHERE w.post.postId = :postId")
+    List<Wishlist> findByPostIdWithUser(@Param("postId") Long postId);
 }

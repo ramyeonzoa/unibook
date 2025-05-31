@@ -1,0 +1,120 @@
+/* 알림 드롭다운 스타일 */
+.notification-dropdown {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* 알림 아이템 스타일 */
+.notification-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item.unread {
+    background-color: #e8f4ff;
+}
+
+.notification-item.unread:hover {
+    background-color: #d4ebff;
+}
+
+/* 알림 아이콘 */
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.notification-icon.wishlist {
+    background-color: #ffe8e8;
+    color: #dc3545;
+}
+
+.notification-icon.post {
+    background-color: #e8f5e9;
+    color: #28a745;
+}
+
+.notification-icon.message {
+    background-color: #e3f2fd;
+    color: #2196f3;
+}
+
+/* 알림 내용 */
+.notification-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.notification-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.notification-text {
+    font-size: 0.8125rem;
+    color: #6c757d;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* 알림 배지 애니메이션 */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.badge.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* 토스트 알림 스타일 */
+.notification-toast {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+}
+
+/* 빈 상태 */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    margin-bottom: 0;
+}

@@ -11,6 +11,7 @@ import com.unibook.exception.ValidationException;
 import com.unibook.repository.BookRepository;
 import com.unibook.repository.PostRepository;
 import com.unibook.repository.SubjectRepository;
+import com.unibook.repository.WishlistRepository;
 import com.unibook.repository.projection.PostSearchProjection;
 import com.unibook.util.FileUploadUtil;
 import com.unibook.util.QueryNormalizer;
@@ -42,8 +43,10 @@ public class PostService {
     private final PostRepository postRepository;
     private final BookRepository bookRepository;
     private final SubjectRepository subjectRepository;
+    private final WishlistRepository wishlistRepository;
     private final FileUploadUtil fileUploadUtil;
     private final SubjectBookService subjectBookService;
+    private final NotificationService notificationService;
     
     // 조회수 중복 방지를 위한 캐시 (userId/sessionId -> postId -> lastViewTime)
     private final Map<String, Map<Long, LocalDateTime>> viewCache = new ConcurrentHashMap<>();
@@ -432,10 +435,94 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
-        post.setStatus(status);
-        postRepository.save(post);
-        
-        log.info("게시글 상태 변경: postId={}, status={}", postId, status);
+        // 상태가 실제로 변경되는 경우에만 알림 발송
+        Post.PostStatus oldStatus = post.getStatus();
+        if (oldStatus != status) {
+            post.setStatus(status);
+            postRepository.save(post);
+            
+            log.info("게시글 상태 변경: postId={}, oldStatus={}, newStatus={}", postId, oldStatus, status);
+            
+            // 찜한 사용자들에게 알림 발송 (비동기)
+            publishWishlistStatusChangeNotifications(postId, status);
+        }
+    }
+    
+    /**
+     * 게시글을 찜한 사용자들에게 상태 변경 알림 발송 (postId 버전)
+     */
+    private void publishWishlistStatusChangeNotifications(Long postId, Post.PostStatus newStatus) {
+        try {
+            // 해당 게시글을 찜한 모든 사용자 조회
+            List<Wishlist> wishlists = wishlistRepository.findByPostIdWithUser(postId);
+            
+            if (wishlists.isEmpty()) {
+                log.debug("게시글을 찜한 사용자가 없음: postId={}", postId);
+                return;
+            }
+            
+            log.info("찜 상태 변경 알림 발송 시작: postId={}, userCount={}", postId, wishlists.size());
+            
+            // 각 사용자에게 비동기로 알림 발송
+            for (Wishlist wishlist : wishlists) {
+                try {
+                    Long recipientUserId = wishlist.getUser().getUserId();
+                    notificationService.createWishlistStatusNotificationAsync(recipientUserId, postId, newStatus);
+                } catch (Exception e) {
+                    // 개별 사용자 알림 실패는 로그만 남기고 계속 진행
+                    log.warn("개별 알림 발송 실패: userId={}, postId={}, error={}", 
+                            wishlist.getUser().getUserId(), postId, e.getMessage());
+                }
+            }
+            
+            log.info("찜 상태 변경 알림 발송 완료: postId={}", postId);
+            
+        } catch (Exception e) {
+            // 알림 발송 실패가 게시글 상태 변경을 방해하면 안 됨
+            log.warn("알림 발송 중 오류 발생: postId={}, error={}", postId, e.getMessage());
+        }
+    }
+
+    /**
+     * 게시글을 찜한 사용자들에게 상태 변경 알림 발송 (Post 객체 버전)
+     * 테스트 및 직접 호출용
+     */
+    public void publishWishlistStatusChangeNotifications(Post post, Post.PostStatus newStatus) {
+        // 현재 상태와 새 상태가 같으면 알림 발송하지 않음
+        if (post.getStatus() == newStatus) {
+            log.debug("현재 상태와 동일하여 알림 발송 생략: postId={}, status={}", post.getPostId(), newStatus);
+            return;
+        }
+
+        try {
+            // 해당 게시글을 찜한 모든 사용자 조회
+            List<Wishlist> wishlists = wishlistRepository.findByPostIdWithUser(post.getPostId());
+            
+            if (wishlists.isEmpty()) {
+                log.debug("게시글을 찜한 사용자가 없음: postId={}", post.getPostId());
+                return;
+            }
+            
+            log.info("찜 상태 변경 알림 발송 시작: postId={}, userCount={}", post.getPostId(), wishlists.size());
+            
+            // 각 사용자에게 비동기로 알림 발송
+            for (Wishlist wishlist : wishlists) {
+                try {
+                    Long recipientUserId = wishlist.getUser().getUserId();
+                    notificationService.createWishlistStatusNotificationAsync(recipientUserId, post.getPostId(), newStatus);
+                } catch (Exception e) {
+                    // 개별 사용자 알림 실패는 로그만 남기고 계속 진행
+                    log.warn("개별 알림 발송 실패: userId={}, postId={}, error={}", 
+                            wishlist.getUser().getUserId(), post.getPostId(), e.getMessage());
+                }
+            }
+            
+            log.info("찜 상태 변경 알림 발송 완료: postId={}", post.getPostId());
+            
+        } catch (Exception e) {
+            // 알림 발송 실패가 게시글 상태 변경을 방해하면 안 됨
+            log.warn("알림 발송 중 오류 발생: postId={}, error={}", post.getPostId(), e.getMessage());
+        }
     }
     
     /**

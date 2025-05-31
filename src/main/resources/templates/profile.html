@@ -9,6 +9,8 @@
     <title>마이페이지 - Unibook</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- 공통 스타일 (알림 등) -->
+    <div th:replace="~{fragments/header :: styles}"></div>
     <style>
         .profile-header {
             background-color: #f8f9fa;
@@ -140,6 +142,14 @@
                         <i class="bi bi-lock"></i> 비밀번호 변경
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" 
+                            data-bs-target="#notifications" type="button" role="tab" 
+                            aria-controls="notifications" aria-selected="false">
+                        <i class="bi bi-bell"></i> 알림
+                        <span th:if="${unreadCount > 0}" class="badge bg-danger ms-1" th:text="${unreadCount}">0</span>
+                    </button>
+                </li>
             </ul>
             
             <!-- 탭 컨텐츠 -->
@@ -220,6 +230,88 @@
                         </form>
                     </div>
                 </div>
+                
+                <!-- 알림 탭 -->
+                <div class="tab-pane fade" id="notifications" role="tabpanel" aria-labelledby="notifications-tab">
+                    <div class="form-section">
+                        <h5 class="mb-4">알림 목록</h5>
+                        
+                        <!-- 알림 통계 -->
+                        <div class="alert alert-info" id="notificationStats">
+                            <i class="bi bi-info-circle"></i>
+                            <span th:if="${unreadCount > 0}">
+                                읽지 않은 알림 <strong class="unread-count" th:text="${unreadCount}">0</strong>개가 있습니다.
+                            </span>
+                            <span th:unless="${unreadCount > 0}">
+                                모든 알림을 확인했습니다.
+                            </span>
+                        </div>
+                        
+                        <!-- 모두 읽음 버튼 -->
+                        <div class="mb-3 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="markAllReadBtn">
+                                <i class="bi bi-check-all"></i> 모두 읽음
+                            </button>
+                        </div>
+                        
+                        <!-- 알림 목록 -->
+                        <div id="notificationListContainer">
+                            <div th:if="${notifications.empty}" class="text-center py-5" id="emptyNotifications">
+                                <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                                <p class="text-muted mt-3">알림이 없습니다.</p>
+                            </div>
+                            
+                            <div class="list-group" id="profileNotificationList">
+                                <a th:each="notification : ${notifications.content}" 
+                                   th:href="${notification.url}" 
+                                   class="list-group-item list-group-item-action notification-item"
+                                   th:classappend="${!notification.isRead} ? 'unread' : ''"
+                                   th:data-notification-id="${notification.notificationId}">
+                                    <div class="d-flex align-items-start">
+                                        <div class="notification-icon me-3"
+                                             th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'wishlist' : 
+                                                           (${notification.type == 'POST_WISHLISTED'} ? 'post' : 'message')">
+                                            <i class="bi" 
+                                               th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'bi-heart-fill' : 
+                                                             (${notification.type == 'POST_WISHLISTED'} ? 'bi-heart' : 'bi-envelope')"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <div class="notification-title" th:text="${notification.title}">알림 제목</div>
+                                            <div class="notification-text" th:text="${notification.content}">알림 내용</div>
+                                            <div class="notification-time text-muted small" 
+                                                 th:text="${#temporals.format(notification.createdAt, 'yyyy-MM-dd HH:mm')}">시간</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 페이지네이션 -->
+                        <nav th:if="${notifications.totalPages > 1}" aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${notifications.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number - 1})}" 
+                                       aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <li th:each="pageNum : ${#numbers.sequence(0, notifications.totalPages - 1)}" 
+                                    class="page-item" th:classappend="${pageNum == notifications.number} ? 'active'">
+                                    <a class="page-link" th:href="@{/profile#notifications(page=${pageNum})}" 
+                                       th:text="${pageNum + 1}">1</a>
+                                </li>
+                                
+                                <li class="page-item" th:classappend="${notifications.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number + 1})}" 
+                                       aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
             </div>
             
         </div>
@@ -234,6 +326,11 @@
 
 <script>
 $(document).ready(function() {
+    // URL 해시에 따라 탭 자동 선택
+    if (window.location.hash === '#notifications') {
+        $('#notifications-tab').tab('show');
+    }
+    
     // 전화번호 자동 포맷팅
     $('#phoneNumber').on('input', function() {
         let value = $(this).val().replace(/[^0-9]/g, '');
@@ -313,6 +410,220 @@ $(document).ready(function() {
     }
     
     $("#newPasswordConfirm").on("input", checkPasswordMatch);
+    
+    // CSRF 토큰 설정
+    const token = $('meta[name="_csrf"]').attr('content');
+    const header = $('meta[name="_csrf_header"]').attr('content');
+    
+    $.ajaxSetup({
+        beforeSend: function(xhr) {
+            if (header && token) {
+                xhr.setRequestHeader(header, token);
+            }
+        }
+    });
+    
+    // 알림 클릭 시 읽음 처리 (이벤트 위임 사용)
+    $(document).on('click', '.notification-item', function(e) {
+        e.preventDefault();
+        const $this = $(this);
+        const notificationId = $this.data('notification-id');
+        const targetUrl = $this.attr('href');
+        
+        // 이미 읽은 알림이면 바로 이동
+        if (!$this.hasClass('unread')) {
+            window.location.href = targetUrl;
+            return;
+        }
+        
+        // 읽음으로 표시
+        $.ajax({
+            url: '/api/notifications/' + notificationId + '/read',
+            type: 'POST',
+            success: function() {
+                $this.removeClass('unread');
+                // 읽지 않은 알림 수 감소
+                const $unreadCount = $('#notifications-tab .badge');
+                
+                if ($unreadCount.length) {
+                    const count = parseInt($unreadCount.text()) - 1;
+                    if (count > 0) {
+                        $unreadCount.text(count);
+                    } else {
+                        $unreadCount.remove();
+                    }
+                }
+                
+                // 알림 통계 업데이트
+                updateNotificationStats();
+                // 페이지 이동
+                window.location.href = targetUrl;
+            },
+            error: function(xhr) {
+                console.error('알림 읽음 처리 실패:', xhr);
+                // 실패해도 페이지 이동은 수행
+                window.location.href = targetUrl;
+            }
+        });
+    });
+    
+    // 모두 읽음 버튼 클릭 (이벤트 위임 사용)
+    $(document).on('click', '#markAllReadBtn', function() {
+        $.ajax({
+            url: '/api/notifications/read-all',
+            type: 'POST',
+            success: function() {
+                $('.notification-item.unread').removeClass('unread');
+                $('#notifications-tab .badge').remove();
+                updateNotificationStats();
+            },
+            error: function(xhr) {
+                console.error('모두 읽음 처리 실패:', xhr);
+            }
+        });
+    });
+    
+    // 알림 통계 업데이트 함수
+    function updateNotificationStats() {
+        const unreadCount = $('.notification-item.unread').length;
+        const $statsDiv = $('#notificationStats');
+        
+        if (unreadCount > 0) {
+            $statsDiv.html('<i class="bi bi-info-circle"></i> 읽지 않은 알림 <strong class="unread-count">' + unreadCount + '</strong>개가 있습니다.');
+        } else {
+            $statsDiv.html('<i class="bi bi-info-circle"></i> 모든 알림을 확인했습니다.');
+        }
+    }
+    
+    // 실시간 알림 수신 처리
+    $(document).on('notification:new', function(event, notification) {
+        // 알림 탭이 활성화되어 있고 첫 페이지에 있을 때만 추가
+        if ($('#notifications-tab').hasClass('active')) {
+            const currentPage = parseInt(new URLSearchParams(window.location.search).get('page') || '0');
+            if (currentPage === 0) {
+                addNotificationToList(notification);
+            } else {
+                // 다른 페이지에 있으면 탭 배지만 업데이트
+                const $badge = $('#notifications-tab .badge');
+                if ($badge.length) {
+                    $badge.text(parseInt($badge.text()) + 1);
+                } else {
+                    $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
+                }
+            }
+        } else {
+            // 알림 탭이 비활성화 상태이면 배지만 업데이트
+            const $badge = $('#notifications-tab .badge');
+            if ($badge.length) {
+                $badge.text(parseInt($badge.text()) + 1);
+            } else {
+                $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
+            }
+        }
+    });
+    
+    // 새 알림을 목록에 추가하는 함수
+    function addNotificationToList(notification) {
+        console.log('=== addNotificationToList START ===');
+        console.log('Notification:', notification);
+        
+        // 빈 알림 메시지 제거
+        $('#emptyNotifications').remove();
+        
+        // 알림 목록이 없으면 생성
+        if (!$('#profileNotificationList').length) {
+            console.log('Creating notification list');
+            $('#notificationListContainer').html('<div class="list-group" id="profileNotificationList"></div>');
+        }
+        
+        // 알림 목록 표시
+        $('#profileNotificationList').show();
+        console.log('NotificationList visible after show():', $('#profileNotificationList').is(':visible'));
+        
+        // 중복 체크
+        if ($('[data-notification-id="' + notification.notificationId + '"]').length > 0) {
+            console.log('Duplicate notification, skipping');
+            return;
+        }
+        
+        // 알림 타입에 따른 아이콘 클래스 설정
+        let iconClass = 'bi-envelope';
+        let iconTypeClass = 'message';
+        if (notification.type === 'WISHLIST_STATUS_CHANGED') {
+            iconClass = 'bi-heart-fill';
+            iconTypeClass = 'wishlist';
+        } else if (notification.type === 'POST_WISHLISTED') {
+            iconClass = 'bi-heart';
+            iconTypeClass = 'post';
+        }
+        
+        // 새 알림 HTML 생성 (새 알림은 항상 unread)
+        const notificationHtml = `
+            <a href="${notification.url}" 
+               class="list-group-item list-group-item-action notification-item unread"
+               data-notification-id="${notification.notificationId}">
+                <div class="d-flex align-items-start">
+                    <div class="notification-icon me-3 ${iconTypeClass}">
+                        <i class="bi ${iconClass}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-text">${notification.content}</div>
+                        <div class="notification-time text-muted small">방금 전</div>
+                    </div>
+                </div>
+            </a>
+        `;
+        
+        // HTML 생성 확인
+        console.log('Generated HTML:', notificationHtml);
+        
+        // 목록 상단에 추가
+        const $newItem = $(notificationHtml);
+        console.log('New item created:', $newItem.length);
+        
+        // 현재 알림 개수 확인
+        const $items = $('#profileNotificationList .notification-item');
+        console.log('Current items count:', $items.length);
+        
+        // 페이징 제한 - 10개 이상이면 마지막 항목 제거
+        if ($items.length >= 10) {
+            console.log('Removing last item');
+            $items.last().remove();
+        }
+        
+        // 새 아이템 추가
+        console.log('Before prepend - NotificationList HTML:', $('#profileNotificationList').html());
+        $('#profileNotificationList').prepend($newItem);
+        console.log('After prepend - NotificationList HTML:', $('#profileNotificationList').html());
+        console.log('New item in DOM:', $('[data-notification-id="' + notification.notificationId + '"]').length);
+        
+        // 알림 목록을 강제로 표시
+        $('#profileNotificationList').css('display', 'block');
+        console.log('Force display block - visible?', $('#profileNotificationList').is(':visible'));
+        
+        // 부모 요소들 확인
+        console.log('Parent container visible?', $('#notificationListContainer').is(':visible'));
+        console.log('Notifications tab pane visible?', $('#notifications').is(':visible'));
+        console.log('Notifications tab pane classes:', $('#notifications').attr('class'));
+        
+        // 탭 패널도 강제로 표시
+        $('#notifications').addClass('show active');
+        console.log('After forcing tab - visible?', $('#notificationList').is(':visible'));
+        
+        console.log('=== addNotificationToList END ===');
+        
+        // 알림 통계 업데이트
+        updateNotificationStats();
+        
+        // 탭 배지 업데이트
+        const $badge = $('#notifications-tab .badge');
+        if ($badge.length) {
+            $badge.text(parseInt($badge.text()) + 1);
+        } else {
+            $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
+        }
+    }
 });
 </script>
 

@@ -28,7 +28,7 @@ Database: MySQL on Windows (localhost:3306, username: root, password: 1234)
 WSL: Claude Code와 git 작업용으로만 사용
 Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 실행
 
-✅ Day 1-4 COMPLETED (2025년 1월 25-27일)
+✅ Day 1-8 COMPLETED (2025년 5월 25일-31일)
 
 📋 Day 1 완료:
 - Spring Boot 프로젝트 초기 설정
@@ -229,25 +229,104 @@ Execution: gradlew bootRun은 반드시 IntelliJ 또는 Windows 터미널에서 
   - SubjectService, PostService에 year/semester 처리 로직 추가
   - subject-search-v2.js: 연도/학기 자동 설정 및 표시 기능 추가
 
+📋 Day 7 완료 (2025년 5월 30일) - MySQL Full-text Search & 통합 검색 시스템:
+- **MySQL Full-text Search 구현**:
+  - create_fulltext_indexes.sql 스크립트 생성 (books, posts 테이블)
+  - 한글 검색 지원을 위한 ngram 파서 설정 (토큰 최소 길이 2자)
+  - 복합 인덱스: posts (title, content), books (title, author, publisher)
+  - PostSearchProjection 생성 (MATCH AGAINST 점수 포함)
+  - BookRepository, PostRepository에 Full-text 검색 쿼리 추가
+
+- **통합 검색 기능 구현**:
+  - HomeController에 /search 엔드포인트 추가
+  - 게시글 + 책 통합 검색 결과 표시
+  - 관련도순, 최신순, 가격순, 조회수순 정렬 옵션
+  - 검색어 하이라이팅 (search-highlight.js/css)
+  - 메인 페이지 검색창에서 통합 검색 연결
+
+- **검색 결과 최적화**:
+  - QueryNormalizer 활용한 검색어 정규화
+  - Fetch Join으로 N+1 쿼리 방지
+  - @Query의 countQuery 분리로 페이징 성능 최적화
+  - 검색 점수(relevance) 기반 정렬
+
+- **UI/UX 개선**:
+  - 검색 결과 페이지 디자인 (게시글 카드 + 책 카드)
+  - 정렬 옵션을 버튼에서 텍스트 링크로 변경
+  - 검색어 강조 표시 (keyword 매개변수 전달)
+  - 빈 검색 결과 안내 메시지
+
+- **버그 수정 및 성능 개선**:
+  - Enum 비교 시 toString() 메서드 사용 (Thymeleaf 호환성)
+  - null 체크 강화 (게시글 상세 페이지)
+  - transactionMethod 필수 입력 처리
+  - 검색 하이라이팅 성능 최적화
+
+📋 Day 8 완료 (2025년 5월 31일) - 찜하기 & 마이페이지 & 알림 시스템:
+- **찜하기 기능 완전 구현**:
+  - Wishlist Entity 및 Repository 구현
+  - AJAX 찜하기/취소 기능 (/api/wishlist/toggle)
+  - 찜 상태 실시간 UI 업데이트 (하트 아이콘 색상 변경)
+  - 중복 찜하기 방지 (unique 제약 조건)
+  - 찜 목록 페이지 (/posts/wishlist) - 기존 posts/list.html 재사용
+
+- **마이페이지 구현**:
+  - ProfileController 및 profile.html 생성
+  - 개인정보 수정 (이름, 전화번호, 학과 변경)
+  - 비밀번호 변경 (현재 비밀번호 확인 필수)
+  - 실시간 비밀번호 검증 (signup 페이지와 동일한 UX)
+  - 탭 기반 UI (정보 수정 / 비밀번호 변경)
+  - N+1 쿼리 방지를 위한 최적화 쿼리 사용
+
+- **헤더 메뉴 개선**:
+  - "내 게시글" (/posts/my) 메뉴 추가 - 기존 posts/list.html 재사용
+  - "찜 목록" (/posts/wishlist) 메뉴 추가
+  - "설정" → "마이페이지" 이름 변경, 아이콘 변경 (bi-gear → bi-person-gear)
+  - pageType 매개변수로 동일 템플릿 다용도 활용
+
+- **알림 시스템 구현**:
+  - **Entity**: Notification, NotificationType enum (WISHLIST_STATUS_CHANGED, POST_WISHLISTED 등)
+  - **Repository**: 복합 인덱스 최적화, Fetch Join 쿼리
+  - **Service**: NotificationService (비동기 알림 생성), NotificationEmitterService (SSE 연결 관리)
+  - **Controller**: NotificationApiController (RESTful API + SSE 스트림)
+  - **Frontend**: notification.js (SSE 연결, 실시간 업데이트), notification.css (스타일링)
+  - **Features**: 
+    - 찜한 게시글 상태 변경 시 실시간 알림
+    - 읽지 않은 알림 개수 배지 표시
+    - 알림 드롭다운 메뉴
+    - 토스트 알림 (새 알림 도착 시)
+    - 모든 알림 읽음 처리
+
+- **전역 JavaScript 개선**:
+  - email-resend.js 전역 모듈화 (모든 페이지에서 사용 가능)
+  - header.html에 공통 스크립트 fragment 추가
+  - CSRF 토큰 전역 설정
+
+- **Repository 최적화**:
+  - UserRepository.findByIdWithDepartmentAndSchool() - N+1 방지
+  - PostRepository.findWishlistedPostsByUser() - Fetch Join 적용
+  - PostRepository.findByUserIdWithDetails() - 내 게시글 조회 최적화
+  - WishlistRepository.findByPostIdWithUser() - 찜한 사용자 목록 조회
+
+- **테스트 코드 구현**:
+  - NotificationServiceTest: 비동기 알림 생성 테스트
+  - NotificationEmitterServiceTest: SSE 연결 및 동시성 테스트
+  - NotificationApiControllerTest: API 엔드포인트 통합 테스트
+
 📋 Development Schedule
 
-Week 1: Core Features
+Week 1: Core Features (완료)
 ✅ Day 1-2: Project setup + Entity classes + Basic CRUD
 ✅ Day 3: Authentication system (signup/login)
 ✅ Day 4: Email verification with university domain validation
-✅ Day 5: Post CRUD with image upload + Naver Book API (완료)
-✅ Day 6: Advanced search functionality (PROJECT CORE) - 과목-교수 연동 시스템 완료
-✅ Day 6 Phase 2 완료: Subject-Post 직접 연결 시스템
-  - Subject Entity에 year, semester 필드 추가 (완료)
-  - Post Entity에 Subject 직접 연결 추가 (완료)
-  - 모든 상품 타입에서 과목 선택 가능하도록 UI/Service 확장 (완료)
-  - 게시글 상세 페이지에 과목 정보 및 같은 과목 자료 표시 (완료)
-☐ Day 7: Integration testing and UI improvement
+✅ Day 5: Post CRUD with image upload + Naver Book API
+✅ Day 6: Advanced search functionality (PROJECT CORE) - 과목-교수 연동 시스템
+✅ Day 7: MySQL Full-text Search & 통합 검색 시스템
 
 Week 2: Advanced Features
-☐ Day 8: Wishlist + Notification system
+✅ Day 8: Wishlist + Notification system + 마이페이지
 ☐ Day 9-10: Firebase real-time chat (결정됨: Firebase 사용)
-☐ Day 11: Advanced features (view count, user profile)
+☐ Day 11: Advanced features (view count, user profile enhancements)
 ☐ Day 12: UI/UX improvements
 ☐ Day 13: Testing and bug fixes
 ☐ Day 14: Deployment preparation (플랫폼 미정 - 구현 후 결정)
@@ -449,44 +528,80 @@ unibook/
 ├── src/main/java/com/unibook/
 │   ├── common/          # AppConstants, Messages
 │   ├── config/          # SecurityConfig, JpaAuditConfig, DataInitializer, 
-│   │                   # AsyncConfig, VerificationInterceptor, WebMvcConfig
+│   │                   # AsyncConfig, VerificationInterceptor, WebMvcConfig, RestTemplateConfig
 │   ├── controller/      # HomeController, AuthController, GlobalExceptionHandler,
-│   │   │               # VerificationController, PostController
-│   │   └── api/        # SchoolApiController, DepartmentApiController
+│   │   │               # VerificationController, PostController, ProfileController
+│   │   ├── api/        # SchoolApiController, DepartmentApiController, BookApiController,
+│   │   │               # ProfessorApiController, SubjectApiController, UserApiController,
+│   │   │               # WishlistApiController, NotificationApiController
+│   │   └── dto/        # ErrorResponse, PagedResponse, SubjectSelectionRequest,
+│   │                   # SubjectWithProfessorRequest, ApiResponse
 │   ├── domain/
-│   │   ├── entity/     # 13개 Entity (모두 BaseEntity 상속)
-│   │   │               # EmailVerificationToken 포함
-│   │   └── dto/        # DTO 클래스들 (PostRequestDto, PostResponseDto 포함)
+│   │   ├── entity/     # 14개 Entity (모두 BaseEntity 상속)
+│   │   │               # User, Post, PostImage, PostDescription, Book, School, Department,
+│   │   │               # Professor, Subject, SubjectBook, Wishlist, Notification,
+│   │   │               # EmailVerificationToken
+│   │   └── dto/        # DTO 클래스들 (PostRequestDto, PostResponseDto, BookSearchDto,
+│   │                   # NotificationDto, LoginRequestDto, SignupRequestDto,
+│   │                   # UserResponseDto, ProfessorDto, SubjectDto, SubjectBookDto 등)
 │   ├── exception/       # 커스텀 예외 클래스들
 │   │   ├── BusinessException (기본)
 │   │   ├── ValidationException (검증)
 │   │   ├── ResourceNotFoundException (404)
 │   │   ├── AuthenticationException (인증)
 │   │   ├── DataInitializationException (초기화)
+│   │   ├── DuplicateResourceException (중복)
 │   │   ├── EmailException (이메일)
 │   │   └── RateLimitException (Rate Limiting)
 │   ├── repository/      # JPA Repository 인터페이스
-│   │                   # EmailVerificationTokenRepository 포함
+│   │   │               # EmailVerificationTokenRepository, NotificationRepository,
+│   │   │               # WishlistRepository, PostSearchProjection 포함
+│   │   └── projection/ # PostSearchProjection (Full-text search용)
 │   ├── security/        # UserPrincipal, CustomUserDetailsService
 │   ├── service/         # 비즈니스 로직 서비스
-│   │                   # EmailService, RateLimitService 포함
-│   └── util/           # FileUploadUtil 등
+│   │                   # EmailService, RateLimitService, BookSearchService,
+│   │                   # ProfessorService, SubjectService, SubjectBookService,
+│   │                   # WishlistService, NotificationService,
+│   │                   # NotificationEmitterService 포함
+│   └── util/           # FileUploadUtil, PageableUtils, QueryNormalizer
 └── src/main/resources/
     ├── static/         # 정적 리소스
-    │   ├── css/       # loading.css
-    │   └── js/        # loading.js
+    │   ├── css/       # loading.css, search-highlight.css, notification.css
+    │   └── js/        # loading.js, book-search.js, email-resend.js,
+    │                   # search-highlight.js, subject-search-v2.js,
+    │                   # notification.js
     ├── templates/       # Thymeleaf 템플릿
     │   ├── auth/       # signup.html, login.html, resend-verification.html,
     │   │               # forgot-password.html, reset-password.html,
     │   │               # verification-required.html
     │   ├── email/      # verification.html, password-reset.html
     │   ├── error/      # token-error.html
-    │   ├── fragments/  # header.html (공통 헤더/푸터/메시지)
-    │   └── posts/      # list.html, form.html, detail.html
-    ├── data/           # CSV 파일들
+    │   ├── fragments/  # header.html (공통 헤더/푸터/메시지/스크립트)
+    │   ├── posts/      # list.html, form.html, detail.html
+    │   ├── index.html  # 메인 페이지
+    │   └── profile.html # 마이페이지
+    ├── data/           # univ-email-250411-final.csv, univ-dept-mapped.csv
+    ├── create_database.sql           # DB 초기화 스크립트
+    ├── create_fulltext_indexes.sql   # Full-text 검색 인덱스 생성
+    ├── mysql_fulltext_config.md      # MySQL 설정 가이드
     └── application.yml # 설정 파일
 
-🔑 Critical Entity Structure (Day 3 확정)
+🔑 Critical Entity Structure (Day 8 최신)
+
+**총 14개 Entity (모두 BaseEntity 상속)**:
+1. **User** - 사용자 (이메일 인증, 학과 연결)
+2. **Post** - 게시글 (이미지, 책, 과목 연결)
+3. **PostImage** - 게시글 이미지 (순서 관리)
+4. **PostDescription** - 게시글 상세 설명 (1:1 관계)
+5. **Book** - 책 정보 (네이버 API 연동)
+6. **School** - 학교
+7. **Department** - 학과
+8. **Professor** - 교수 (학교별 관리)
+9. **Subject** - 과목 (연도/학기별 정규화)
+10. **SubjectBook** - 과목-책 연결 (활성 게시글 수 관리)
+11. **Wishlist** - 찜하기 (사용자-게시글 연결)
+12. **Notification** - 알림 (SSE, JSON 페이로드)
+13. **EmailVerificationToken** - 이메일 인증 토큰
 
 1. **BaseEntity (모든 Entity의 부모)**
 ```java
@@ -507,7 +622,7 @@ public abstract class BaseEntity {
 }
 ```
 
-1. **User Entity 핵심 변경사항**
+2. **User Entity 핵심 변경사항**
 - nickname → name으로 변경
 - phoneNumber 필드 추가 (필수)
 - User는 School 직접 참조 없음, Department를 통해서만 접근
@@ -515,21 +630,39 @@ public abstract class BaseEntity {
 - UserRole: ADMIN, USER (STUDENT 아님)
 - UserStatus: ACTIVE, SUSPENDED, WITHDRAWN (BANNED 아님)
 
-1. **Post Entity 필수 필드**
+3. **Post Entity 필수 필드**
 - productType (TEXTBOOK, CERTBOOK, NOTE, PASTEXAM, ETC)
 - status → PostStatus (AVAILABLE, RESERVED, COMPLETED)
 - transactionMethod, campusLocation, description 추가
 - postImages (List<PostImage>) - 이미지는 PostImage 엔티티로 관리
 - **subject (ManyToOne, nullable)** - 모든 타입에서 과목 선택 가능
+- **book (ManyToOne, nullable)** - 책 정보 연결
 - Subject에서 연도/학기 정보 획득 (정규화)
 
-1. **Book Entity**
+4. **Wishlist Entity (Day 8 추가)**
+- user, post 복합 unique 제약 조건
+- 찜하기/취소 기능의 핵심
+
+5. **Notification Entity (Day 8 추가)**
+- NotificationType enum (WISHLIST_STATUS_CHANGED, POST_WISHLISTED 등)
+- JSON payload 지원 (@JdbcTypeCode)
+- 복합 인덱스 최적화 (recipient_user_id, is_read), (recipient_user_id, created_at)
+- SSE 실시간 알림 시스템
+
+6. **Subject Entity (Day 6 정규화)**
+- year, semester 필드 추가 (학기별 별도 Subject)
+- SubjectType enum (MAJOR, GENERAL)
+- 같은 과목이라도 학기가 다르면 별도 Entity
+
+7. **Book Entity**
 - isbn, publicationYear, originalPrice 필드 필수
+- imageUrl 필드 추가 (네이버 API 썸네일)
 - year → publicationYear으로 변경
 
-1. **PostImage Entity**
+8. **PostImage Entity**
 - postImageId (imageId 아님)
 - imageUrl (imagePath 아님)
+- imageOrder 필드로 순서 관리
 
 🗄️ Database Configuration
 
@@ -630,128 +763,45 @@ logging:
 - 검색 엔진: MySQL Full-text search (Elasticsearch 대신)
 - 책 정보 입력: 네이버 책 검색 API를 통한 검색 → 선택 → DB 자동 저장
 
-📌 Day 5 구현 완료 - 최종 점검 사항:
-✅ 책 검색 및 선택 기능 (네이버 API 통합)
-✅ 게시글 생성 시 책 연동 (ISBN 중복 방지)
-✅ 게시글 수정 시 책 정보 유지/변경/삭제
-✅ 다중 이미지 업로드 및 드래그앤드롭 순서 변경
-✅ 교재 타입 변경 시 책 연결 자동 해제
-✅ 네이버 API 에러 처리 (재시도, 캐싱)
-✅ 책 표지 이미지 전체 시스템 적용
-✅ UI/UX 성능 최적화 (디바운싱, 로딩 개선)
-✅ 모든 템플릿에서 일관된 디자인
+🎯 Next Phase: Real-time Chat & Advanced Features (Day 9+)
 
-📋 Day 6 진행중 - Advanced Search System (PROJECT CORE):
+**Day 9-10: Firebase Real-time Chat**
+- Firebase 프로젝트 설정 및 SDK 통합
+- 1:1 채팅 시스템 구현
+- 채팅방 목록 및 메시지 히스토리
+- 읽음 표시 및 실시간 상태
+- 이미지 전송 기능
 
-🚨 **핵심 설계 원칙** (Day 6 확정):
-1. **과목 선택 시에만 학교 제약**: 게시글 조회는 전체, 과목 입력은 본인 학교만
-2. **사용자 중심 UX**: 과목명 우선 → 교수명 보조 (교수 우선 아님)  
-3. **데이터 신뢰성**: 사용자는 본인 학교 교수/과목만 연결 가능 (타 학교 교재 판매 방지)
-4. **교양과목 특별 처리**: SubjectType.GENERAL은 "교양학부" 소속으로 자동 관리
-5. **Subject 정규화**: year, semester 필드로 학기별 과목 관리 ("2024년 1학기 데이터구조" ≠ "2024년 2학기 데이터구조")
-6. **모든 상품 타입 과목 연결**: 필기노트, 족보 등 모든 타입에서 과목 선택 가능
+**Day 11: Advanced Features**
+- 조회수 증가 시스템 (중복 방지, 비동기 처리)
+- 사용자 프로필 페이지 확장 (거래 히스토리)
+- 거래 후기 시스템
+- 신고 기능 및 관리자 도구
 
-🎯 **Day 6 구현 완료**:
-- ✅ 과목 선택: 학교 내 제한 (서울대 학생 → 서울대 교수/과목만)
-- ✅ 게시글 조회: 전체 학교 (서울대 학생도 연세대 학생 게시글 볼 수 있음)
-- ✅ 과목명 우선 검색 → 교수 선택/생성 플로우
-- ✅ 학교별 과목/교수 검색 API 구현
+**Day 12: UI/UX Improvements**
+- 디자인 시스템 통일 및 일관성 향상
+- 다크 모드 지원
+- 접근성 개선 (WCAG 2.1 준수)
+- 로딩 상태 및 스켈레톤 UI
 
-🔧 **구현된 API 설계**:
-- ✅ 과목/교수 검색 API: /api/.../search/my-school (사용자 소속 학교만)
-- ✅ 게시글 검색 API: 전체 학교 대상 (schoolId 제약 없음)
-- ✅ 교양과목: 자동으로 "교양학부" 소속으로 처리
-- ✅ 검색 우선순위: 본인 학과 우선 → 타 학과 순서
+**Day 13: Testing & Quality Assurance**
+- 단위 테스트 작성 (Service 계층 중심)
+- 통합 테스트 (API 엔드포인트)
+- 성능 테스트 및 최적화
+- 보안 점검 및 취약점 분석
 
-📝 **Day 6 구현 현황**:
+**Day 14: Deployment Preparation**
+- 프로덕션 환경 설정
+- Docker 컨테이너화
+- CI/CD 파이프라인 구축
+- 모니터링 및 로깅 시스템 설정
 
-**✅ Phase 1 완료 - 과목-교수 연동 시스템**:
-- ✅ SubjectService.findOrCreateSubjectWithProfessor() - 학교 제약 적용
-- ✅ ProfessorService.findOrCreateProfessor() - 학교 내 검색 제한
-- ✅ API 엔드포인트 - schoolId 기반 필터링 완료
-- ✅ subject-search-v2.js - 과목명 우선 검색 UX 완료
-- ✅ 교양과목 자동 처리 시스템 완료
+**미정 사항**:
+- 배포 플랫폼: AWS/NCP/기타 (Day 14에서 최종 결정)
+- 도메인 및 SSL 인증서 설정
+- CDN 사용 여부 (이미지 최적화)
 
-**✅ Phase 2 완료 - Subject-Post 직접 연결**:
-- ✅ Subject Entity 정규화 (year, semester 필드 이동)
-- ✅ Post → Subject 직접 연결 구현
-- ✅ 모든 상품 타입에서 과목 선택 가능
-- ✅ 게시글 상세 페이지에 과목 정보 표시
-- ✅ 같은 과목의 다른 자료 섹션 구현
-
-**☐ Phase 3 남은 작업 - Advanced Search Features**:
-- ☐ 교재 상세 페이지 구현 (/books/{id})
-- ☐ "이 책을 사용하는 과목" 섹션
-- ☐ 학교 → 학과 → 교수 → 과목 계층 구조 네비게이션
-- ☐ "우리 학교만 보기" 필터 토글
-- ☐ 클릭 가능한 브레드크럼 네비게이션
-- ☐ 검색 히스토리 기능
-
-☐ 미정 사항:
-- 채팅 시스템: Firebase 확정 (Day 9-10)
-- 배포 플랫폼: AWS, NCP 등 (Day 14에서 결정)
-
-🎯 Key Features to Implement (Day 5-14)
-
-1. **✅ Day 5: Post CRUD with Image Upload (완료)**
-- 게시글 작성 폼 ✅
-- 다중 이미지 업로드 (최대 5개) ✅
-- 드래그앤드롭 이미지 순서 변경 ✅
-- Bootstrap Carousel 갤러리 ✅
-- 네이버 책 검색 API 연동 ✅
-- 게시글 수정/삭제 ✅
-
-2. **Day 6: Advanced Search System (PROJECT CORE)**
-- 교재 상세 페이지
-- "이 책을 사용하는 과목" 섹션
-- 학교 → 학과 → 교수 → 과목 계층 구조
-- "우리 학교만 보기" 필터
-- 클릭 가능한 네비게이션
-- 검색 히스토리
-
-3. **Day 7: Integration Testing & UI**
-- 전체 기능 통합 테스트
-- UI/UX 개선
-- 반응형 디자인 점검
-- 성능 최적화
-
-4. **Day 8: Wishlist + Notification**
-- 찜하기 기능
-- 실시간 알림 (SSE 또는 WebSocket)
-- 알림 설정 페이지
-
-5. **Day 9-10: Real-time Chat**
-- Firebase 설정 (결정됨: Firebase 사용)
-- 1:1 채팅
-- 채팅방 목록
-- 읽음 표시
-- 이미지 전송
-
-6. **Day 11: Advanced Features**
-- 조회수 증가 (중복 방지)
-- 사용자 프로필 페이지
-- 거래 후기
-- 신고 기능
-
-7. **Day 12: UI/UX Improvements**
-- 디자인 시스템 통일
-- 다크 모드
-- 접근성 개선
-- 로딩 상태 표시
-
-8. **Day 13: Testing & Bug Fixes**
-- 단위 테스트
-- 통합 테스트
-- 버그 수정
-- 보안 점검
-
-9. **Day 14: Deployment Preparation**
-- 프로덕션 설정
-- 도커라이징
-- CI/CD 파이프라인
-- 모니터링 설정
-
-🚨 Common Pitfalls & Solutions (Day 1-3 경험)
+🚨 Common Pitfalls & Solutions (Day 1-8 경험)
 
 1. **Lombok 관련**
 - 문제: @ToString 순환 참조
@@ -811,6 +861,18 @@ private List<PostImage> postImages;
 - 정적 리소스 접근: /uploads/** 경로를 SecurityConfig에 permitAll() 추가
 - MVP 우선: 복잡한 기능은 나중에, 먼저 동작하는 코드 작성
 
+10. **Day 7-8 문제 해결**
+- **MySQL Full-text 설정**: ngram 파서 토큰 길이 2자로 설정 (한글 검색 지원)
+- **SSE 연결 관리**: CopyOnWriteArrayList로 스레드 안전성 확보
+- **JSON 필드 네이밍**: @JsonProperty("isRead")로 프론트엔드 호환성 해결
+- **LazyInitializationException**: @Async 메서드에서 findById 사용, getReferenceById 금지
+- **테스트 코드 Stubbing**: @MockitoSettings(strictness = Strictness.LENIENT) 사용
+- **N+1 쿼리 최적화**: Repository에 Fetch Join 쿼리 추가, countQuery 분리
+- **비밀번호 검증 일관성**: 정규식 패턴 전역 상수화, 동일한 UX 적용
+- **전역 JavaScript**: 공통 기능은 별도 파일로 분리, header.html에서 로드
+- **페이지 재사용**: pageType 매개변수로 동일 템플릿 다용도 활용 (내 게시글/찜 목록)
+- **알림 배지 표시**: SSE 연결 전 기존 미읽음 알림 수 조회 필수
+
 📧 Gmail SMTP Configuration (Day 4 완료)
 - Gmail: unibooknotify@gmail.com
 - App Password: application-local.yml에 설정
@@ -839,75 +901,70 @@ List<Post> findByBook_Subjects_Professor_Department_DepartmentId(Long department
 List<Post> findByBook_Subjects_Professor_Department_School_SchoolId(Long schoolId);
 ```
 
-📌 현재 프로젝트 상태 (Day 6 완료)
+📌 현재 프로젝트 상태 (Day 8 완료)
 
-✅ Day 1-3 완료된 기능:
-- 전체 인증 시스템 (회원가입/로그인/로그아웃)
-- DTO 패턴 전면 적용
-- 실시간 폼 검증
-- 로그인 상태별 UI 분기
-- 학교-학과 자동완성 검색
-- BaseEntity 기반 감사(Audit) 기능
-- 보안 강화: 세션 고정 공격 방어, 동시 로그인 차단
-- 성능 개선: BookService 쿼리 최적화, 인덱스 추가, N+1 해결
-- 예외 처리: 커스텀 예외 클래스 체계 구축
-- 트랜잭션: 동시성 제어 (SERIALIZABLE)
-- AuditorAware: 0L = 시스템 사용자 정의
-- 코드 정리: Magic Number/String → 상수화
+✅ **핵심 기능 완성** (Week 1 + Day 8):
+- **인증 시스템**: 회원가입/로그인/이메일 인증/비밀번호 재설정 완전 구현
+- **게시글 시스템**: CRUD/다중 이미지 업로드/상태 관리/권한 제어 완전 구현
+- **책 연동 시스템**: 네이버 API 검색/선택/저장/표지 이미지 완전 구현
+- **과목-교수 연동**: 학교 내 제한/과목명 우선 검색/연도-학기 정규화 완전 구현
+- **검색 시스템**: MySQL Full-text Search/통합 검색/하이라이팅 완전 구현
+- **찜하기 시스템**: AJAX 토글/목록 페이지/상태 알림 완전 구현
+- **알림 시스템**: SSE 실시간/드롭다운 UI/토스트 알림 완전 구현
+- **마이페이지**: 정보 수정/비밀번호 변경/실시간 검증 완전 구현
 
-✅ Day 4 완료된 기능:
-- 이메일 인증 시스템 (Gmail SMTP)
-- 비밀번호 재설정 기능
-- 이메일 템플릿 디자인 개선
-- Spring Retry 자동 재시도
-- 비동기 이메일 발송
-- 토큰 만료 시간 관리
-- UI/UX 일관성 개선
+✅ **기술 스택 확정**:
+- **Backend**: Spring Boot 3.5.0, Java 21, JPA/Hibernate, MySQL 8.0+
+- **Frontend**: Thymeleaf, Bootstrap 5.3.0, jQuery, AJAX
+- **External API**: 네이버 책 검색 API (캐싱/재시도 포함)
+- **Messaging**: Server-Sent Events (SSE) for 실시간 알림
+- **Performance**: MySQL Full-text Search, Fetch Join, 복합 인덱스
 
-✅ Day 5 완료된 기능:
-- 게시글 기본 CRUD ✅
-- 다중 이미지 업로드 (최대 5개, 드래그앤드롭 순서 변경) ✅
-- 네이버 책 검색 API 연동 (ISBN 중복 방지, 캐싱, 재시도) ✅
-- Book Entity 확장 (imageUrl, nullable publicationYear) ✅
-- 공통 헤더/푸터 (Bootstrap 5.3.0) ✅
-- 권한별 UI (작성자/로그인/비로그인 구분) ✅
-- 상태 변경 기능 (AJAX) ✅
-- Bootstrap Carousel 이미지 갤러리 ✅
-- 책 표지 이미지 시스템 (메인/폼/상세 페이지) ✅
-- UI/UX 성능 최적화 (디바운싱, 로딩 개선) ✅
-- CSRF 토큰 통합 관리 ✅
+✅ **아키텍처 패턴**:
+- **Entity**: 14개 Entity, BaseEntity 상속, JPA Auditing
+- **DTO**: 완전한 DTO 패턴, Entity-DTO 분리
+- **Repository**: Spring Data JPA, Custom Query 최적화
+- **Service**: 비즈니스 로직 분리, @Async 비동기 처리
+- **Controller**: RESTful API + Thymeleaf 템플릿
+- **Exception**: 커스텀 예외 체계, 글로벌 예외 처리
+- **Security**: Spring Security, 세션 기반 인증
+- **Caching**: Spring Cache (Simple), API 결과 캐싱
 
-✅ Day 6 완료된 기능:
-- 과목-교수 연동 시스템 (학교 내 제한) ✅
-- Subject Entity 정규화 (year, semester 필드 추가) ✅
-- Post → Subject 직접 연결 구현 ✅
-- 모든 상품 타입에서 과목 선택 가능 ✅
-- 과목명 우선 검색 UX (subject-search-v2.js) ✅
-- 게시글 상세 페이지 과목 정보 표시 ✅
-- 같은 과목의 다른 자료 섹션 ✅
-- SubjectBook 관계 정리 (year/semester 제거) ✅
-- API 엔드포인트 year/semester 지원 ✅
+✅ **성능 최적화 완료**:
+- **N+1 Query 해결**: Fetch Join, @BatchSize, 최적화 쿼리
+- **DB 인덱스**: Full-text 인덱스, 복합 인덱스, Foreign Key 인덱스
+- **캐싱**: 네이버 API 결과 캐싱, 학교/학과 데이터 캐싱
+- **페이징**: Spring Data 페이징, countQuery 분리
+- **검색 성능**: MySQL ngram 파서, 검색어 정규화
 
-✅ Day 7 완료된 기능:
-  - MySQL Full-text Search 구현: 한글 검색 지원, 통합 검색 ✅
-  - 검색 결과 하이라이팅: 검색어 강조 표시 ✅
-  - 정렬 기능: 관련도순, 최신순, 가격순, 조회수순 ✅
-  - UI/UX 개선: 메인 페이지 검색, 정렬 옵션 텍스트 링크화 ✅
-  - 버그 수정: Enum 비교, null 체크, 거래 방법 필수화 ✅
+✅ **UI/UX 완성도**:
+- **반응형**: Bootstrap Grid, 모바일 친화적 디자인
+- **실시간 검증**: 이메일 중복/비밀번호 규칙/폼 검증
+- **Ajax 인터랙션**: 찜하기/상태 변경/검색/알림
+- **사용자 경험**: 로딩 상태/에러 메시지/성공 피드백
+- **접근성**: 키보드 네비게이션/스크린 리더 지원
 
-💡 핵심 원칙
-1. Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
-2. 모든 설정값은 application.yml에서 관리
-3. 비밀번호 등 민감정보는 application-local.yml에
-4. 성능 문제는 처음부터 고려 (Fetch Join, 캐싱, 인덱스)
-5. 사용자 경험 우선 (실시간 검증, 자동완성)
-6. 예외는 구체적으로 (커스텀 예외 사용)
-7. 상수는 중앙 관리 (AppConstants, Messages)
+💡 핵심 원칙 (Day 8 확정)
+1. **Entity-DTO 분리**: Entity는 View에 직접 노출하지 않음 (항상 DTO 사용)
+2. **설정 관리**: 모든 설정값은 application.yml, 민감정보는 application-local.yml
+3. **성능 우선**: N+1 쿼리 방지, Fetch Join, 캐싱, 인덱스 최적화
+4. **사용자 경험**: 실시간 검증, AJAX 인터랙션, 로딩 상태 표시
+5. **예외 처리**: 구체적인 커스텀 예외, 글로벌 예외 핸들러
+6. **코드 일관성**: 상수 중앙 관리 (AppConstants, Messages), 네이밍 컨벤션
+7. **보안 강화**: Spring Security, CSRF 보호, 입력 검증, Rate Limiting
+8. **테스트 가능성**: Service 계층 단위 테스트, API 통합 테스트
 
+🔧 **Day 8까지의 핵심 패턴**:
+- **Repository 패턴**: Fetch Join 쿼리, countQuery 분리, 복합 인덱스
+- **비동기 처리**: @Async 서비스, SSE 실시간 통신, 이메일 발송
+- **캐싱 전략**: Spring Cache, API 결과 캐싱, 성능 최적화
+- **UI 재사용**: pageType 매개변수, 템플릿 다용도 활용
+- **전역 모듈**: 공통 JavaScript, CSRF 토큰 관리, 에러 처리
+- **검색 최적화**: MySQL Full-text Search, ngram 파서, 검색어 정규화
 
-📝 추가 고려사항
-- 모바일 반응형 디자인 (Day 7, 12)
-- SEO 최적화 (Day 12)
-- 접근성 (WCAG 2.1) 준수 (Day 12)
-- 성능 모니터링 도구 (Day 14)
-- 에러 추적 시스템 (Day 14)
+📝 Next Steps (Day 9+)
+- **실시간 채팅**: Firebase SDK 통합, Firestore 실시간 리스너
+- **성능 모니터링**: 응답 시간 측정, DB 쿼리 분석, 메모리 사용량
+- **테스트 커버리지**: Service 계층 80% 이상, 주요 API 엔드포인트 100%
+- **보안 강화**: SQL Injection 방지, XSS 보호, 파일 업로드 검증
+- **배포 자동화**: Docker 컨테이너, CI/CD 파이프라인, 모니터링 설정

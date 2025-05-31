@@ -25,6 +25,7 @@ public class WishlistService {
     private final WishlistRepository wishlistRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     /**
      * 찜하기 추가/제거 토글
@@ -59,6 +60,14 @@ public class WishlistService {
             wishlistRepository.save(wishlist);
             post.setWishlistCount(post.getWishlistCount() + 1);
             log.info("찜 추가: userId={}, postId={}", userId, postId);
+            
+            // 게시글 작성자에게 익명 찜 알림 발송
+            notificationService.createPostWishlistedNotificationAsync(
+                    post.getUser().getUserId(), 
+                    postId, 
+                    post.getTitle()
+            );
+            
             return true;
         }
     }

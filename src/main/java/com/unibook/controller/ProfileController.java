@@ -1,10 +1,12 @@
 package com.unibook.controller;
 
 import com.unibook.common.Messages;
+import com.unibook.domain.dto.NotificationDto;
 import com.unibook.domain.entity.User;
 import com.unibook.exception.ValidationException;
 import com.unibook.security.UserPrincipal;
 import com.unibook.repository.UserRepository;
+import com.unibook.service.NotificationService;
 import com.unibook.service.UserService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -12,6 +14,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,22 +37,36 @@ public class ProfileController {
     private final UserService userService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
     
     /**
      * 마이페이지 조회
      */
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public String profile(Model model, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+    public String profile(Model model, 
+                         @AuthenticationPrincipal UserPrincipal userPrincipal,
+                         @PageableDefault(size = 10) Pageable pageable) {
         // Department, School 정보까지 한 번에 가져오기 (N+1 방지)
         User user = userRepository.findByIdWithDepartmentAndSchool(userPrincipal.getUserId())
                 .orElseThrow(() -> new ValidationException("사용자를 찾을 수 없습니다."));
+        
+        // 알림 데이터 조회
+        Page<NotificationDto.Response> notifications = notificationService.getNotifications(
+                userPrincipal.getUserId(), pageable);
+        NotificationDto.CountResponse notificationCount = notificationService.getNotificationCount(
+                userPrincipal.getUserId());
         
         model.addAttribute("user", user);
         model.addAttribute("passwordChangeForm", new PasswordChangeForm());
         model.addAttribute("infoUpdateForm", new InfoUpdateForm(user.getPhoneNumber()));
         model.addAttribute("passwordError", false);  // 기본값 설정
         model.addAttribute("infoError", false);      // 기본값 설정
+        
+        // 알림 관련 데이터 추가
+        model.addAttribute("notifications", notifications);
+        model.addAttribute("totalCount", notificationCount.getTotalCount());
+        model.addAttribute("unreadCount", notificationCount.getUnreadCount());
         
         return "profile";
     }

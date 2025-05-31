@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <!-- Loading CSS -->
     <link rel="stylesheet" href="/css/loading.css">
+    <!-- Custom Styles -->
+    <div th:replace="~{fragments/header :: styles}"></div>
     <!-- CSRF Token -->
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
