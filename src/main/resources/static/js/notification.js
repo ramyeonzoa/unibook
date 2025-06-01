@@ -55,18 +55,29 @@ function connectSSE() {
     eventSource.addEventListener('notification', function(event) {
         const notification = JSON.parse(event.data);
         
-        // 현재 채팅방에 있는 경우, 해당 채팅방의 알림은 무시
+        // 현재 채팅방에 있는 경우, 해당 채팅방의 알림은 즉시 읽음 처리
         if (notification.type === 'NEW_MESSAGE' && notification.url) {
-            // 현재 URL이 알림의 URL과 일치하면 (같은 채팅방에 있으면) 무시
             const currentPath = window.location.pathname;
             if (currentPath === notification.url) {
-                console.log('현재 채팅방의 알림이므로 무시:', notification);
+                console.log('현재 채팅방의 알림이므로 즉시 읽음 처리:', notification);
+                
+                // 알림을 즉시 읽음으로 표시
+                markAsRead(notification.notificationId, function() {
+                    console.log('현재 채팅방 알림 읽음 처리 완료:', notification.notificationId);
+                });
+                
+                // 토스트는 표시하지 않고 리턴
                 return;
             }
         }
         
         // 알림 카운트 증가
         incrementNotificationCount();
+        
+        // 채팅 알림인 경우 채팅 배지도 업데이트
+        if (notification.type === 'NEW_MESSAGE') {
+            incrementChatBadgeCount();
+        }
         
         // 토스트 알림 표시
         showNotificationToast(notification);
@@ -83,6 +94,9 @@ function connectSSE() {
     eventSource.addEventListener('count-update', function(event) {
         const countData = JSON.parse(event.data);
         updateNotificationBadge(countData.unreadCount);
+        
+        // 전체 카운트 업데이트 시 채팅 배지도 다시 계산
+        loadUnreadNotificationsForChatBadge();
     });
     
     eventSource.onerror = function(error) {
@@ -101,10 +115,28 @@ function loadNotificationCount() {
         .done(function(response) {
             if (response.success) {
                 updateNotificationBadge(response.data.unreadCount);
+                
+                // 읽지 않은 알림 목록도 로드하여 채팅 배지 업데이트
+                loadUnreadNotificationsForChatBadge();
             }
         })
         .fail(function(xhr) {
             console.error('알림 카운트 로드 실패:', xhr);
+        });
+}
+
+/**
+ * 채팅 배지 업데이트를 위한 읽지 않은 알림 로드
+ */
+function loadUnreadNotificationsForChatBadge() {
+    $.get('/api/notifications/unread?limit=100')
+        .done(function(response) {
+            if (response.success) {
+                updateChatBadgeFromNotifications(response.data.content);
+            }
+        })
+        .fail(function(xhr) {
+            console.error('채팅 배지용 알림 로드 실패:', xhr);
         });
 }
 
@@ -361,3 +393,85 @@ function showToast(type, message) {
         $(this).remove();
     });
 }
+
+// ===============================
+// 채팅 배지 관리 함수들 (알림 시스템 통합)
+// ===============================
+
+/**
+ * 읽지 않은 알림에서 NEW_MESSAGE 타입만 필터링하여 채팅 배지 업데이트
+ */
+function updateChatBadgeFromNotifications(notifications) {
+    // NEW_MESSAGE 타입 알림만 필터링
+    const chatNotifications = notifications.filter(n => n.type === 'NEW_MESSAGE' && !n.isRead);
+    const chatCount = chatNotifications.length;
+    
+    console.log('채팅 배지 업데이트:', {
+        totalNotifications: notifications.length,
+        chatNotifications: chatCount
+    });
+    
+    updateChatBadge(chatCount);
+}
+
+/**
+ * 채팅 배지 카운트 증가
+ */
+function incrementChatBadgeCount() {
+    const $chatCounts = $('.chat-count');
+    if ($chatCounts.length > 0) {
+        const currentCount = parseInt($chatCounts.first().text()) || 0;
+        updateChatBadge(currentCount + 1);
+    }
+}
+
+/**
+ * 채팅 배지 업데이트 (chat-notification.js에서 가져온 로직)
+ */
+function updateChatBadge(count) {
+    // 클래스 기반으로 모든 채팅 배지 업데이트
+    const $badges = $('.chat-badge');
+    const $counts = $('.chat-count');
+    
+    console.log('채팅 배지 업데이트 실행:', { count, badgeFound: $badges.length, countFound: $counts.length });
+    
+    if ($badges.length === 0 || $counts.length === 0) {
+        console.error('채팅 배지 엘리먼트를 찾을 수 없습니다:', {
+            badges: $badges.length,
+            counts: $counts.length
+        });
+        return;
+    }
+    
+    console.log('채팅 배지 업데이트 적용:', count);
+    
+    if (count > 0) {
+        $counts.text(count > 99 ? '99+' : count);
+        $badges.show();
+        $badges.css('display', 'inline-block'); // 강제 표시
+        
+        console.log('채팅 배지 표시됨:', $badges.length, '개');
+        
+        // 애니메이션 효과
+        $badges.addClass('pulse');
+        setTimeout(() => $badges.removeClass('pulse'), 1000);
+    } else {
+        $badges.hide();
+        console.log('채팅 배지 숨김');
+    }
+}
+
+/**
+ * 채팅방 진입 시 채팅 배지에서 해당 채팅방의 알림 수 차감
+ * (ChatController에서 호출하는 markChatNotificationsAsRead와 연동)
+ */
+function decrementChatBadgeForChatRoom(chatRoomId) {
+    // 서버에서 읽음 처리가 완료된 후 전체 카운트를 다시 로드
+    setTimeout(() => {
+        loadUnreadNotificationsForChatBadge();
+    }, 500);
+}
+
+// 전역에서 접근 가능하도록 함수 노출
+window.updateChatBadgeFromNotifications = updateChatBadgeFromNotifications;
+window.decrementChatBadgeForChatRoom = decrementChatBadgeForChatRoom;

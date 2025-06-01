@@ -391,9 +391,9 @@
             // 초기화 시작
             setTimeout(initChatWhenReady, 500);
             
-            // 채팅방 진입 시 채팅 알림 클리어
-            if (window.chatNotificationManager && chatRoomId) {
-                window.chatNotificationManager.clearChatRoomUnread(chatRoomId);
+            // 채팅방 진입 시 채팅 알림 클리어 (알림 시스템 통합)
+            if (window.decrementChatBadgeForChatRoom && chatRoomId) {
+                window.decrementChatBadgeForChatRoom(chatRoomId);
             }
             
             // 메시지 입력창 이벤트

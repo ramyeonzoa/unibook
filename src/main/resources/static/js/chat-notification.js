@@ -17,23 +17,20 @@ class ChatNotificationManager {
     }
     
     async init() {
-        console.log('ChatNotificationManager 초기화 시작');
-        
-        // 초기 채팅 알림 개수 로드
-        await this.loadUnreadChatCount();
+        console.log('ChatNotificationManager 초기화 시작 (알림 시스템 통합 모드)');
         
         // 현재 채팅방 ID 감지
         this.detectCurrentChatRoom();
         
-        // 채팅방별 읽지 않은 메시지 수 로드 (채팅 목록 페이지에서)
+        // 채팅방별 읽지 않은 메시지 수 로드 (채팅 목록 페이지에서만)
         if (window.location.pathname === '/chat') {
             await this.loadChatRoomUnreadCounts();
         }
         
-        // 주기적 체크 시작 (글로벌 리스너 문제로 인해 폴링 방식 사용)
-        this.startPeriodicCheck();
+        // 주기적 체크는 비활성화 (알림 시스템에서 처리)
+        // this.startPeriodicCheck();
         
-        console.log('ChatNotificationManager 초기화 완료');
+        console.log('ChatNotificationManager 초기화 완료 (배지 업데이트는 알림 시스템에서 처리)');
     }
     
     /**
@@ -53,7 +50,7 @@ class ChatNotificationManager {
     
     
     /**
-     * 채팅방의 읽지 않은 메시지 수 로드
+     * 채팅방의 읽지 않은 메시지 수 로드 (알림 시스템 통합으로 배지 업데이트 안 함)
      */
     async loadUnreadChatCount() {
         try {
@@ -62,8 +59,9 @@ class ChatNotificationManager {
             
             if (response.success) {
                 this.totalUnreadCount = response.data || 0;
-                this.updateChatBadge(this.totalUnreadCount);
-                console.log('채팅 배지 업데이트 완료:', this.totalUnreadCount);
+                // 배지 업데이트는 알림 시스템에서 처리
+                // this.updateChatBadge(this.totalUnreadCount);
+                console.log('채팅 읽지 않은 수 로드 완료 (배지 업데이트는 알림 시스템에서 처리):', this.totalUnreadCount);
             }
         } catch (error) {
             console.error('채팅 알림 개수 로드 실패:', error);
@@ -91,9 +89,10 @@ class ChatNotificationManager {
                 });
                 
                 this.totalUnreadCount = totalUnread;
-                this.updateChatBadge(this.totalUnreadCount);
+                // 배지 업데이트는 알림 시스템에서 처리
+                // this.updateChatBadge(this.totalUnreadCount);
                 
-                console.log('채팅방별 읽지 않은 메시지 수 로드 완료:', {
+                console.log('채팅방별 읽지 않은 메시지 수 로드 완료 (배지 업데이트는 알림 시스템에서 처리):', {
                     unreadChats: Object.fromEntries(this.unreadChats),
                     totalUnreadCount: this.totalUnreadCount
                 });
@@ -117,7 +116,8 @@ class ChatNotificationManager {
         
         // 로컬에서 즉시 UI 업데이트
         this.totalUnreadCount++;
-        this.updateChatBadge(this.totalUnreadCount);
+        // 배지 업데이트는 알림 시스템에서 처리
+        // this.updateChatBadge(this.totalUnreadCount);
         
         // 토스트 알림 표시 (현재 채팅방이 아닌 경우에만)
         this.showChatToast(senderName, message, chatRoomId);
@@ -132,7 +132,8 @@ class ChatNotificationManager {
         // 읽지 않은 채팅 수 감소
         if (this.totalUnreadCount > 0) {
             this.totalUnreadCount--;
-            this.updateChatBadge(this.totalUnreadCount);
+            // 배지 업데이트는 알림 시스템에서 처리
+            // this.updateChatBadge(this.totalUnreadCount);
         }
     }
     
@@ -184,44 +185,11 @@ class ChatNotificationManager {
         this.unreadChats.set(chatRoomId, currentCount + 1);
         
         this.totalUnreadCount++;
-        this.updateChatBadge(this.totalUnreadCount);
+        // 배지 업데이트는 알림 시스템에서 처리
+        // this.updateChatBadge(this.totalUnreadCount);
     }
     
-    /**
-     * 채팅 배지 업데이트
-     */
-    updateChatBadge(count) {
-        // 클래스 기반으로 모든 채팅 배지 업데이트
-        const $badges = $('.chat-badge');
-        const $counts = $('.chat-count');
-        
-        console.log('채팅 배지 업데이트 시도:', { count, badgeFound: $badges.length, countFound: $counts.length });
-        
-        if ($badges.length === 0 || $counts.length === 0) {
-            console.error('채팅 배지 엘리먼트를 찾을 수 없습니다:', {
-                badges: $badges.length,
-                counts: $counts.length
-            });
-            return;
-        }
-        
-        console.log('채팅 배지 업데이트 실행:', count);
-        
-        if (count > 0) {
-            $counts.text(count > 99 ? '99+' : count);
-            $badges.show();
-            $badges.css('display', 'inline-block'); // 강제 표시
-            
-            console.log('채팅 배지 표시됨:', $badges.length, '개');
-            
-            // 애니메이션 효과
-            $badges.addClass('pulse');
-            setTimeout(() => $badges.removeClass('pulse'), 1000);
-        } else {
-            $badges.hide();
-            console.log('채팅 배지 숨김');
-        }
-    }
+    // 채팅 배지 업데이트는 notification.js에서 처리함
     
     /**
      * 채팅 토스트 알림 표시
@@ -292,17 +260,7 @@ class ChatNotificationManager {
         });
     }
     
-    /**
-     * 채팅방 진입 시 해당 채팅방의 읽지 않은 수 초기화
-     */
-    clearChatRoomUnread(chatRoomId) {
-        const unreadCount = this.unreadChats.get(chatRoomId) || 0;
-        if (unreadCount > 0) {
-            this.unreadChats.set(chatRoomId, 0);
-            this.totalUnreadCount = Math.max(0, this.totalUnreadCount - unreadCount);
-            this.updateChatBadge(this.totalUnreadCount);
-        }
-    }
+    // 채팅방 읽지 않은 수 초기화는 아래 clearChatRoomUnread 메서드에서 처리
     
     /**
      * 주기적 채팅 알림 체크 시작
@@ -358,8 +316,7 @@ class ChatNotificationManager {
                 
                 console.log(`채팅방 ${chatRoomId} 읽지 않은 메시지 ${unreadCount}개 클리어, 전체 남은 수: ${this.totalUnreadCount}`);
                 
-                // 배지 업데이트
-                this.updateChatBadge(this.totalUnreadCount);
+                // 배지 업데이트는 알림 시스템에서 처리됨
             }
         } catch (error) {
             console.error('채팅방 읽지 않은 메시지 수 조회 실패:', error);
@@ -369,7 +326,7 @@ class ChatNotificationManager {
             if (currentUnreadCount > 0) {
                 this.unreadChats.set(chatRoomId, 0);
                 this.totalUnreadCount = Math.max(0, this.totalUnreadCount - currentUnreadCount);
-                this.updateChatBadge(this.totalUnreadCount);
+                // 배지 업데이트는 알림 시스템에서 처리됨
             }
         }
     }
