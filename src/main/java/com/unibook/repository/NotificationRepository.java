@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 알림 Repository
@@ -92,4 +93,15 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Notification n WHERE n.relatedPost.postId = :postId")
     int deleteByRelatedPostId(@Param("postId") Long postId);
+    
+    /**
+     * 특정 채팅방의 읽지 않은 메시지 알림 조회
+     */
+    @Query("SELECT n FROM Notification n " +
+           "WHERE n.recipient.userId = :userId " +
+           "AND n.type = com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE " +
+           "AND n.isRead = false " +
+           "AND n.url = :chatRoomUrl")
+    List<Notification> findUnreadChatNotificationsByUserAndChatRoom(@Param("userId") Long userId, 
+                                                                   @Param("chatRoomUrl") String chatRoomUrl);
 }

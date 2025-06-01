@@ -2,6 +2,7 @@ package com.unibook.repository;
 
 import com.unibook.domain.entity.ChatRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -90,4 +91,21 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
            "AND (cr.buyer.userId = :userId OR cr.seller.userId = :userId) " +
            "AND cr.status = 'ACTIVE'")
     Optional<ChatRoom> findByIdAndUserId(@Param("chatRoomId") Long chatRoomId, @Param("userId") Long userId);
+    
+    /**
+     * 특정 게시글과 연결된 모든 채팅방 조회 (상태 무관)
+     */
+    @Query("SELECT cr FROM ChatRoom cr " +
+           "WHERE cr.post.postId = :postId")
+    List<ChatRoom> findAllByPostId(@Param("postId") Long postId);
+    
+    /**
+     * 특정 게시글과 연결된 채팅방들의 Post 참조를 제거 (JPQL 업데이트)
+     */
+    @Modifying
+    @Query("UPDATE ChatRoom cr SET cr.post = null, " +
+           "cr.postTitle = COALESCE(cr.postTitle, (SELECT p.title FROM Post p WHERE p.postId = :postId)), " +
+           "cr.postPrice = COALESCE(cr.postPrice, (SELECT p.price FROM Post p WHERE p.postId = :postId)) " +
+           "WHERE cr.post.postId = :postId")
+    int updatePostReferenceToNull(@Param("postId") Long postId);
 }

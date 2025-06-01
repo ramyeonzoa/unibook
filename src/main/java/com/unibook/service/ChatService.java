@@ -74,6 +74,9 @@ public class ChatService {
             .sellerUnreadCount(0)
             .build();
         
+        // 게시글 정보 복사 (게시글 삭제 시에도 유지되도록)
+        chatRoom.copyPostInfo(post);
+        
         // 저장 후 실제 Firebase Room ID 설정
         chatRoom = chatRoomRepository.save(chatRoom);
         chatRoom.setActualFirebaseRoomId();
@@ -205,16 +208,45 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findByFirebaseRoomId(firebaseRoomId)
             .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
         
+        Long recipientId;
+        String senderName;
+        
         // 현재 사용자가 구매자인지 판매자인지 확인
         if (currentUserId.equals(chatRoom.getBuyer().getUserId())) {
             // 현재 사용자가 구매자면 판매자의 unreadCount 증가
             chatRoom.setSellerUnreadCount(chatRoom.getSellerUnreadCount() + 1);
+            recipientId = chatRoom.getSeller().getUserId();
+            senderName = chatRoom.getBuyer().getName();
         } else if (currentUserId.equals(chatRoom.getSeller().getUserId())) {
             // 현재 사용자가 판매자면 구매자의 unreadCount 증가
             chatRoom.setBuyerUnreadCount(chatRoom.getBuyerUnreadCount() + 1);
+            recipientId = chatRoom.getBuyer().getUserId();
+            senderName = chatRoom.getSeller().getName();
+        } else {
+            log.warn("채팅방에 속하지 않은 사용자: firebaseRoomId={}, userId={}", firebaseRoomId, currentUserId);
+            return;
         }
         
         chatRoomRepository.save(chatRoom);
+        
+        // 채팅 알림 생성 (서버에서 직접 알림 생성)
+        try {
+            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                .recipientUserId(recipientId)
+                .actorUserId(currentUserId)
+                .type(Notification.NotificationType.NEW_MESSAGE)
+                .title(senderName + "님이 메시지를 보냈습니다")
+                .content(chatRoom.getLastMessage() != null ? chatRoom.getLastMessage() : "새 메시지")
+                .url("/chat/rooms/" + chatRoom.getChatRoomId())
+                .build();
+            
+            notificationService.createNotificationAsync(request);
+            
+            log.info("채팅 알림 생성 요청 완료: recipientId={}, senderName={}", recipientId, senderName);
+        } catch (Exception e) {
+            log.error("채팅 알림 생성 실패: {}", e.getMessage());
+        }
+        
         log.info("상대방 읽지 않은 메시지 수 증가: firebaseRoomId={}, currentUserId={}", 
                 firebaseRoomId, currentUserId);
     }
@@ -263,5 +295,50 @@ public class ChatService {
         
         // 사용자가 구매자인지 판매자인지 확인하여 읽지 않은 메시지 수 반환
         return chatRoom.getUnreadCountForUser(userId);
+    }
+    
+    /**
+     * 채팅방 진입 시 해당 채팅방의 모든 알림을 읽음 처리
+     */
+    @Transactional
+    public void markChatNotificationsAsRead(Long chatRoomId, Long userId) {
+        try {
+            // 1. 해당 채팅방의 NEW_MESSAGE 알림들을 모두 읽음 처리
+            // URL로 매칭 (/chat/rooms/{chatRoomId})
+            String chatRoomUrl = "/chat/rooms/" + chatRoomId;
+            List<Notification> unreadNotifications = notificationRepository
+                .findUnreadChatNotificationsByUserAndChatRoom(userId, chatRoomUrl);
+            
+            log.info("채팅방 진입 - 읽지 않은 알림 조회: chatRoomId={}, userId={}, url={}, found={}", 
+                    chatRoomId, userId, chatRoomUrl, unreadNotifications.size());
+            
+            for (Notification notification : unreadNotifications) {
+                notification.markAsRead();
+            }
+            
+            if (!unreadNotifications.isEmpty()) {
+                notificationRepository.saveAll(unreadNotifications);
+                log.info("채팅방 진입으로 {} 개의 알림을 읽음 처리: chatRoomId={}, userId={}", 
+                        unreadNotifications.size(), chatRoomId, userId);
+            }
+            
+            // 2. ChatRoom의 unreadCount도 0으로 초기화
+            ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
+            
+            // 현재 사용자가 구매자인지 판매자인지 확인하여 읽지 않은 메시지 수 초기화
+            if (userId.equals(chatRoom.getBuyer().getUserId())) {
+                chatRoom.setBuyerUnreadCount(0);
+                log.info("구매자 읽지 않은 메시지 수 초기화: chatRoomId={}", chatRoomId);
+            } else if (userId.equals(chatRoom.getSeller().getUserId())) {
+                chatRoom.setSellerUnreadCount(0);
+                log.info("판매자 읽지 않은 메시지 수 초기화: chatRoomId={}", chatRoomId);
+            }
+            
+            chatRoomRepository.save(chatRoom);
+            
+        } catch (Exception e) {
+            log.error("채팅방 알림 읽음 처리 중 오류: chatRoomId={}, userId={}", chatRoomId, userId, e);
+        }
     }
 }

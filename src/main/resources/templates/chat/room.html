@@ -161,9 +161,25 @@
             border-radius: 12px;
         }
         
-        .status-available { background: #d4edda; color: #155724; }
-        .status-reserved { background: #fff3cd; color: #856404; }
-        .status-completed { background: #d1ecf1; color: #0c5460; }
+        .post-status-badge.status-available {
+            background: #28a745;
+            color: white;
+        }
+        
+        .post-status-badge.status-reserved {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .post-status-badge.status-completed {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .post-status-badge.status-deleted {
+            background: #dc3545;
+            color: white;
+        }
         
         /* 스크롤바 스타일 */
         .messages-container::-webkit-scrollbar {
@@ -254,6 +270,7 @@
                                         </div>
                                     </div>
                                     <span class="post-status-badge"
+                                          th:if="${chatRoom.postStatus != null}"
                                           th:classappend="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'status-available' : 
                                                          chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 'status-completed'}"
                                           th:text="${chatRoom.postStatus.toString() == 'AVAILABLE' ? '판매중' : 
@@ -261,10 +278,15 @@
                                         상태
                                     </span>
                                 </div>
-                                <a th:href="@{'/posts/' + ${chatRoom.postId}}" 
+                                <a th:if="${chatRoom.postId != null}"
+                                   th:href="@{'/posts/' + ${chatRoom.postId}}" 
                                    class="btn btn-sm btn-outline-primary mt-2">
                                     <i class="bi bi-eye me-1"></i>상품 보기
                                 </a>
+                                <span th:if="${chatRoom.postId == null}"
+                                      class="btn btn-sm btn-secondary mt-2 disabled">
+                                    <i class="bi bi-x-circle me-1"></i>삭제된 게시글
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -368,6 +390,11 @@
             
             // 초기화 시작
             setTimeout(initChatWhenReady, 500);
+            
+            // 채팅방 진입 시 채팅 알림 클리어
+            if (window.chatNotificationManager && chatRoomId) {
+                window.chatNotificationManager.clearChatRoomUnread(chatRoomId);
+            }
             
             // 메시지 입력창 이벤트
             $('#messageInput').on('keydown', function(e) {

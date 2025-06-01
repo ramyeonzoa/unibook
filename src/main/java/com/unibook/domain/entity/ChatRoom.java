@@ -38,11 +38,24 @@ public class ChatRoom extends BaseEntity {
     private User seller;
     
     /**
-     * 관련 게시글
+     * 관련 게시글 (nullable - 게시글 삭제 시에도 채팅방 유지)
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "post_id", nullable = false)
+    @JoinColumn(name = "post_id", nullable = true, 
+                foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private Post post;
+    
+    /**
+     * 게시글 제목 복사본 (게시글 삭제 시에도 유지)
+     */
+    @Column(name = "post_title", length = 255)
+    private String postTitle;
+    
+    /**
+     * 게시글 가격 복사본 (게시글 삭제 시에도 유지)
+     */
+    @Column(name = "post_price")
+    private Integer postPrice;
     
     /**
      * 채팅방 상태
@@ -152,5 +165,62 @@ public class ChatRoom extends BaseEntity {
      */
     public boolean isParticipant(Long userId) {
         return userId.equals(buyer.getUserId()) || userId.equals(seller.getUserId());
+    }
+    
+    /**
+     * 게시글 정보 복사 (채팅방 생성 시 호출)
+     */
+    public void copyPostInfo(Post post) {
+        if (post != null) {
+            this.postTitle = post.getTitle();
+            this.postPrice = post.getPrice();
+        }
+    }
+    
+    /**
+     * 게시글이 삭제되었는지 확인
+     */
+    public boolean isPostDeleted() {
+        return this.post == null;
+    }
+    
+    /**
+     * 표시용 게시글 제목 반환 (삭제된 경우 대체 텍스트)
+     */
+    public String getDisplayTitle() {
+        if (this.post != null) {
+            return this.post.getTitle();
+        }
+        return this.postTitle != null ? this.postTitle : "삭제된 게시글";
+    }
+    
+    /**
+     * 표시용 게시글 가격 반환 (삭제된 경우 복사본 사용)
+     */
+    public Integer getDisplayPrice() {
+        if (this.post != null) {
+            return this.post.getPrice();
+        }
+        return this.postPrice;
+    }
+    
+    /**
+     * 게시글 상태 반환 (삭제된 경우 null 반환)
+     */
+    public Post.PostStatus getPostStatus() {
+        if (this.post != null) {
+            return this.post.getStatus();
+        }
+        return null;
+    }
+    
+    /**
+     * 게시글 ID 반환 (삭제된 경우 null 반환)
+     */
+    public Long getPostId() {
+        if (this.post != null) {
+            return this.post.getPostId();
+        }
+        return null;
     }
 }

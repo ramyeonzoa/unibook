@@ -47,6 +47,9 @@ public class ChatController {
         ChatDto.ChatRoomDetailResponse chatRoom = chatService.getChatRoomDetail(
             chatRoomId, userPrincipal.getUserId());
         
+        // 채팅방 진입 시 해당 채팅방의 알림 읽음 처리
+        chatService.markChatNotificationsAsRead(chatRoomId, userPrincipal.getUserId());
+        
         model.addAttribute("chatRoom", chatRoom);
         model.addAttribute("currentUserId", userPrincipal.getUserId());
         model.addAttribute("currentUserName", userPrincipal.getName());

@@ -58,10 +58,21 @@ public class ChatDto {
             User otherUser = chatRoom.getOtherUser(currentUserId);
             Post post = chatRoom.getPost();
             
-            // 게시글 썸네일 (첫 번째 이미지)
+            // 게시글 정보 처리 (삭제된 경우 복사본 사용)
+            Long postId = null;
+            String postTitle = chatRoom.getDisplayTitle(); // 삭제된 경우 복사본 사용
             String thumbnail = null;
-            if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
-                thumbnail = post.getPostImages().get(0).getImageUrl();
+            Long postOwnerId = null;
+            
+            if (post != null) {
+                // 게시글이 존재하는 경우
+                postId = post.getPostId();
+                postOwnerId = post.getUser().getUserId();
+                
+                // 게시글 썸네일 (첫 번째 이미지)
+                if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
+                    thumbnail = post.getPostImages().get(0).getImageUrl();
+                }
             }
             
             return ChatRoomListResponse.builder()
@@ -69,10 +80,10 @@ public class ChatDto {
                 .firebaseRoomId(chatRoom.getFirebaseRoomId())
                 .otherUserId(otherUser.getUserId())
                 .otherUserName(otherUser.getName())
-                .postId(post.getPostId())
-                .postTitle(post.getTitle())
-                .postThumbnail(thumbnail)
-                .postOwnerId(post.getUser().getUserId())
+                .postId(postId) // 삭제된 경우 null
+                .postTitle(postTitle) // 삭제된 경우 "삭제된 게시글"
+                .postThumbnail(thumbnail) // 삭제된 경우 null
+                .postOwnerId(postOwnerId) // 삭제된 경우 null
                 .lastMessage(chatRoom.getLastMessage())
                 .lastMessageTime(chatRoom.getLastMessageTime())
                 .unreadCount(chatRoom.getUnreadCountForUser(currentUserId))
@@ -131,9 +142,24 @@ public class ChatDto {
             User otherUser = chatRoom.getOtherUser(currentUserId);
             Post post = chatRoom.getPost();
             
+            // 게시글 정보 처리 (삭제된 경우 복사본 사용)
+            Long postId = null;
+            String postTitle = chatRoom.getDisplayTitle(); // 삭제된 경우 복사본 사용
             String thumbnail = null;
-            if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
-                thumbnail = post.getPostImages().get(0).getImageUrl();
+            Post.PostStatus postStatus = null;
+            Integer postPrice = chatRoom.getDisplayPrice(); // 삭제된 경우 복사본 사용
+            Long postOwnerId = null;
+            
+            if (post != null) {
+                // 게시글이 존재하는 경우
+                postId = post.getPostId();
+                postStatus = post.getStatus();
+                postOwnerId = post.getUser().getUserId();
+                
+                // 게시글 썸네일 (첫 번째 이미지)
+                if (post.getPostImages() != null && !post.getPostImages().isEmpty()) {
+                    thumbnail = post.getPostImages().get(0).getImageUrl();
+                }
             }
             
             return ChatRoomDetailResponse.builder()
@@ -142,12 +168,12 @@ public class ChatDto {
                 .otherUserId(otherUser.getUserId())
                 .otherUserName(otherUser.getName())
                 .otherUserEmail(otherUser.getEmail())
-                .postId(post.getPostId())
-                .postTitle(post.getTitle())
-                .postThumbnail(thumbnail)
-                .postStatus(post.getStatus())
-                .postPrice(post.getPrice())
-                .postOwnerId(post.getUser().getUserId())
+                .postId(postId) // 삭제된 경우 null
+                .postTitle(postTitle) // 삭제된 경우 "삭제된 게시글"
+                .postThumbnail(thumbnail) // 삭제된 경우 null
+                .postStatus(postStatus) // 삭제된 경우 null
+                .postPrice(postPrice) // 삭제된 경우 복사본 사용
+                .postOwnerId(postOwnerId) // 삭제된 경우 null
                 .status(chatRoom.getStatus())
                 .unreadCount(chatRoom.getUnreadCountForUser(currentUserId))
                 .createdAt(chatRoom.getCreatedAt())

@@ -4,6 +4,7 @@ import com.unibook.domain.entity.Post;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -192,4 +193,11 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    "WHERE p.user.userId = :userId",
            countQuery = "SELECT COUNT(p) FROM Post p WHERE p.user.userId = :userId")
     Page<Post> findByUserIdWithDetails(@Param("userId") Long userId, Pageable pageable);
+    
+    /**
+     * Native Query로 직접 Post 삭제 (외래키 제약 회피)
+     */
+    @Modifying
+    @Query(value = "DELETE FROM posts WHERE post_id = :postId", nativeQuery = true)
+    void deleteByIdNative(@Param("postId") Long postId);
 }

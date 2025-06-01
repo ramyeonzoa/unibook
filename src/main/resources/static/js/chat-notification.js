@@ -30,8 +30,8 @@ class ChatNotificationManager {
             await this.loadChatRoomUnreadCounts();
         }
         
-        // 주기적 체크는 글로벌 리스너로 대체됨 (더 이상 사용하지 않음)
-        // this.startPeriodicCheck();
+        // 주기적 체크 시작 (글로벌 리스너 문제로 인해 폴링 방식 사용)
+        this.startPeriodicCheck();
         
         console.log('ChatNotificationManager 초기화 완료');
     }
@@ -306,17 +306,17 @@ class ChatNotificationManager {
     
     /**
      * 주기적 채팅 알림 체크 시작
-     * @deprecated Firebase 글로벌 리스너로 대체됨. 더 이상 사용하지 않음.
      */
     startPeriodicCheck() {
-        console.log('[DEPRECATED] 주기적 체크는 Firebase 글로벌 리스너로 대체되었습니다.');
-        return; // 더 이상 폴링을 시작하지 않음
+        // 기존 체크 중지
+        this.stopPeriodicCheck();
         
-        // 이전 코드 (주석 처리)
-        // this.checkInterval = setInterval(() => {
-        //     this.loadUnreadChatCount();
-        // }, 10000);
-        // console.log('주기적 채팅 알림 체크 시작');
+        // 5초마다 읽지 않은 메시지 수 체크
+        this.checkInterval = setInterval(() => {
+            this.loadUnreadChatCount();
+        }, 5000);
+        
+        console.log('주기적 채팅 알림 체크 시작 (5초 간격)');
     }
     
     /**

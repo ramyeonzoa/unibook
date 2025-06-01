@@ -142,52 +142,59 @@ public class PostController {
     public String detail(@PathVariable Long id, Model model,
                         @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // 게시글 조회 (연관 데이터 포함)
-        Post post = postService.getPostByIdWithDetails(id)
-                .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
+        try {
+            // 게시글 조회 (연관 데이터 포함)
+            Post post = postService.getPostByIdWithDetails(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
+            
+            // 비동기로 조회수 증가 (중복 방지 로직 포함)
+            if (userPrincipal != null) {
+                postService.incrementViewCountAsync(id, userPrincipal.getUserId());
+            } else {
+                // 비로그인 사용자는 세션 기반으로 처리
+                postService.incrementViewCountAsync(id, null);
+            }
+            
+            // 작성자 여부 확인
+            boolean isOwner = false;
+            boolean canEdit = false;
+            if (userPrincipal != null) {
+                isOwner = post.getUser().getUserId().equals(userPrincipal.getUserId());
+                // 작성자이거나 관리자인 경우 수정 가능
+                canEdit = isOwner || userPrincipal.getAuthorities().stream()
+                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+            }
+            
+            // 같은 책의 다른 게시글 (현재 게시글 제외)
+            List<Post> relatedPosts = post.getBook() != null ? 
+                    postService.getRelatedPosts(post.getBook().getBookId(), id, 4) : 
+                    List.of();
+            
+            // 같은 과목의 다른 게시글 (현재 게시글 제외)
+            List<Post> subjectRelatedPosts = post.getSubject() != null ?
+                    postService.getRelatedPostsBySubject(post.getSubject().getSubjectId(), id, 4) :
+                    List.of();
+            
+            // 찜 상태 확인
+            boolean isWishlisted = false;
+            if (userPrincipal != null && !isOwner) {
+                isWishlisted = wishlistService.isWishlisted(userPrincipal.getUserId(), id);
+            }
+            
+            model.addAttribute("post", post);
+            model.addAttribute("isOwner", isOwner);
+            model.addAttribute("canEdit", canEdit);
+            model.addAttribute("isWishlisted", isWishlisted);
+            model.addAttribute("relatedPosts", relatedPosts);
+            model.addAttribute("subjectRelatedPosts", subjectRelatedPosts);
+            
+            return "posts/detail";
         
-        // 비동기로 조회수 증가 (중복 방지 로직 포함)
-        if (userPrincipal != null) {
-            postService.incrementViewCountAsync(id, userPrincipal.getUserId());
-        } else {
-            // 비로그인 사용자는 세션 기반으로 처리
-            postService.incrementViewCountAsync(id, null);
+        } catch (ResourceNotFoundException e) {
+            // 게시글을 찾을 수 없는 경우 삭제된 게시글 페이지로 이동
+            log.info("삭제된 게시글 접근 시도: postId={}", id);
+            return "error/post-deleted";
         }
-        
-        // 작성자 여부 확인
-        boolean isOwner = false;
-        boolean canEdit = false;
-        if (userPrincipal != null) {
-            isOwner = post.getUser().getUserId().equals(userPrincipal.getUserId());
-            // 작성자이거나 관리자인 경우 수정 가능
-            canEdit = isOwner || userPrincipal.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-        }
-        
-        // 같은 책의 다른 게시글 (현재 게시글 제외)
-        List<Post> relatedPosts = post.getBook() != null ? 
-                postService.getRelatedPosts(post.getBook().getBookId(), id, 4) : 
-                List.of();
-        
-        // 같은 과목의 다른 게시글 (현재 게시글 제외)
-        List<Post> subjectRelatedPosts = post.getSubject() != null ?
-                postService.getRelatedPostsBySubject(post.getSubject().getSubjectId(), id, 4) :
-                List.of();
-        
-        // 찜 상태 확인
-        boolean isWishlisted = false;
-        if (userPrincipal != null && !isOwner) {
-            isWishlisted = wishlistService.isWishlisted(userPrincipal.getUserId(), id);
-        }
-        
-        model.addAttribute("post", post);
-        model.addAttribute("isOwner", isOwner);
-        model.addAttribute("canEdit", canEdit);
-        model.addAttribute("isWishlisted", isWishlisted);
-        model.addAttribute("relatedPosts", relatedPosts);
-        model.addAttribute("subjectRelatedPosts", subjectRelatedPosts);
-        
-        return "posts/detail";
     }
     
     /**

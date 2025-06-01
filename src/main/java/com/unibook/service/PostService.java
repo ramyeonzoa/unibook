@@ -9,6 +9,7 @@ import com.unibook.exception.DuplicateResourceException;
 import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.repository.BookRepository;
+import com.unibook.repository.ChatRoomRepository;
 import com.unibook.repository.PostRepository;
 import com.unibook.repository.SubjectRepository;
 import com.unibook.repository.WishlistRepository;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.persistence.EntityManager;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -44,9 +46,11 @@ public class PostService {
     private final BookRepository bookRepository;
     private final SubjectRepository subjectRepository;
     private final WishlistRepository wishlistRepository;
+    private final ChatRoomRepository chatRoomRepository;
     private final FileUploadUtil fileUploadUtil;
     private final SubjectBookService subjectBookService;
     private final NotificationService notificationService;
+    private final EntityManager entityManager;
     
     // 조회수 중복 방지를 위한 캐시 (userId/sessionId -> postId -> lastViewTime)
     private final Map<String, Map<Long, LocalDateTime>> viewCache = new ConcurrentHashMap<>();
@@ -421,7 +425,8 @@ public class PostService {
             fileUploadUtil.deleteFile(image.getImageUrl());
         }
         
-        // 게시글 삭제 (CASCADE로 PostImage, PostDescription도 함께 삭제됨)
+        // 게시글 삭제 - JPA의 기본 delete 사용
+        // ON DELETE SET NULL이 설정되어 있으면 자동으로 ChatRoom의 post_id가 NULL로 변경됨
         postRepository.delete(post);
         
         log.info("게시글 삭제 완료: postId={}", postId);

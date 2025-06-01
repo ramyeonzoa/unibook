@@ -55,6 +55,16 @@ function connectSSE() {
     eventSource.addEventListener('notification', function(event) {
         const notification = JSON.parse(event.data);
         
+        // 현재 채팅방에 있는 경우, 해당 채팅방의 알림은 무시
+        if (notification.type === 'NEW_MESSAGE' && notification.url) {
+            // 현재 URL이 알림의 URL과 일치하면 (같은 채팅방에 있으면) 무시
+            const currentPath = window.location.pathname;
+            if (currentPath === notification.url) {
+                console.log('현재 채팅방의 알림이므로 무시:', notification);
+                return;
+            }
+        }
+        
         // 알림 카운트 증가
         incrementNotificationCount();
         
