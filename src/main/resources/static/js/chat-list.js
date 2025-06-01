@@ -380,17 +380,58 @@ $(window).on('focus', function() {
     }
 });
 
-// CSS 추가 (하이라이트 효과)
+// CSS 추가 (하이라이트 효과 + 다크모드 지원)
 $('head').append(`
 <style>
-.chat-item.highlight {
+/* 라이트모드 하이라이트 효과 */
+[data-bs-theme="light"] .chat-item.highlight {
     background-color: #e7f3ff !important;
     border-color: #b6d7ff !important;
     transform: translateY(-2px) !important;
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2) !important;
 }
 
-.chat-item {
+/* 다크모드 하이라이트 효과 */
+[data-bs-theme="dark"] .chat-item.highlight {
+    background-color: rgba(76, 132, 255, 0.3) !important;
+    border-color: #4c84ff !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(76, 132, 255, 0.4) !important;
+}
+
+/* 다크모드 채팅 아이템 기본 스타일 */
+[data-bs-theme="dark"] .chat-item {
+    background-color: #343a40 !important;
+    border-color: #495057 !important;
+    color: #e9ecef !important;
+    transition: all 0.3s ease !important;
+}
+
+[data-bs-theme="dark"] .chat-item:hover {
+    background-color: #6c757d !important;
+    border-color: #adb5bd !important;
+    color: #ffffff !important;
+}
+
+/* 다크모드 채팅 아이템 내부 텍스트 색상 강화 */
+[data-bs-theme="dark"] .chat-item .chat-title {
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .chat-item .chat-last-message {
+    color: #dee2e6 !important;
+}
+
+[data-bs-theme="dark"] .chat-item .chat-post-info {
+    color: #ced4da !important;
+}
+
+[data-bs-theme="dark"] .chat-item .chat-time {
+    color: #ced4da !important;
+}
+
+/* 라이트모드 채팅 아이템 */
+[data-bs-theme="light"] .chat-item {
     transition: all 0.3s ease !important;
 }
 

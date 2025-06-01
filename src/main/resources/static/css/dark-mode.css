@@ -1,0 +1,519 @@
+/**
+ * 다크모드 커스텀 스타일
+ */
+
+/* 다크모드 기본 색상 변수 */
+[data-bs-theme="dark"] {
+    --bs-primary: #4c84ff;
+    --bs-primary-rgb: 76, 132, 255;
+    --bs-success: #5cb85c;
+    --bs-danger: #d9534f;
+    --bs-warning: #f0ad4e;
+    --bs-info: #5bc0de;
+}
+
+/* 네비게이션 바 스타일 */
+.navbar {
+    background-color: var(--bs-body-bg) !important;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* 다크모드에서 네비게이션 커스텀 */
+[data-bs-theme="dark"] .navbar {
+    background-color: var(--bs-dark) !important;
+    border-bottom: 1px solid var(--bs-gray-800);
+}
+
+[data-bs-theme="dark"] .navbar-brand {
+    color: var(--bs-primary) !important;
+}
+
+[data-bs-theme="dark"] .navbar-nav .nav-link {
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .navbar-nav .nav-link:hover {
+    color: var(--bs-primary) !important;
+}
+
+/* 라이트 모드에서 네비게이션 */
+[data-bs-theme="light"] .navbar {
+    background-color: white !important;
+    border-bottom: 1px solid var(--bs-gray-300);
+}
+
+[data-bs-theme="light"] .navbar-nav .nav-link {
+    color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="light"] .navbar-nav .nav-link:hover {
+    color: var(--bs-primary) !important;
+}
+
+/* 채팅 목록 다크모드 스타일 - 높은 우선순위 */
+[data-bs-theme="dark"] .chat-item,
+[data-bs-theme="dark"] div.chat-item,
+[data-bs-theme="dark"] .chat-item.p-3.mb-3 {
+    background-color: var(--bs-gray-700) !important;
+    border-color: var(--bs-gray-600) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .chat-item:hover,
+[data-bs-theme="dark"] div.chat-item:hover,
+[data-bs-theme="dark"] .chat-item.p-3.mb-3:hover {
+    background-color: var(--bs-gray-600) !important;
+    border-color: var(--bs-gray-500) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+/* chat-list.js의 highlight 효과 다크모드 오버라이드 */
+[data-bs-theme="dark"] .chat-item.highlight,
+[data-bs-theme="dark"] div.chat-item.highlight {
+    background-color: rgba(76, 132, 255, 0.3) !important;
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 4px 12px rgba(76, 132, 255, 0.4) !important;
+    transform: translateY(-2px) !important;
+}
+
+[data-bs-theme="dark"] .chat-title,
+[data-bs-theme="dark"] .chat-item .chat-title {
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .chat-last-message,
+[data-bs-theme="dark"] .chat-item .chat-last-message {
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .chat-post-info,
+[data-bs-theme="dark"] .chat-item .chat-post-info {
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .chat-time,
+[data-bs-theme="dark"] .chat-item .chat-time {
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .unread-badge {
+    background: #dc3545 !important;
+    color: white !important;
+}
+
+/* 게시글 카드 다크모드 스타일 */
+[data-bs-theme="dark"] .card {
+    background-color: var(--bs-gray-900);
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme="dark"] .card:hover {
+    border-color: var(--bs-gray-600);
+}
+
+[data-bs-theme="dark"] .card-title,
+[data-bs-theme="dark"] h5.card-title,
+[data-bs-theme="dark"] .card .card-title {
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .card-text {
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .author-info,
+[data-bs-theme="dark"] .author-info * {
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item:hover {
+    background-color: var(--bs-gray-800) !important;
+}
+
+[data-bs-theme="dark"] .list-group-item h6 {
+    color: var(--bs-gray-100) !important;
+}
+
+/* 알림 드롭다운 다크모드 스타일 */
+[data-bs-theme="dark"] .notification-dropdown {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .notification-item {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .notification-item:hover {
+    background-color: var(--bs-gray-800) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .notification-item.unread {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    border-left: 3px solid #ffc107 !important;
+}
+
+[data-bs-theme="dark"] .notification-item.unread:hover {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+}
+
+[data-bs-theme="dark"] .dropdown-header {
+    color: var(--bs-gray-300) !important;
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+/* 폼 요소 다크모드 스타일 */
+[data-bs-theme="dark"] .form-control {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-primary) !important;
+    color: var(--bs-gray-100) !important;
+    box-shadow: 0 0 0 0.25rem rgba(76, 132, 255, 0.25) !important;
+}
+
+[data-bs-theme="dark"] .form-control::placeholder {
+    color: var(--bs-gray-500) !important;
+}
+
+[data-bs-theme="dark"] .form-select {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .input-group-text {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-300) !important;
+}
+
+/* 검색 및 필터 섹션 다크모드 */
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--bs-gray-900) !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--bs-gray-800) !important;
+}
+
+/* 필터 툴바 및 섹션 다크모드 */
+[data-bs-theme="dark"] .filter-toolbar {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .filter-section {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: var(--bs-gray-400) !important;
+}
+
+/* 알림 및 alert 다크모드 */   
+[data-bs-theme="dark"] .alert-info {
+    background-color: rgba(76, 132, 255, 0.15) !important;
+    border-color: rgba(76, 132, 255, 0.3) !important;
+    color: #9bb5ff !important;
+}
+
+[data-bs-theme="dark"] .alert-success {
+    background-color: rgba(92, 184, 92, 0.15) !important;
+    border-color: rgba(92, 184, 92, 0.3) !important;
+    color: #a8d8a8 !important;
+}
+
+[data-bs-theme="dark"] .alert-warning {
+    background-color: rgba(240, 173, 78, 0.15) !important;
+    border-color: rgba(240, 173, 78, 0.3) !important;
+    color: #f4c97e !important;
+}
+
+[data-bs-theme="dark"] .alert-danger {
+    background-color: rgba(217, 83, 79, 0.15) !important;
+    border-color: rgba(217, 83, 79, 0.3) !important;
+    color: #e5a2a0 !important;
+}
+
+/* 헤딩과 텍스트 요소 */
+[data-bs-theme="dark"] h1, 
+[data-bs-theme="dark"] h2, 
+[data-bs-theme="dark"] h3, 
+[data-bs-theme="dark"] h4, 
+[data-bs-theme="dark"] h5, 
+[data-bs-theme="dark"] h6 {
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .lead {
+    color: var(--bs-gray-300) !important;
+}
+
+/* 프로필 페이지 다크모드 스타일 */
+[data-bs-theme="dark"] .profile-header,
+[data-bs-theme="dark"] .form-section {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .profile-header h3,
+[data-bs-theme="dark"] .form-section h4 {
+    color: var(--bs-gray-100) !important;
+}
+
+/* 탭 네비게이션 다크모드 */
+[data-bs-theme="dark"] .nav-tabs {
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link:hover {
+    background-color: var(--bs-gray-700) !important;
+    border-color: var(--bs-gray-600) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+[data-bs-theme="dark"] .nav-tabs .nav-link.active {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) var(--bs-gray-700) var(--bs-gray-900) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+/* 게시글 제목 및 텍스트 색상 */
+[data-bs-theme="dark"] .post-title,
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-gray-100) !important;
+}
+
+/* 게시글 폼 다크모드 스타일 */
+[data-bs-theme="dark"] .preview-item {
+    border-color: var(--bs-gray-600) !important;
+    background-color: var(--bs-gray-800) !important;
+}
+
+[data-bs-theme="dark"] .preview-item .delete-btn {
+    background: rgba(33, 37, 41, 0.9) !important;
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .drag-area {
+    border-color: var(--bs-gray-600) !important;
+    background-color: var(--bs-gray-800) !important;
+    color: var(--bs-gray-300) !important;
+}
+
+[data-bs-theme="dark"] .drag-area:hover {
+    border-color: var(--bs-primary) !important;
+    background-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .drag-area.drag-over {
+    border-color: var(--bs-primary) !important;
+    background-color: rgba(76, 132, 255, 0.1) !important;
+}
+
+[data-bs-theme="dark"] .price-input-group .unit {
+    color: var(--bs-gray-400) !important;
+}
+
+/* 책 검색 모달 다크모드 */
+[data-bs-theme="dark"] .book-search-results {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .book-item {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .book-item:hover {
+    background-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .selected-book-info {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+    color: var(--bs-gray-100) !important;
+}
+
+/* 모달 다크모드 스타일 */
+[data-bs-theme="dark"] .modal-content {
+    background-color: var(--bs-gray-900);
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme="dark"] .modal-header {
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme="dark"] .modal-footer {
+    border-color: var(--bs-gray-700);
+}
+
+/* 드롭다운 다크모드 스타일 */
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: var(--bs-gray-900);
+    border-color: var(--bs-gray-700);
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: var(--bs-gray-300);
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+    background-color: var(--bs-gray-800);
+    color: var(--bs-gray-100);
+}
+
+[data-bs-theme="dark"] .dropdown-divider {
+    border-color: var(--bs-gray-700);
+}
+
+/* 테이블 다크모드 스타일 */
+[data-bs-theme="dark"] .table {
+    color: var(--bs-gray-300);
+}
+
+[data-bs-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 페이지네이션 다크모드 스타일 */
+[data-bs-theme="dark"] .page-link {
+    background-color: var(--bs-gray-900);
+    border-color: var(--bs-gray-700);
+    color: var(--bs-gray-300);
+}
+
+[data-bs-theme="dark"] .page-link:hover {
+    background-color: var(--bs-gray-800);
+    border-color: var(--bs-gray-600);
+    color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+
+/* 테마 토글 버튼 애니메이션 */
+#themeToggle, #themeToggleMobile, #themeToggleGuest {
+    transition: all 0.3s ease;
+}
+
+#themeToggle:hover, #themeToggleMobile:hover, #themeToggleGuest:hover {
+    transform: scale(1.1);
+}
+
+#themeIcon, #themeIconMobile, #themeIconGuest {
+    transition: transform 0.3s ease;
+}
+
+/* 다크모드 전환 애니메이션 (토글 시에만) */
+.theme-transitioning * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* 스크롤바 다크모드 스타일 (Webkit 브라우저) */
+[data-bs-theme="dark"] ::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-track {
+    background: var(--bs-gray-900);
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--bs-gray-600);
+    border-radius: 4px;
+}
+
+[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--bs-gray-500);
+}
+
+/* 커스텀 그라데이션 다크모드 */
+[data-bs-theme="dark"] .total-unread {
+    background: linear-gradient(135deg, #4c84ff 0%, #6366f1 100%);
+}
+
+[data-bs-theme="dark"] .chat-avatar {
+    background: linear-gradient(135deg, #4c84ff 0%, #6366f1 100%);
+}
+
+/* 채팅방 컨테이너 다크모드 스타일 */
+[data-bs-theme="dark"] .chat-container {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .chat-header {
+    background: linear-gradient(135deg, #4c84ff 0%, #6366f1 100%) !important;
+}
+
+[data-bs-theme="dark"] .post-info {
+    background-color: var(--bs-gray-800) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+[data-bs-theme="dark"] .messages-container {
+    background-color: var(--bs-gray-900) !important;
+}
+
+[data-bs-theme="dark"] .message-sent .message-content {
+    background-color: transparent !important;
+    color: var(--bs-gray-100) !important;
+    border: none !important;
+}
+
+[data-bs-theme="dark"] .message-received,
+[data-bs-theme="dark"] div.message.message-received,
+[data-bs-theme="dark"] .message-received .message-content {
+    background-color: var(--bs-gray-800) !important;
+    color: var(--bs-gray-100) !important;
+    border: none !important;
+}
+
+[data-bs-theme="dark"] .chat-input-container {
+    background-color: var(--bs-gray-900) !important;
+    border-color: var(--bs-gray-700) !important;
+}
+
+/* 검색 하이라이트 다크모드 */
+[data-bs-theme="dark"] .highlight-text {
+    background-color: rgba(255, 193, 7, 0.3);
+    color: var(--bs-warning);
+}
+
+/* 이미지 다크모드 필터 (선택적) */
+[data-bs-theme="dark"] .post-thumbnail {
+    filter: brightness(0.9);
+}
+
+[data-bs-theme="dark"] .post-thumbnail:hover {
+    filter: brightness(1);
+}
