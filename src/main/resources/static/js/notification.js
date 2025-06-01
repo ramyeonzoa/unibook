@@ -64,11 +64,9 @@ function connectSSE() {
         if (notification.type === 'NEW_MESSAGE' && notification.url) {
             const currentPath = window.location.pathname;
             if (currentPath === notification.url) {
-                console.log('현재 채팅방의 알림이므로 즉시 읽음 처리:', notification);
-                
                 // 알림을 즉시 읽음으로 표시
                 markAsRead(notification.notificationId, function() {
-                    console.log('현재 채팅방 알림 읽음 처리 완료:', notification.notificationId);
+                    // 현재 채팅방 알림 읽음 처리 완료
                 });
                 
                 // 토스트는 표시하지 않고 리턴
@@ -131,7 +129,7 @@ function loadNotificationCount() {
             }
         })
         .fail(function(xhr) {
-            console.error('알림 카운트 로드 실패:', xhr);
+            // 알림 카운트 로드 실패
         });
 }
 
@@ -146,7 +144,7 @@ function loadUnreadNotificationsForChatBadge() {
             }
         })
         .fail(function(xhr) {
-            console.error('채팅 배지용 알림 로드 실패:', xhr);
+            // 채팅 배지용 알림 로드 실패:
         });
 }
 
@@ -161,7 +159,7 @@ function loadUnreadNotifications() {
             }
         })
         .fail(function(xhr) {
-            console.error('알림 목록 로드 실패:', xhr);
+            // 알림 목록 로드 실패
             $('.notification-list').html(
                 '<li class="text-center py-3">' +
                 '<span class="text-danger">알림을 불러올 수 없습니다.</span>' +
@@ -582,7 +580,10 @@ function initChatListSync() {
     // 1. 페이지 로드 시 읽지 않은 NEW_MESSAGE 알림들로 배지 동기화
     syncChatListWithNotifications();
     
-    // 2. 채팅방 클릭 시 배지 감소 이벤트 등록
+    // 2. 시간 정규화 (서버 시간을 일관된 포맷으로 변환)
+    normalizeInitialTimestamps();
+    
+    // 3. 채팅방 클릭 시 배지 감소 이벤트 등록
     $(document).on('click', '.chat-item', function() {
         const chatRoomId = $(this).data('chat-room-id');
         if (chatRoomId) {
@@ -655,9 +656,53 @@ function syncChatListWithNotifications() {
         });
 }
 
+/**
+ * 초기 로드 시 서버 시간을 일관된 포맷으로 정규화
+ * 서버에서 이미 한국 시간으로 저장하므로 단순히 포맷팅만 수행
+ */
+function normalizeInitialTimestamps() {
+    $('.chat-time[data-timestamp]').each((index, element) => {
+        const $timeElement = $(element);
+        const timestamp = $timeElement.data('timestamp');
+        
+        if (timestamp) {
+            try {
+                // 서버에서 온 timestamp는 이미 한국 시간
+                const date = new Date(timestamp);
+                const formattedTime = formatChatTime(date);
+                $timeElement.text(formattedTime);
+            } catch (error) {
+                console.error('시간 변환 실패:', timestamp, error);
+            }
+        }
+    });
+    
+    // 정규화 완료 플래그 설정
+    window.chatTimestampsNormalized = true;
+    window.notificationTimeNormalizationDone = true;
+}
+
+
+/**
+ * 채팅 시간 포맷팅 (서버와 동일한 형식)
+ */
+function formatChatTime(date) {
+    const messageDate = new Date(date);
+    
+    // 서버와 동일한 포맷 사용: MM/dd HH:mm
+    const month = String(messageDate.getMonth() + 1).padStart(2, '0');
+    const day = String(messageDate.getDate()).padStart(2, '0');
+    const hours = String(messageDate.getHours()).padStart(2, '0');
+    const minutes = String(messageDate.getMinutes()).padStart(2, '0');
+    
+    return `${month}/${day} ${hours}:${minutes}`;
+}
+
 // 전역에서 접근 가능하도록 함수 노출
 window.updateChatBadgeFromNotifications = updateChatBadgeFromNotifications;
 window.decrementChatBadgeForChatRoom = decrementChatBadgeForChatRoom;
 window.updateChatListBadge = updateChatListBadge;
 window.decrementChatListBadge = decrementChatListBadge;
 window.initChatListSync = initChatListSync;
+window.formatChatTime = formatChatTime;
+window.parseServerTimeAsKST = parseServerTimeAsKST;

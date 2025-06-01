@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -119,20 +121,18 @@ public class ChatApiController {
             @RequestParam String lastMessage,
             @RequestParam String timestamp) {
         
-        // ISO 8601 형식의 timestamp를 LocalDateTime으로 변환
+        // ISO 8601 형식의 timestamp를 한국 시간으로 변환
         LocalDateTime dateTime;
         try {
-            // Z를 +00:00으로 변경하고 LocalDateTime으로 파싱
-            String localTimestamp = timestamp.replace("Z", "");
-            if (localTimestamp.contains(".")) {
-                // 밀리초 제거
-                localTimestamp = localTimestamp.substring(0, localTimestamp.indexOf('.'));
-            }
-            dateTime = LocalDateTime.parse(localTimestamp);
+            // Firebase에서 보내는 UTC 시간을 한국 시간으로 변환
+            Instant instant = Instant.parse(timestamp);
+            dateTime = instant.atZone(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+            
+            log.debug("UTC 시간을 한국 시간으로 변환: {} -> {}", timestamp, dateTime);
         } catch (Exception e) {
-            // 파싱 실패 시 현재 시간 사용
+            // 파싱 실패 시 현재 시간 사용 (한국 시간)
             log.error("Timestamp 파싱 실패: {}", timestamp, e);
-            dateTime = LocalDateTime.now();
+            dateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"));
         }
         
         chatService.updateLastMessage(firebaseRoomId, lastMessage, dateTime);

@@ -39,7 +39,7 @@ public class ChatDto {
         // 마지막 메시지 정보
         private String lastMessage;
         
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
         private LocalDateTime lastMessageTime;
         
         // 읽지 않은 메시지 수
@@ -48,7 +48,7 @@ public class ChatDto {
         // 채팅방 상태
         private ChatRoom.ChatRoomStatus status;
         
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
         private LocalDateTime createdAt;
         
         /**
@@ -132,7 +132,7 @@ public class ChatDto {
         private ChatRoom.ChatRoomStatus status;
         private Integer unreadCount;
         
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
         private LocalDateTime createdAt;
         
         /**
@@ -196,7 +196,7 @@ public class ChatDto {
         private MessageType type;
         private String imageUrl; // 이미지 메시지인 경우
         
-        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
         private LocalDateTime timestamp;
         
         // 읽음 상태 (사용자별)

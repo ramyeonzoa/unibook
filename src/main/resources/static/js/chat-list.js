@@ -36,6 +36,8 @@ class ChatListManager {
             // 실시간 리스너 설정
             this.setupRealtimeListeners();
             
+            // notification.js에서 이미 시간 정규화를 처리하므로 추가 작업 불필요
+            
             console.log('채팅 목록 실시간 업데이트 초기화 완료');
             
         } catch (error) {
@@ -168,10 +170,12 @@ class ChatListManager {
             console.log('채팅방', chatRoomId, '최신 메시지 업데이트:', messagePreview);
         }
         
-        // 시간 업데이트
+        // 시간 업데이트 (notification.js의 통합된 시간 포맷 사용)
         const $time = $chatItem.find('.chat-time');
         if ($time.length > 0 && latestMessage.timestamp) {
-            const timeString = this.formatTime(latestMessage.timestamp.toDate());
+            const timeString = window.formatChatTime ? 
+                window.formatChatTime(latestMessage.timestamp.toDate()) : 
+                this.formatTime(latestMessage.timestamp.toDate());
             $time.text(timeString);
         }
         
@@ -303,30 +307,21 @@ class ChatListManager {
         }
     }
     
+    
     /**
-     * 시간 포맷팅
+     * 시간 포맷팅 (Firebase와 서버 시간 모두 지원)
      */
     formatTime(date) {
-        const now = new Date();
+        // Firebase timestamp를 한국 시간으로 변환
         const messageDate = new Date(date);
         
-        // 오늘인지 확인
-        const isToday = now.toDateString() === messageDate.toDateString();
+        // 서버와 동일한 포맷 사용: MM/dd HH:mm
+        const month = String(messageDate.getMonth() + 1).padStart(2, '0');
+        const day = String(messageDate.getDate()).padStart(2, '0');
+        const hours = String(messageDate.getHours()).padStart(2, '0');
+        const minutes = String(messageDate.getMinutes()).padStart(2, '0');
         
-        if (isToday) {
-            return messageDate.toLocaleTimeString('ko-KR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-        } else {
-            return messageDate.toLocaleDateString('ko-KR', {
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
+        return `${month}/${day} ${hours}:${minutes}`;
     }
     
     /**

@@ -188,6 +188,7 @@
                             <!-- 메타 정보 -->
                             <div class="chat-meta">
                                 <div class="chat-time" 
+                                     th:attr="data-timestamp=${chat.lastMessageTime != null ? chat.lastMessageTime.toString() : chat.createdAt.toString()}"
                                      th:text="${chat.lastMessageTime != null ? 
                                                #temporals.format(chat.lastMessageTime, 'MM/dd HH:mm') : 
                                                #temporals.format(chat.createdAt, 'MM/dd HH:mm')}">
