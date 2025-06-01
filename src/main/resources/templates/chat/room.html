@@ -199,6 +199,27 @@
             background: #a8a8a8;
         }
         
+        /* 이미지 메시지 스타일 */
+        .message-image {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .message-image:hover {
+            transform: scale(1.05);
+        }
+        
+        .message-sent .message-image {
+            border: 1px solid #007bff;
+        }
+        
+        .message-received .message-image {
+            border: 1px solid #e9ecef;
+        }
+        
         /* 모바일 반응형 */
         @media (max-width: 768px) {
             .chat-container {
@@ -302,7 +323,18 @@
                     
                     <!-- 메시지 입력 -->
                     <div class="chat-input-container">
-                        <form onsubmit="return false;" class="d-flex align-items-end gap-3">
+                        <form onsubmit="return false;" class="d-flex align-items-end gap-2">
+                            <input type="file" 
+                                   id="imageInput" 
+                                   accept="image/*" 
+                                   style="display: none;"
+                                   onchange="handleImageSelect(this)">
+                            <button type="button" 
+                                    class="btn btn-light rounded-pill"
+                                    style="width: 40px; height: 40px;"
+                                    onclick="document.getElementById('imageInput').click()">
+                                <i class="bi bi-image"></i>
+                            </button>
                             <div class="flex-grow-1">
                                 <textarea class="form-control chat-input" 
                                          id="messageInput"
@@ -318,6 +350,23 @@
                             </button>
                         </form>
                         
+                        <!-- 이미지 미리보기 영역 -->
+                        <div id="imagePreview" class="mt-2" style="display: none;">
+                            <div class="position-relative d-inline-block">
+                                <img id="previewImage" src="" alt="미리보기" style="max-width: 200px; max-height: 200px; border-radius: 8px;">
+                                <button type="button" 
+                                        class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                                        onclick="cancelImageUpload()">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                            <button type="button" 
+                                    class="btn btn-primary btn-sm ms-2"
+                                    onclick="sendImageMessage()">
+                                이미지 전송
+                            </button>
+                        </div>
+                        
                         <div class="mt-2 text-muted small">
                             <i class="bi bi-info-circle me-1"></i>
                             Enter로 전송, Shift+Enter로 줄바꿈
@@ -325,6 +374,21 @@
                     </div>
                 </div>
                 
+            </div>
+        </div>
+    </div>
+    
+    <!-- 이미지 확대 모달 -->
+    <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">이미지 보기</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" src="" alt="확대 이미지" style="max-width: 100%; height: auto;">
+                </div>
             </div>
         </div>
     </div>
@@ -395,6 +459,86 @@
             if (window.decrementChatBadgeForChatRoom && chatRoomId) {
                 window.decrementChatBadgeForChatRoom(chatRoomId);
             }
+            
+            // 이미지 업로드 관련 변수
+            let selectedImageFile = null;
+            
+            // 이미지 선택 처리
+            window.handleImageSelect = function(input) {
+                if (input.files && input.files[0]) {
+                    const file = input.files[0];
+                    
+                    // 파일 크기 체크 (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('이미지 크기는 10MB 이하여야 합니다.');
+                        input.value = '';
+                        return;
+                    }
+                    
+                    // 파일 타입 체크
+                    if (!file.type.startsWith('image/')) {
+                        alert('이미지 파일만 업로드 가능합니다.');
+                        input.value = '';
+                        return;
+                    }
+                    
+                    selectedImageFile = file;
+                    
+                    // 미리보기 표시
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('#previewImage').attr('src', e.target.result);
+                        $('#imagePreview').show();
+                        $('#messageInput').prop('disabled', true);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            
+            // 이미지 업로드 취소
+            window.cancelImageUpload = function() {
+                selectedImageFile = null;
+                $('#imageInput').val('');
+                $('#imagePreview').hide();
+                $('#previewImage').attr('src', '');
+                $('#messageInput').prop('disabled', false);
+            };
+            
+            // 이미지 메시지 전송
+            window.sendImageMessage = async function() {
+                if (!selectedImageFile || !chatManager) {
+                    return;
+                }
+                
+                try {
+                    // 버튼 비활성화
+                    $('#imagePreview button').prop('disabled', true);
+                    
+                    // Firebase Storage에 업로드
+                    const storage = getStorage();
+                    const storageRef = storage.ref();
+                    const timestamp = Date.now();
+                    const fileName = `chat/${firebaseRoomId}/${timestamp}_${selectedImageFile.name}`;
+                    const imageRef = storageRef.child(fileName);
+                    
+                    // 업로드
+                    const snapshot = await imageRef.put(selectedImageFile);
+                    const downloadURL = await snapshot.ref.getDownloadURL();
+                    
+                    // 이미지 메시지 전송
+                    await chatManager.sendImageMessage(downloadURL);
+                    
+                    // 초기화
+                    cancelImageUpload();
+                    
+                } catch (error) {
+                    console.error('이미지 전송 실패:', error);
+                    alert('이미지 전송에 실패했습니다.');
+                } finally {
+                    // 버튼 활성화
+                    $('#imagePreview button').prop('disabled', false);
+                }
+            };
             
             // 메시지 입력창 이벤트
             $('#messageInput').on('keydown', function(e) {

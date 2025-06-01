@@ -177,7 +177,7 @@ public class NotificationService {
      * 사용자별 알림 목록 조회
      */
     public Page<NotificationDto.Response> getNotifications(Long userId, Pageable pageable) {
-        Page<Notification> notifications = notificationRepository.findByRecipientUserIdWithDetails(userId, pageable);
+        Page<Notification> notifications = notificationRepository.findByRecipientUserIdWithDetailsExcludingNewMessage(userId, pageable);
         return notifications.map(NotificationDto.Response::from);
     }
 
@@ -194,8 +194,8 @@ public class NotificationService {
      * 알림 카운트 조회
      */
     public NotificationDto.CountResponse getNotificationCount(Long userId) {
-        long totalCount = notificationRepository.countByRecipientUserId(userId);
-        long unreadCount = notificationRepository.countUnreadByRecipientUserId(userId);
+        long totalCount = notificationRepository.countByRecipientUserIdExcludingNewMessage(userId);
+        long unreadCount = notificationRepository.countUnreadByRecipientUserIdExcludingNewMessage(userId);
         
         return NotificationDto.CountResponse.builder()
                 .totalCount(totalCount)

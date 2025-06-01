@@ -32,6 +32,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                      "WHERE n.recipient.userId = :userId"
     )
     Page<Notification> findByRecipientUserIdWithDetails(@Param("userId") Long userId, Pageable pageable);
+    
+    /**
+     * 사용자별 알림 목록 조회 (NEW_MESSAGE 제외)
+     */
+    @Query(
+        value = "SELECT n FROM Notification n " +
+                "LEFT JOIN FETCH n.actor " +
+                "LEFT JOIN FETCH n.relatedPost " +
+                "WHERE n.recipient.userId = :userId " +
+                "AND n.type != com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE " +
+                "ORDER BY n.isRead ASC, n.createdAt DESC",
+        countQuery = "SELECT COUNT(n) FROM Notification n " +
+                     "WHERE n.recipient.userId = :userId " +
+                     "AND n.type != com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE"
+    )
+    Page<Notification> findByRecipientUserIdWithDetailsExcludingNewMessage(@Param("userId") Long userId, Pageable pageable);
 
     /**
      * 사용자별 읽지 않은 알림 개수 조회
@@ -44,6 +60,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
      * 사용자별 전체 알림 개수 조회
      */
     long countByRecipientUserId(Long userId);
+    
+    /**
+     * 사용자별 읽지 않은 알림 개수 조회 (NEW_MESSAGE 제외)
+     */
+    @Query("SELECT COUNT(n) FROM Notification n " +
+           "WHERE n.recipient.userId = :userId AND n.isRead = false " +
+           "AND n.type != com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE")
+    long countUnreadByRecipientUserIdExcludingNewMessage(@Param("userId") Long userId);
+    
+    /**
+     * 사용자별 전체 알림 개수 조회 (NEW_MESSAGE 제외)
+     */
+    @Query("SELECT COUNT(n) FROM Notification n " +
+           "WHERE n.recipient.userId = :userId " +
+           "AND n.type != com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE")
+    long countByRecipientUserIdExcludingNewMessage(@Param("userId") Long userId);
 
     /**
      * 사용자별 읽지 않은 알림 목록 조회 (페이징 지원)
@@ -59,6 +91,22 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
                      "WHERE n.recipient.userId = :userId AND n.isRead = false"
     )
     Page<Notification> findUnreadByRecipientUserIdWithDetails(@Param("userId") Long userId, Pageable pageable);
+    
+    /**
+     * 사용자별 읽지 않은 알림 목록 조회 (NEW_MESSAGE 제외)
+     */
+    @Query(
+        value = "SELECT n FROM Notification n " +
+                "LEFT JOIN FETCH n.actor " +
+                "LEFT JOIN FETCH n.relatedPost " +
+                "WHERE n.recipient.userId = :userId AND n.isRead = false " +
+                "AND n.type != com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE " +
+                "ORDER BY n.createdAt DESC",
+        countQuery = "SELECT COUNT(n) FROM Notification n " +
+                     "WHERE n.recipient.userId = :userId AND n.isRead = false " +
+                     "AND n.type != com.unibook.domain.entity.Notification$NotificationType.NEW_MESSAGE"
+    )
+    Page<Notification> findUnreadByRecipientUserIdWithDetailsExcludingNewMessage(@Param("userId") Long userId, Pageable pageable);
 
     /**
      * 특정 알림을 읽음으로 표시

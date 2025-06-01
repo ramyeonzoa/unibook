@@ -21,6 +21,7 @@ $(document).ready(function() {
     
     // 채팅 목록 페이지에서 초기 동기화 및 클릭 이벤트 설정
     if (window.location.pathname === '/chat') {
+        console.log('채팅 목록 페이지 감지, 동기화 시작');
         initChatListSync();
     }
 });
@@ -60,27 +61,39 @@ function connectSSE() {
     eventSource.addEventListener('notification', function(event) {
         const notification = JSON.parse(event.data);
         
-        // 현재 채팅방에 있는 경우, 해당 채팅방의 알림은 즉시 읽음 처리
-        if (notification.type === 'NEW_MESSAGE' && notification.url) {
-            const currentPath = window.location.pathname;
-            if (currentPath === notification.url) {
-                // 알림을 즉시 읽음으로 표시
-                markAsRead(notification.notificationId, function() {
-                    // 현재 채팅방 알림 읽음 처리 완료
-                });
-                
-                // 토스트는 표시하지 않고 리턴
-                return;
+        // NEW_MESSAGE 타입은 채팅 시스템에서만 처리
+        if (notification.type === 'NEW_MESSAGE') {
+            // 현재 채팅방에 있는 경우, 해당 채팅방의 알림은 즉시 읽음 처리
+            if (notification.url) {
+                const currentPath = window.location.pathname;
+                if (currentPath === notification.url) {
+                    // 알림을 즉시 읽음으로 표시
+                    markAsRead(notification.notificationId, function() {
+                        // 현재 채팅방 알림 읽음 처리 완료
+                    });
+                    
+                    // 토스트는 표시하지 않고 리턴
+                    return;
+                }
             }
+            
+            // 채팅 배지 업데이트
+            incrementChatBadgeCount();
+            
+            // 토스트는 표시 (현재 채팅방이 아닌 경우)
+            showNotificationToast(notification);
+            
+            // 채팅 목록 페이지에서 채팅방별 배지 업데이트
+            if (window.location.pathname === '/chat') {
+                updateChatListBadge(notification);
+            }
+            
+            return; // NEW_MESSAGE는 일반 알림 처리 건너뜀
         }
         
+        // 다른 타입의 알림들은 정상 처리
         // 알림 카운트 증가
         incrementNotificationCount();
-        
-        // 채팅 알림인 경우 채팅 배지도 업데이트
-        if (notification.type === 'NEW_MESSAGE') {
-            incrementChatBadgeCount();
-        }
         
         // 토스트 알림 표시
         showNotificationToast(notification);
@@ -92,11 +105,6 @@ function connectSSE() {
         
         // 커스텀 이벤트 발생 (마이페이지 실시간 업데이트용)
         $(document).trigger('notification:new', [notification]);
-        
-        // 채팅 목록 페이지에서 채팅방별 배지 업데이트
-        if (notification.type === 'NEW_MESSAGE' && window.location.pathname === '/chat') {
-            updateChatListBadge(notification);
-        }
     });
     
     eventSource.addEventListener('count-update', function(event) {
@@ -174,7 +182,12 @@ function loadUnreadNotifications() {
 function displayNotifications(notifications) {
     const $lists = $('.notification-list');
     
-    if (notifications.length === 0) {
+    // NEW_MESSAGE 타입 제외
+    const filteredNotifications = notifications.filter(function(notification) {
+        return notification.type !== 'NEW_MESSAGE';
+    });
+    
+    if (filteredNotifications.length === 0) {
         $lists.html(
             '<li class="empty-state">' +
             '<i class="bi bi-bell-slash"></i>' +
@@ -185,7 +198,7 @@ function displayNotifications(notifications) {
     }
     
     let html = '';
-    notifications.forEach(function(notification) {
+    filteredNotifications.forEach(function(notification) {
         html += createNotificationItem(notification);
     });
     
@@ -645,8 +658,11 @@ function syncChatListWithNotifications() {
                     }
                 });
                 
-                // 전체 카운트 업데이트
+                // 전체 카운트 업데이트 (채팅 목록 페이지의 "읽지 않은 메시지 n개" 표시용)
                 updateTotalUnreadCountDisplay();
+                
+                // 헤더의 채팅 배지도 업데이트
+                updateChatBadgeFromNotifications(response.data.content);
                 
                 console.log('채팅 목록 동기화 완료');
             }

@@ -189,6 +189,42 @@ class FirebaseChatManager {
     }
     
     /**
+     * 이미지 메시지 전송
+     */
+    async sendImageMessage(imageUrl) {
+        if (!imageUrl) return;
+        
+        try {
+            const message = {
+                senderId: this.currentUserId,
+                senderName: this.currentUserName,
+                content: '📷 이미지',
+                imageUrl: imageUrl,
+                type: 'IMAGE',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                isReadByBuyer: this.isBuyer,
+                isReadBySeller: !this.isBuyer
+            };
+            
+            // Firestore에 메시지 추가
+            const docRef = await this.messagesRef.add(message);
+            
+            // 상대방의 읽지 않은 메시지 수 업데이트
+            this.incrementOtherUserUnreadCount('📷 이미지');
+            
+            // Spring Boot에 마지막 메시지 정보 업데이트
+            this.updateLastMessageInDB('📷 이미지');
+            
+            console.log('이미지 메시지 전송 완료:', docRef.id);
+            
+            return docRef.id;
+        } catch (error) {
+            console.error('이미지 메시지 전송 실패:', error);
+            throw error;
+        }
+    }
+    
+    /**
      * 빈 상태 표시
      */
     displayEmptyState() {
@@ -223,7 +259,7 @@ class FirebaseChatManager {
             // 메시지 타입별 내용
             let messageContent = '';
             if (message.type === 'IMAGE') {
-                messageContent = `<img src="${message.imageUrl}" class="message-image" alt="이미지 메시지">`;
+                messageContent = `<img src="${message.imageUrl}" class="message-image" alt="이미지 메시지" onclick="showImageModal('${message.imageUrl}')">`;
             } else {
                 messageContent = this.escapeHtml(message.content);
             }
@@ -504,6 +540,15 @@ async function sendMessage() {
         const sendBtn = document.getElementById('sendBtn');
         if (sendBtn) sendBtn.disabled = false;
     }
+}
+
+/**
+ * 이미지 모달 표시
+ */
+function showImageModal(imageUrl) {
+    document.getElementById('modalImage').src = imageUrl;
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
 }
 
 /**
