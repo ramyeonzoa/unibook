@@ -18,6 +18,11 @@ $(document).ready(function() {
     if ($('#notificationDropdownMobile').length || $('#notificationDropdownDesktop').length) {
         initNotificationSystem();
     }
+    
+    // 채팅 목록 페이지에서 초기 동기화 및 클릭 이벤트 설정
+    if (window.location.pathname === '/chat') {
+        initChatListSync();
+    }
 });
 
 /**
@@ -89,6 +94,11 @@ function connectSSE() {
         
         // 커스텀 이벤트 발생 (마이페이지 실시간 업데이트용)
         $(document).trigger('notification:new', [notification]);
+        
+        // 채팅 목록 페이지에서 채팅방별 배지 업데이트
+        if (notification.type === 'NEW_MESSAGE' && window.location.pathname === '/chat') {
+            updateChatListBadge(notification);
+        }
     });
     
     eventSource.addEventListener('count-update', function(event) {
@@ -472,6 +482,182 @@ function decrementChatBadgeForChatRoom(chatRoomId) {
     }, 500);
 }
 
+/**
+ * 채팅 목록 페이지에서 개별 채팅방 배지 업데이트
+ */
+function updateChatListBadge(notification) {
+    // URL에서 채팅방 ID 추출 (/chat/rooms/123)
+    const urlMatch = notification.url.match(/\/chat\/rooms\/(\d+)/);
+    if (!urlMatch) return;
+    
+    const chatRoomId = urlMatch[1];
+    console.log('채팅 목록 배지 업데이트:', { chatRoomId, notification });
+    
+    // 해당 채팅방의 배지 증가
+    const $chatItem = $(`.chat-item[data-chat-room-id="${chatRoomId}"]`);
+    if ($chatItem.length > 0) {
+        let $badge = $chatItem.find('.unread-badge');
+        
+        if ($badge.length > 0) {
+            // 기존 배지가 있으면 숫자 증가
+            const currentCount = parseInt($badge.text()) || 0;
+            const newCount = currentCount + 1;
+            $badge.text(newCount);
+        } else {
+            // 배지가 없으면 새로 생성
+            const $metaDiv = $chatItem.find('.chat-meta');
+            if ($metaDiv.length > 0) {
+                $badge = $('<div class="unread-badge">1</div>');
+                $metaDiv.append($badge);
+            }
+        }
+        
+        if ($badge.length > 0) {
+            $badge.show();
+            
+            // 애니메이션 효과
+            $badge.addClass('pulse');
+            setTimeout(() => $badge.removeClass('pulse'), 1000);
+            
+            console.log(`채팅방 ${chatRoomId} 배지 업데이트: ${$badge.text()}`);
+        }
+    }
+    
+    // 전체 "읽지 않은 메시지 n개" 카운트 업데이트
+    updateTotalUnreadCountDisplay();
+}
+
+/**
+ * 채팅 목록 페이지의 전체 읽지 않은 메시지 카운트 업데이트
+ */
+function updateTotalUnreadCountDisplay() {
+    let totalCount = 0;
+    
+    // 모든 채팅방의 읽지 않은 메시지 수 합계
+    $('.unread-badge:visible').each(function() {
+        const count = parseInt($(this).text()) || 0;
+        totalCount += count;
+    });
+    
+    // "읽지 않은 메시지 n개" 텍스트 업데이트
+    const $totalUnreadDiv = $('.total-unread');
+    const $countSpan = $totalUnreadDiv.find('strong');
+    
+    if (totalCount > 0) {
+        if ($countSpan.length > 0) {
+            $countSpan.text(totalCount);
+        }
+        $totalUnreadDiv.show();
+    } else {
+        $totalUnreadDiv.hide();
+    }
+    
+    console.log('전체 읽지 않은 메시지 수 업데이트:', totalCount);
+}
+
+/**
+ * 채팅방 진입 시 해당 채팅방의 배지 감소 (채팅 목록 페이지용)
+ */
+function decrementChatListBadge(chatRoomId) {
+    const $chatItem = $(`.chat-item[data-chat-room-id="${chatRoomId}"]`);
+    if ($chatItem.length > 0) {
+        const $badge = $chatItem.find('.unread-badge');
+        
+        if ($badge.length > 0) {
+            $badge.remove(); // 배지 완전 제거
+            console.log(`채팅방 ${chatRoomId} 배지 제거`);
+        }
+    }
+    
+    // 전체 카운트도 업데이트
+    updateTotalUnreadCountDisplay();
+}
+
+/**
+ * 채팅 목록 페이지 초기 동기화 및 이벤트 설정
+ */
+function initChatListSync() {
+    console.log('채팅 목록 페이지 동기화 초기화');
+    
+    // 1. 페이지 로드 시 읽지 않은 NEW_MESSAGE 알림들로 배지 동기화
+    syncChatListWithNotifications();
+    
+    // 2. 채팅방 클릭 시 배지 감소 이벤트 등록
+    $(document).on('click', '.chat-item', function() {
+        const chatRoomId = $(this).data('chat-room-id');
+        if (chatRoomId) {
+            console.log('채팅방 클릭:', chatRoomId);
+            
+            // 약간의 지연 후 배지 감소 (페이지 이동 후 서버에서 읽음 처리 완료될 시간)
+            setTimeout(() => {
+                decrementChatListBadge(chatRoomId);
+            }, 500);
+        }
+    });
+}
+
+/**
+ * 읽지 않은 알림과 채팅 목록 동기화
+ */
+function syncChatListWithNotifications() {
+    $.get('/api/notifications/unread?limit=100')
+        .done(function(response) {
+            if (response.success && response.data && response.data.content) {
+                console.log('채팅 목록 동기화 시작, 총 알림:', response.data.content.length);
+                
+                // NEW_MESSAGE 타입 알림만 필터링
+                const chatNotifications = response.data.content.filter(n => n.type === 'NEW_MESSAGE');
+                
+                // 채팅방별 알림 개수 계산
+                const chatRoomCounts = {};
+                chatNotifications.forEach(notification => {
+                    const urlMatch = notification.url.match(/\/chat\/rooms\/(\d+)/);
+                    if (urlMatch) {
+                        const chatRoomId = urlMatch[1];
+                        chatRoomCounts[chatRoomId] = (chatRoomCounts[chatRoomId] || 0) + 1;
+                    }
+                });
+                
+                console.log('채팅방별 알림 개수:', chatRoomCounts);
+                
+                // 각 채팅방의 배지 업데이트
+                Object.keys(chatRoomCounts).forEach(chatRoomId => {
+                    const count = chatRoomCounts[chatRoomId];
+                    const $chatItem = $(`.chat-item[data-chat-room-id="${chatRoomId}"]`);
+                    
+                    if ($chatItem.length > 0) {
+                        let $badge = $chatItem.find('.unread-badge');
+                        
+                        if ($badge.length > 0) {
+                            // 기존 배지 업데이트
+                            $badge.text(count);
+                        } else {
+                            // 새 배지 생성
+                            const $metaDiv = $chatItem.find('.chat-meta');
+                            if ($metaDiv.length > 0) {
+                                $badge = $(`<div class="unread-badge">${count}</div>`);
+                                $metaDiv.append($badge);
+                            }
+                        }
+                        
+                        console.log(`채팅방 ${chatRoomId} 배지 동기화: ${count}`);
+                    }
+                });
+                
+                // 전체 카운트 업데이트
+                updateTotalUnreadCountDisplay();
+                
+                console.log('채팅 목록 동기화 완료');
+            }
+        })
+        .fail(function(xhr) {
+            console.error('채팅 목록 동기화 실패:', xhr);
+        });
+}
+
 // 전역에서 접근 가능하도록 함수 노출
 window.updateChatBadgeFromNotifications = updateChatBadgeFromNotifications;
 window.decrementChatBadgeForChatRoom = decrementChatBadgeForChatRoom;
+window.updateChatListBadge = updateChatListBadge;
+window.decrementChatListBadge = decrementChatListBadge;
+window.initChatListSync = initChatListSync;

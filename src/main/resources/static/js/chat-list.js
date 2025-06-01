@@ -132,11 +132,11 @@ class ChatListManager {
                 if (!isFirstLoad) {
                     console.log('채팅방', chatRoomId, '새 메시지 감지:', latestMessage);
                     
-                    // 채팅방 카드 업데이트
+                    // 채팅방 카드 업데이트 (최신 메시지 텍스트와 시간만)
                     this.updateChatRoomCard(chatRoomId, latestMessage);
                     
-                    // 읽지 않은 메시지 수 업데이트
-                    this.updateUnreadCount(chatRoomId, latestMessage);
+                    // 읽지 않은 메시지 수는 notification.js에서 처리하므로 여기서는 비활성화
+                    // this.updateUnreadCount(chatRoomId, latestMessage);
                 } else {
                     console.log('채팅방', chatRoomId, '초기 메시지 로드:', latestMessage.content?.substring(0, 20));
                 }
@@ -151,10 +151,10 @@ class ChatListManager {
     }
     
     /**
-     * 채팅방 카드 업데이트 (최신 메시지)
+     * 채팅방 카드 업데이트 (최신 메시지와 시간만, 배지는 notification.js에서 처리)
      */
     updateChatRoomCard(chatRoomId, latestMessage) {
-        const $chatItem = $(`.chat-item[onclick*="/chat/rooms/${chatRoomId}"]`);
+        const $chatItem = $(`.chat-item[data-chat-room-id="${chatRoomId}"]`);
         if ($chatItem.length === 0) {
             console.warn('채팅방 카드를 찾을 수 없음:', chatRoomId);
             return;
@@ -175,7 +175,7 @@ class ChatListManager {
             $time.text(timeString);
         }
         
-        // 카드에 애니메이션 효과 추가
+        // 카드에 애니메이션 효과 추가 (배지 애니메이션과 구분)
         $chatItem.addClass('highlight');
         setTimeout(() => {
             $chatItem.removeClass('highlight');
@@ -207,8 +207,8 @@ class ChatListManager {
             
             this.updateUnreadBadge(chatRoomId, newCount);
             
-            // 전체 읽지 않은 메시지 수도 업데이트
-            this.updateTotalUnreadCount();
+            // 전체 읽지 않은 메시지 수는 notification.js에서 처리
+            // this.updateTotalUnreadCount();
             
         } catch (error) {
             console.error('읽지 않은 메시지 수 업데이트 실패:', chatRoomId, error);
@@ -249,43 +249,46 @@ class ChatListManager {
     }
     
     /**
-     * 전체 읽지 않은 메시지 수 업데이트
+     * 전체 읽지 않은 메시지 수 업데이트 (notification.js에서 처리하므로 비활성화)
      */
     async updateTotalUnreadCount() {
-        try {
-            // 클라이언트에서 직접 계산
-            let totalCount = 0;
-            $('.chat-item .unread-badge:visible').each(function() {
-                const count = parseInt($(this).text()) || 0;
-                totalCount += count;
-            });
-            
-            console.log('클라이언트에서 계산된 총 읽지 않은 메시지 수:', totalCount);
-            
-            const $totalUnread = $('.total-unread');
-            if (totalCount > 0) {
-                if ($totalUnread.length > 0) {
-                    $totalUnread.find('strong').text(totalCount);
-                    $totalUnread.show();
-                } else {
-                    // 전체 읽지 않은 메시지 표시 영역 생성
-                    const totalUnreadHtml = `
-                        <div class="total-unread">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-bell-fill me-2"></i>
-                                <span>읽지 않은 메시지 <strong>${totalCount}</strong>개</span>
-                            </div>
-                        </div>
-                    `;
-                    $('.chat-list').before(totalUnreadHtml);
-                }
-            } else {
-                $totalUnread.hide();
-            }
-            
-        } catch (error) {
-            console.error('전체 읽지 않은 메시지 수 업데이트 실패:', error);
-        }
+        // 전체 읽지 않은 메시지 수는 notification.js의 updateTotalUnreadCountDisplay()에서 처리
+        console.log('전체 읽지 않은 메시지 수 업데이트는 notification.js에서 처리됨');
+        
+        // try {
+        //     // 클라이언트에서 직접 계산
+        //     let totalCount = 0;
+        //     $('.chat-item .unread-badge:visible').each(function() {
+        //         const count = parseInt($(this).text()) || 0;
+        //         totalCount += count;
+        //     });
+        //     
+        //     console.log('클라이언트에서 계산된 총 읽지 않은 메시지 수:', totalCount);
+        //     
+        //     const $totalUnread = $('.total-unread');
+        //     if (totalCount > 0) {
+        //         if ($totalUnread.length > 0) {
+        //             $totalUnread.find('strong').text(totalCount);
+        //             $totalUnread.show();
+        //         } else {
+        //             // 전체 읽지 않은 메시지 표시 영역 생성
+        //             const totalUnreadHtml = `
+        //                 <div class="total-unread">
+        //                     <div class="d-flex align-items-center">
+        //                         <i class="bi bi-bell-fill me-2"></i>
+        //                         <span>읽지 않은 메시지 <strong>${totalCount}</strong>개</span>
+        //                     </div>
+        //                 </div>
+        //             `;
+        //             $('.chat-list').before(totalUnreadHtml);
+        //         }
+        //     } else {
+        //         $totalUnread.hide();
+        //     }
+        //     
+        // } catch (error) {
+        //     console.error('전체 읽지 않은 메시지 수 업데이트 실패:', error);
+        // }
     }
     
     /**

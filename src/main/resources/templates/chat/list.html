@@ -154,6 +154,7 @@
                 <div th:if="${!chatRooms.isEmpty()}" class="chat-list">
                     <div th:each="chat : ${chatRooms}" 
                          class="chat-item p-3 mb-3"
+                         th:data-chat-room-id="${chat.chatRoomId}"
                          th:onclick="|location.href='/chat/rooms/${chat.chatRoomId}'|">
                         
                         <div class="d-flex align-items-center">
