@@ -409,6 +409,23 @@ class FirebaseChatManager {
                 messageContent = this.escapeHtml(message.content);
             }
             
+            // 읽음 상태 확인
+            let readStatus = '';
+            if (isMyMessage) {
+                // 내가 보낸 메시지의 경우, 상대방이 읽었는지 확인
+                const isReadByOther = this.isBuyer ? message.isReadBySeller : message.isReadByBuyer;
+                
+                // 읽음 상태 표시 (시스템 메시지는 제외)
+                if (message.type !== 'SYSTEM') {
+                    if (isReadByOther) {
+                        readStatus = ' • 읽음';
+                    } else {
+                        // 읽지 않은 경우 숫자 1 표시
+                        readStatus = ' • <span class="unread-count">1</span>';
+                    }
+                }
+            }
+            
             html += `
                 <div class="message-wrapper ${alignClass} mb-3">
                     <div class="message ${messageClass}">
@@ -417,7 +434,7 @@ class FirebaseChatManager {
                         </div>
                         <div class="message-info">
                             <small class="text-muted">
-                                ${!isMyMessage ? message.senderName + ' • ' : ''}${timeString}
+                                ${!isMyMessage ? message.senderName + ' • ' : ''}${timeString}${readStatus}
                             </small>
                         </div>
                     </div>
