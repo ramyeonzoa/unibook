@@ -201,10 +201,10 @@ public class ChatService {
     }
     
     /**
-     * 상대방의 읽지 않은 메시지 수 증가
+     * 상대방의 읽지 않은 메시지 수 증가 (현재 메시지 내용 포함)
      */
     @Transactional
-    public void incrementOtherUserUnreadCount(String firebaseRoomId, Long currentUserId) {
+    public void incrementOtherUserUnreadCount(String firebaseRoomId, Long currentUserId, String currentMessage) {
         ChatRoom chatRoom = chatRoomRepository.findByFirebaseRoomId(firebaseRoomId)
             .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
         
@@ -229,26 +229,39 @@ public class ChatService {
         
         chatRoomRepository.save(chatRoom);
         
-        // 채팅 알림 생성 (서버에서 직접 알림 생성)
+        // 채팅 알림 생성 (현재 전송된 메시지 내용 사용)
         try {
+            String notificationContent = currentMessage != null && !currentMessage.trim().isEmpty() 
+                ? currentMessage.trim() 
+                : "새 메시지";
+            
             NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
                 .recipientUserId(recipientId)
                 .actorUserId(currentUserId)
                 .type(Notification.NotificationType.NEW_MESSAGE)
                 .title(senderName + "님이 메시지를 보냈습니다")
-                .content(chatRoom.getLastMessage() != null ? chatRoom.getLastMessage() : "새 메시지")
+                .content(notificationContent)
                 .url("/chat/rooms/" + chatRoom.getChatRoomId())
                 .build();
             
             notificationService.createNotificationAsync(request);
             
-            log.info("채팅 알림 생성 요청 완료: recipientId={}, senderName={}", recipientId, senderName);
+            log.info("채팅 알림 생성 요청 완료: recipientId={}, senderName={}, message={}", 
+                    recipientId, senderName, notificationContent);
         } catch (Exception e) {
             log.error("채팅 알림 생성 실패: {}", e.getMessage());
         }
         
         log.info("상대방 읽지 않은 메시지 수 증가: firebaseRoomId={}, currentUserId={}", 
                 firebaseRoomId, currentUserId);
+    }
+    
+    /**
+     * 상대방의 읽지 않은 메시지 수 증가 (기존 호환성을 위한 오버로드)
+     */
+    @Transactional
+    public void incrementOtherUserUnreadCount(String firebaseRoomId, Long currentUserId) {
+        this.incrementOtherUserUnreadCount(firebaseRoomId, currentUserId, null);
     }
     
     /**

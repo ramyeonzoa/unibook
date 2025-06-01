@@ -186,9 +186,15 @@ public class ChatApiController {
     @PostMapping("/rooms/{firebaseRoomId}/increment-unread")
     public ResponseEntity<ApiResponse<Void>> incrementOtherUserUnreadCount(
             @PathVariable String firebaseRoomId,
+            @RequestBody(required = false) Map<String, String> requestBody,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        chatService.incrementOtherUserUnreadCount(firebaseRoomId, userPrincipal.getUserId());
+        String currentMessage = null;
+        if (requestBody != null && requestBody.containsKey("currentMessage")) {
+            currentMessage = requestBody.get("currentMessage");
+        }
+        
+        chatService.incrementOtherUserUnreadCount(firebaseRoomId, userPrincipal.getUserId(), currentMessage);
         
         return ResponseEntity.ok(ApiResponse.<Void>success("상대방의 읽지 않은 메시지 수가 증가되었습니다.", null));
     }

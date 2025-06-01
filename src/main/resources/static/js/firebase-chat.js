@@ -171,11 +171,11 @@ class FirebaseChatManager {
             // Firestore에 메시지 추가
             const docRef = await this.messagesRef.add(message);
             
+            // 상대방의 읽지 않은 메시지 수 업데이트를 위해 Spring Boot 호출 (현재 메시지 내용 전달)
+            this.incrementOtherUserUnreadCount(content);
+            
             // Spring Boot에 마지막 메시지 정보 업데이트
             this.updateLastMessageInDB(content);
-            
-            // 상대방의 읽지 않은 메시지 수 업데이트를 위해 Spring Boot 호출
-            this.incrementOtherUserUnreadCount();
             
             // 더 이상 서버 알림 필요 없음 (Firebase에서 직접 처리)
             
@@ -332,13 +332,17 @@ class FirebaseChatManager {
     /**
      * 상대방의 읽지 않은 메시지 수 증가
      */
-    async incrementOtherUserUnreadCount() {
+    async incrementOtherUserUnreadCount(currentMessage) {
         try {
             // 상대방의 읽지 않은 메시지 수를 증가시키기 위한 API 호출
-            // 서버에서 현재 사용자가 구매자인지 판매자인지 확인하여 상대방의 unreadCount 증가
+            // 현재 전송한 메시지 내용을 함께 전달하여 정확한 알림 생성
             await $.ajax({
                 url: `/api/chat/rooms/${this.firebaseRoomId}/increment-unread`,
-                method: 'POST'
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    currentMessage: currentMessage || '새 메시지'
+                })
             });
         } catch (error) {
             console.error('상대방 읽지 않은 메시지 수 증가 실패:', error);
