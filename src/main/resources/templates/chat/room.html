@@ -262,14 +262,30 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h5 th:text="${chatRoom.otherUserName}">상대방 이름</h5>
-                                <small class="opacity-75">
+                                <small class="opacity-75" th:if="${!chatRoom.otherUserLeft}">
                                     <i class="bi bi-circle-fill text-success me-1" style="font-size: 8px;"></i>
                                     온라인
                                 </small>
+                                <small class="opacity-75 text-warning" th:if="${chatRoom.otherUserLeft}">
+                                    <i class="bi bi-box-arrow-right me-1"></i>
+                                    채팅방을 나감
+                                </small>
                             </div>
-                            <a href="/chat" class="back-btn">
-                                <i class="bi bi-arrow-left fs-4"></i>
-                            </a>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light rounded-circle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" id="chatMenuDropdown">
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="leaveChatRoom(); return false;">
+                                            <i class="bi bi-box-arrow-right me-2"></i>채팅방 나가기
+                                        </a></li>
+                                    </ul>
+                                </div>
+                                <a href="/chat" class="back-btn">
+                                    <i class="bi bi-arrow-left fs-4"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     
@@ -299,11 +315,38 @@
                                         상태
                                     </span>
                                 </div>
-                                <a th:if="${chatRoom.postId != null}"
-                                   th:href="@{'/posts/' + ${chatRoom.postId}}" 
-                                   class="btn btn-sm btn-outline-primary mt-2">
-                                    <i class="bi bi-eye me-1"></i>상품 보기
-                                </a>
+                                <div class="mt-2">
+                                    <a th:if="${chatRoom.postId != null}"
+                                       th:href="@{'/posts/' + ${chatRoom.postId}}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye me-1"></i>상품 보기
+                                    </a>
+                                    
+                                    <!-- 판매자에게만 거래 상태 변경 버튼 표시 -->
+                                    <div th:if="${chatRoom.postId != null && currentUserId == chatRoom.postOwnerId && chatRoom.postStatus != null}"
+                                         class="btn-group ms-2 d-inline-block" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-tag me-1"></i>거래 상태 변경
+                                        </button>
+                                        <ul class="dropdown-menu" id="statusChangeDropdown">
+                                            <li th:if="${chatRoom.postStatus.toString() != 'AVAILABLE'}">
+                                                <a class="dropdown-item" href="#" onclick="updatePostStatus('AVAILABLE'); return false;">
+                                                    <span class="badge bg-success me-2">판매중</span>으로 변경
+                                                </a>
+                                            </li>
+                                            <li th:if="${chatRoom.postStatus.toString() != 'RESERVED'}">
+                                                <a class="dropdown-item" href="#" onclick="updatePostStatus('RESERVED'); return false;">
+                                                    <span class="badge bg-warning text-dark me-2">예약중</span>으로 변경
+                                                </a>
+                                            </li>
+                                            <li th:if="${chatRoom.postStatus.toString() != 'COMPLETED'}">
+                                                <a class="dropdown-item" href="#" onclick="updatePostStatus('COMPLETED'); return false;">
+                                                    <span class="badge bg-secondary me-2">거래완료</span>로 변경
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                                 <span th:if="${chatRoom.postId == null}"
                                       class="btn btn-sm btn-secondary mt-2 disabled">
                                     <i class="bi bi-x-circle me-1"></i>삭제된 게시글
@@ -323,7 +366,13 @@
                     
                     <!-- 메시지 입력 -->
                     <div class="chat-input-container">
-                        <form onsubmit="return false;" class="d-flex align-items-end gap-2">
+                        <!-- 상대방이 나간 경우 알림 메시지 -->
+                        <div th:if="${chatRoom.otherUserLeft}" class="alert alert-warning mb-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            상대방이 채팅방을 나갔습니다. 메시지를 보낼 수 없습니다.
+                        </div>
+                        
+                        <form onsubmit="return false;" class="d-flex align-items-end gap-2" th:classappend="${chatRoom.otherUserLeft ? 'd-none' : ''}">
                             <input type="file" 
                                    id="imageInput" 
                                    accept="image/*" 
@@ -411,6 +460,7 @@
             const otherUserId = /*[[${chatRoom.otherUserId}]]*/ 0;
             const otherUserName = /*[[${chatRoom.otherUserName}]]*/ '';
             const chatRoomId = /*[[${chatRoom.chatRoomId}]]*/ 0;
+            const otherUserLeft = /*[[${chatRoom.otherUserLeft}]]*/ false;
             
             // 구매자 여부 판단: 현재 사용자가 게시글 작성자가 아니면 구매자
             const postOwnerId = /*[[${chatRoom.postOwnerId}]]*/ 0;
@@ -429,7 +479,7 @@
                 if (typeof firebase !== 'undefined' && typeof initializeChat === 'function') {
                     console.log('Firebase와 채팅 함수 준비됨, 채팅 초기화 시작');
                     try {
-                        initializeChat(firebaseRoomId, currentUserId, currentUserName, isBuyer, otherUserId, otherUserName, chatRoomId);
+                        window.chatManager = initializeChat(firebaseRoomId, currentUserId, currentUserName, isBuyer, otherUserId, otherUserName, chatRoomId);
                         
                         // 채팅방 진입 시 읽음 처리
                         if (window.chatNotificationManager) {
@@ -458,6 +508,13 @@
             // 채팅방 진입 시 채팅 알림 클리어 (알림 시스템 통합)
             if (window.decrementChatBadgeForChatRoom && chatRoomId) {
                 window.decrementChatBadgeForChatRoom(chatRoomId);
+            }
+            
+            // 상대방이 나간 경우 메시지 전송 비활성화
+            if (otherUserLeft) {
+                $('#messageInput').prop('disabled', true);
+                $('#sendBtn').prop('disabled', true);
+                $('.chat-input-container button').prop('disabled', true);
             }
             
             // 이미지 업로드 관련 변수
@@ -537,6 +594,144 @@
                 } finally {
                     // 버튼 활성화
                     $('#imagePreview button').prop('disabled', false);
+                }
+            };
+            
+            // 채팅방 나가기 함수
+            window.leaveChatRoom = function() {
+                if (confirm('채팅방을 나가시겠습니까?\n나간 후에는 대화 내용을 볼 수 없습니다.')) {
+                    $.ajax({
+                        url: `/api/chat/rooms/${chatRoomId}/leave`,
+                        method: 'POST',
+                        success: async function(response) {
+                            try {
+                                // 1. 상대방에게 나가기 알림 시스템 메시지 전송
+                                if (window.chatManager && typeof window.chatManager.sendSystemMessage === 'function') {
+                                    const leaveMessage = `${currentUserName}님이 채팅방을 나갔습니다. [LEAVE:${currentUserId}]`;
+                                    console.log('나가기 시스템 메시지 전송:', leaveMessage);
+                                    await window.chatManager.sendSystemMessage(leaveMessage);
+                                    console.log('나가기 시스템 메시지 전송 완료');
+                                } else {
+                                    console.warn('chatManager가 준비되지 않음, 나가기 알림 전송 건너뜀');
+                                }
+                                
+                                // 2. 잠시 기다린 후 채팅 목록으로 이동
+                                setTimeout(() => {
+                                    alert('채팅방을 나갔습니다.');
+                                    window.location.href = '/chat';
+                                }, 500);
+                            } catch (error) {
+                                console.error('나가기 알림 전송 실패:', error);
+                                // 실패해도 나가기는 완료
+                                alert('채팅방을 나갔습니다.');
+                                window.location.href = '/chat';
+                            }
+                        },
+                        error: function(xhr) {
+                            const error = xhr.responseJSON;
+                            alert(error && error.message ? error.message : '채팅방 나가기에 실패했습니다.');
+                        }
+                    });
+                }
+            };
+            
+            // 거래 상태 변경 함수
+            window.updatePostStatus = function(newStatus) {
+                const statusNames = {
+                    'AVAILABLE': '판매중',
+                    'RESERVED': '예약중',
+                    'COMPLETED': '거래완료'
+                };
+                
+                if (confirm(`거래 상태를 '${statusNames[newStatus]}'(으)로 변경하시겠습니까?`)) {
+                    $.ajax({
+                        url: `/api/chat/rooms/${chatRoomId}/post-status`,
+                        method: 'PUT',
+                        data: { newStatus: newStatus },
+                        success: async function(response) {
+                            try {
+                                // 1. 시스템 메시지를 Firebase에 저장 (상태 코드 포함)
+                                if (window.chatManager && typeof window.chatManager.sendSystemMessage === 'function') {
+                                    const systemMessage = `거래 상태가 '${statusNames[newStatus]}'(으)로 변경되었습니다. [STATUS:${newStatus}]`;
+                                    console.log('시스템 메시지 전송 시도:', systemMessage);
+                                    await window.chatManager.sendSystemMessage(systemMessage);
+                                    console.log('시스템 메시지 전송 완료');
+                                } else {
+                                    console.warn('chatManager가 준비되지 않음, 시스템 메시지 전송 건너뜀');
+                                }
+                                
+                                // 2. 게시글 상태 배지 동적 업데이트
+                                updatePostStatusBadge(newStatus);
+                                
+                                // 3. 거래 상태 변경 드롭다운 메뉴 업데이트
+                                updateStatusDropdown(newStatus);
+                            } catch (error) {
+                                console.error('시스템 메시지 전송 실패:', error);
+                                // 실패해도 페이지는 새로고침
+                                location.reload();
+                            }
+                        },
+                        error: function(xhr) {
+                            const error = xhr.responseJSON;
+                            alert(error && error.message ? error.message : '상태 변경에 실패했습니다.');
+                        }
+                    });
+                }
+            };
+            
+            // 게시글 상태 배지 동적 업데이트
+            window.updatePostStatusBadge = function(newStatus) {
+                const statusNames = {
+                    'AVAILABLE': '판매중',
+                    'RESERVED': '예약중',
+                    'COMPLETED': '거래완료'
+                };
+                
+                const statusClasses = {
+                    'AVAILABLE': 'status-available',
+                    'RESERVED': 'status-reserved', 
+                    'COMPLETED': 'status-completed'
+                };
+                
+                const badge = $('.post-status-badge');
+                if (badge.length > 0) {
+                    // 기존 클래스 제거
+                    badge.removeClass('status-available status-reserved status-completed');
+                    // 새 클래스 추가
+                    badge.addClass(statusClasses[newStatus]);
+                    // 텍스트 업데이트
+                    badge.text(statusNames[newStatus]);
+                }
+            };
+            
+            // 거래 상태 변경 드롭다운 메뉴 업데이트
+            window.updateStatusDropdown = function(currentStatus) {
+                const statusOptions = {
+                    'AVAILABLE': { name: '판매중', class: 'bg-success' },
+                    'RESERVED': { name: '예약중', class: 'bg-warning text-dark' },
+                    'COMPLETED': { name: '거래완료', class: 'bg-secondary' }
+                };
+                
+                const dropdown = $('#statusChangeDropdown');
+                if (dropdown.length > 0) {
+                    let html = '';
+                    
+                    Object.keys(statusOptions).forEach(status => {
+                        if (status !== currentStatus) {
+                            const option = statusOptions[status];
+                            html += `
+                                <li>
+                                    <a class="dropdown-item" href="#" onclick="updatePostStatus('${status}'); return false;">
+                                        <span class="badge ${option.class} me-2">${option.name}</span>으로 변경
+                                    </a>
+                                </li>
+                            `;
+                        }
+                    });
+                    
+                    dropdown.html(html);
+                } else {
+                    console.log('거래 상태 변경 드롭다운 메뉴가 없음 (구매자이거나 권한 없음)');
                 }
             };
             

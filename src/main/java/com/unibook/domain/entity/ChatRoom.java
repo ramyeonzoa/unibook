@@ -2,6 +2,7 @@ package com.unibook.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 
 /**
  * 채팅방 Entity
@@ -97,6 +98,32 @@ public class ChatRoom extends BaseEntity {
     @Column(name = "seller_unread_count")
     @Builder.Default
     private Integer sellerUnreadCount = 0;
+    
+    /**
+     * 구매자가 채팅방을 나갔는지 여부
+     */
+    @Column(name = "buyer_left")
+    @Builder.Default
+    private Boolean buyerLeft = false;
+    
+    /**
+     * 판매자가 채팅방을 나갔는지 여부
+     */
+    @Column(name = "seller_left")
+    @Builder.Default
+    private Boolean sellerLeft = false;
+    
+    /**
+     * 구매자가 채팅방을 나간 시간
+     */
+    @Column(name = "buyer_left_at")
+    private LocalDateTime buyerLeftAt;
+    
+    /**
+     * 판매자가 채팅방을 나간 시간
+     */
+    @Column(name = "seller_left_at")
+    private LocalDateTime sellerLeftAt;
     
     /**
      * 채팅방 상태 enum
@@ -202,6 +229,40 @@ public class ChatRoom extends BaseEntity {
             return this.post.getPrice();
         }
         return this.postPrice;
+    }
+    
+    /**
+     * 사용자가 채팅방을 나감
+     */
+    public void leaveChat(Long userId) {
+        if (userId.equals(buyer.getUserId())) {
+            this.buyerLeft = true;
+            this.buyerLeftAt = LocalDateTime.now();
+        } else if (userId.equals(seller.getUserId())) {
+            this.sellerLeft = true;
+            this.sellerLeftAt = LocalDateTime.now();
+        } else {
+            throw new IllegalArgumentException("사용자가 이 채팅방의 참여자가 아닙니다.");
+        }
+    }
+    
+    /**
+     * 사용자가 채팅방을 나갔는지 확인
+     */
+    public boolean hasUserLeft(Long userId) {
+        if (userId.equals(buyer.getUserId())) {
+            return buyerLeft;
+        } else if (userId.equals(seller.getUserId())) {
+            return sellerLeft;
+        }
+        return false;
+    }
+    
+    /**
+     * 양쪽 모두 채팅방을 나갔는지 확인
+     */
+    public boolean isBothLeft() {
+        return buyerLeft && sellerLeft;
     }
     
     /**

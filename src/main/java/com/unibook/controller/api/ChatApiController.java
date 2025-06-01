@@ -3,6 +3,7 @@ package com.unibook.controller.api;
 import com.unibook.controller.dto.ApiResponse;
 import com.unibook.domain.dto.ChatDto;
 import com.unibook.domain.entity.ChatRoom;
+import com.unibook.domain.entity.Post;
 import com.unibook.security.UserPrincipal;
 import com.unibook.service.ChatService;
 import lombok.RequiredArgsConstructor;
@@ -210,6 +211,33 @@ public class ChatApiController {
         chatService.deleteChatRoom(chatRoomId, userPrincipal.getUserId());
         
         return ResponseEntity.ok(ApiResponse.<Void>success("채팅방이 삭제되었습니다.", null));
+    }
+    
+    /**
+     * 채팅방 나가기
+     */
+    @PostMapping("/rooms/{chatRoomId}/leave")
+    public ResponseEntity<ApiResponse<Void>> leaveChatRoom(
+            @PathVariable Long chatRoomId,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        
+        chatService.leaveChatRoom(chatRoomId, userPrincipal.getUserId());
+        
+        return ResponseEntity.ok(ApiResponse.<Void>success("채팅방을 나갔습니다.", null));
+    }
+    
+    /**
+     * 채팅방 내에서 게시글 상태 변경 (판매자만 가능)
+     */
+    @PutMapping("/rooms/{chatRoomId}/post-status")
+    public ResponseEntity<ApiResponse<Void>> updatePostStatusInChat(
+            @PathVariable Long chatRoomId,
+            @RequestParam Post.PostStatus newStatus,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        
+        chatService.updatePostStatusInChat(chatRoomId, userPrincipal.getUserId(), newStatus);
+        
+        return ResponseEntity.ok(ApiResponse.<Void>success("거래 상태가 변경되었습니다.", null));
     }
     
     /**

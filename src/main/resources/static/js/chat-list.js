@@ -302,7 +302,15 @@ class ChatListManager {
         if (message.type === 'IMAGE') {
             return '📷 이미지';
         } else {
-            const content = message.content || '';
+            let content = message.content || '';
+            
+            // 시스템 메시지의 경우 상태 코드 및 나가기 코드 제거
+            if (message.type === 'SYSTEM') {
+                content = content.replace(/\s*\[STATUS:[A-Z]+\]/, '')
+                                .replace(/\s*\[LEAVE:\d+\]/, '')
+                                .trim();
+            }
+            
             return content.length > 30 ? content.substring(0, 30) + '...' : content;
         }
     }

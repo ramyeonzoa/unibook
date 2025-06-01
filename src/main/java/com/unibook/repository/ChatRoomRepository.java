@@ -14,14 +14,16 @@ import java.util.Optional;
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     
     /**
-     * 특정 사용자가 참여한 채팅방 목록 조회 (최근 메시지 순)
+     * 특정 사용자가 참여한 채팅방 목록 조회 (최근 메시지 순, 나간 채팅방 제외)
      */
     @Query("SELECT cr FROM ChatRoom cr " +
            "LEFT JOIN FETCH cr.buyer b " +
            "LEFT JOIN FETCH cr.seller s " +
            "LEFT JOIN FETCH cr.post p " +
            "WHERE (cr.buyer.userId = :userId OR cr.seller.userId = :userId) " +
-           "AND cr.status = 'ACTIVE' " +
+           "AND (cr.status = 'ACTIVE' OR cr.status = 'COMPLETED') " +
+           "AND ((cr.buyer.userId = :userId AND (cr.buyerLeft = false OR cr.buyerLeft IS NULL)) " +
+           "     OR (cr.seller.userId = :userId AND (cr.sellerLeft = false OR cr.sellerLeft IS NULL))) " +
            "ORDER BY cr.lastMessageTime DESC NULLS LAST, cr.createdAt DESC")
     List<ChatRoom> findByUserIdOrderByLastMessageTimeDesc(@Param("userId") Long userId);
     
@@ -89,7 +91,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
            "LEFT JOIN FETCH p.user " +
            "WHERE cr.chatRoomId = :chatRoomId " +
            "AND (cr.buyer.userId = :userId OR cr.seller.userId = :userId) " +
-           "AND cr.status = 'ACTIVE'")
+           "AND (cr.status = 'ACTIVE' OR cr.status = 'COMPLETED')")
     Optional<ChatRoom> findByIdAndUserId(@Param("chatRoomId") Long chatRoomId, @Param("userId") Long userId);
     
     /**

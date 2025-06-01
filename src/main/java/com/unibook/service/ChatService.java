@@ -280,6 +280,34 @@ public class ChatService {
     }
     
     /**
+     * 채팅방 나가기
+     */
+    @Transactional
+    public void leaveChatRoom(Long chatRoomId, Long userId) {
+        ChatRoom chatRoom = chatRoomRepository.findByIdAndUserId(chatRoomId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없거나 접근 권한이 없습니다."));
+        
+        // 이미 나간 경우 체크
+        if (chatRoom.hasUserLeft(userId)) {
+            throw new ValidationException("이미 나간 채팅방입니다.");
+        }
+        
+        // 채팅방 나가기 처리
+        chatRoom.leaveChat(userId);
+        
+        // 양쪽 모두 나간 경우 채팅방 상태 변경
+        if (chatRoom.isBothLeft()) {
+            chatRoom.setStatus(ChatRoom.ChatRoomStatus.COMPLETED);
+        }
+        
+        chatRoomRepository.save(chatRoom);
+        
+        log.info("채팅방 나가기 완료: chatRoomId={}, userId={}", chatRoomId, userId);
+        
+        // 8. 시스템 메시지는 프론트엔드에서 Firebase에 직접 저장 (상대방에게 알림)
+    }
+    
+    /**
      * 채팅 알림 전송 (벨 알림 시스템 사용 안 함, 채팅 전용)
      */
     @Transactional
@@ -353,5 +381,66 @@ public class ChatService {
         } catch (Exception e) {
             log.error("채팅방 알림 읽음 처리 중 오류: chatRoomId={}, userId={}", chatRoomId, userId, e);
         }
+    }
+    
+    /**
+     * 채팅방 내에서 게시글 상태 변경
+     */
+    @Transactional
+    public void updatePostStatusInChat(Long chatRoomId, Long userId, Post.PostStatus newStatus) {
+        // 1. 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findByIdAndUserId(chatRoomId, userId)
+            .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없거나 접근 권한이 없습니다."));
+        
+        // 2. 게시글 조회
+        Post post = chatRoom.getPost();
+        if (post == null) {
+            throw new ValidationException("삭제된 게시글의 상태는 변경할 수 없습니다.");
+        }
+        
+        // 3. 판매자 권한 확인
+        if (!post.getUser().getUserId().equals(userId)) {
+            throw new ValidationException("게시글 작성자만 거래 상태를 변경할 수 있습니다.");
+        }
+        
+        // 4. 현재 상태와 동일한 경우 체크
+        if (post.getStatus() == newStatus) {
+            throw new ValidationException("이미 " + getStatusDisplayName(newStatus) + " 상태입니다.");
+        }
+        
+        // 5. 상태 변경 가능 여부 확인 (모든 상태 변경 허용)
+        // 거래완료 후에도 다시 판매중으로 변경 가능
+        
+        // 6. 게시글 상태 업데이트
+        String oldStatusName = getStatusDisplayName(post.getStatus());
+        String newStatusName = getStatusDisplayName(newStatus);
+        
+        post.setStatus(newStatus);
+        postRepository.save(post);
+        
+        // 7. 채팅방 상태도 업데이트
+        if (newStatus == Post.PostStatus.COMPLETED) {
+            chatRoom.setStatus(ChatRoom.ChatRoomStatus.COMPLETED);
+        } else {
+            // 거래완료가 아닌 경우 다시 ACTIVE로 변경
+            chatRoom.setStatus(ChatRoom.ChatRoomStatus.ACTIVE);
+        }
+        chatRoomRepository.save(chatRoom);
+        
+        log.info("채팅방에서 게시글 상태 변경: chatRoomId={}, postId={}, {} -> {}", 
+                chatRoomId, post.getPostId(), oldStatusName, newStatusName);
+        
+        // 8. 시스템 메시지는 프론트엔드에서 Firebase에 직접 저장
+    }
+    
+    /**
+     * 상태 표시명 반환
+     */
+    private String getStatusDisplayName(Post.PostStatus status) {
+        return switch (status) {
+            case AVAILABLE -> "판매중";
+            case RESERVED -> "예약중";
+            case COMPLETED -> "거래완료";
+        };
     }
 }

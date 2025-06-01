@@ -136,10 +136,37 @@ class FirebaseChatManager {
                 if (realNewMessages.length > 0 && typeof window.chatNotificationManager !== 'undefined' && window.chatNotificationManager !== null) {
                     realNewMessages.forEach(message => {
                         console.log('새 메시지 알림 전송:', message);
+                        
+                        // 시스템 메시지 처리
+                        if (message.type === 'SYSTEM' && message.content) {
+                            // 거래 상태 변경 메시지 처리
+                            if (message.content.includes('거래 상태가')) {
+                                this.handleStatusChangeMessage(message.content);
+                            }
+                            // 채팅방 나가기 메시지 처리
+                            else if (message.content.includes('[LEAVE:')) {
+                                this.handleLeaveMessage(message.content);
+                            }
+                        }
+                        
                         window.chatNotificationManager.onNewMessage(message.senderName, message.content, this.chatRoomId);
                     });
                 } else if (realNewMessages.length > 0) {
                     console.log('채팅 알림 매니저가 없음, 새 메시지:', realNewMessages);
+                    
+                    // 알림 매니저가 없어도 시스템 메시지 처리는 수행
+                    realNewMessages.forEach(message => {
+                        if (message.type === 'SYSTEM' && message.content) {
+                            // 거래 상태 변경 메시지 처리
+                            if (message.content.includes('거래 상태가')) {
+                                this.handleStatusChangeMessage(message.content);
+                            }
+                            // 채팅방 나가기 메시지 처리
+                            else if (message.content.includes('[LEAVE:')) {
+                                this.handleLeaveMessage(message.content);
+                            }
+                        }
+                    });
                 }
                 
                 // 첫 로드 완료 표시
@@ -225,6 +252,100 @@ class FirebaseChatManager {
     }
     
     /**
+     * 시스템 메시지 전송
+     */
+    async sendSystemMessage(content) {
+        try {
+            const message = {
+                senderId: null,
+                senderName: '시스템',
+                content: content,
+                type: 'SYSTEM',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                isReadByBuyer: true,
+                isReadBySeller: true
+            };
+            
+            // Firestore에 메시지 추가
+            const docRef = await this.messagesRef.add(message);
+            
+            // Spring Boot에 마지막 메시지 정보 업데이트
+            this.updateLastMessageInDB(content);
+            
+            console.log('시스템 메시지 전송 완료:', docRef.id);
+            
+            return docRef.id;
+        } catch (error) {
+            console.error('시스템 메시지 전송 실패:', error);
+            throw error;
+        }
+    }
+    
+    /**
+     * 거래 상태 변경 시스템 메시지 처리
+     */
+    handleStatusChangeMessage(content) {
+        try {
+            console.log('거래 상태 변경 메시지 처리:', content);
+            
+            // 메시지에서 상태 코드 추출: "[STATUS:RESERVED]"
+            const statusMatch = content.match(/\[STATUS:([A-Z]+)\]/);
+            if (statusMatch && statusMatch[1]) {
+                const newStatus = statusMatch[1];
+                console.log('상태 변경 감지:', newStatus);
+                
+                // 전역 함수가 있으면 UI 업데이트
+                if (typeof window.updatePostStatusBadge === 'function') {
+                    window.updatePostStatusBadge(newStatus);
+                    console.log('상태 배지 업데이트 완료');
+                }
+                
+                if (typeof window.updateStatusDropdown === 'function') {
+                    window.updateStatusDropdown(newStatus);
+                    console.log('드롭다운 메뉴 업데이트 완료');
+                }
+            } else {
+                console.warn('상태 변경 메시지에서 상태를 추출할 수 없음:', content);
+            }
+        } catch (error) {
+            console.error('거래 상태 변경 메시지 처리 실패:', error);
+        }
+    }
+    
+    /**
+     * 채팅방 나가기 시스템 메시지 처리
+     */
+    handleLeaveMessage(content) {
+        try {
+            console.log('채팅방 나가기 메시지 처리:', content);
+            
+            // 메시지에서 사용자 ID 추출: "[LEAVE:123]"
+            const leaveMatch = content.match(/\[LEAVE:(\d+)\]/);
+            if (leaveMatch && leaveMatch[1]) {
+                const leftUserId = parseInt(leaveMatch[1]);
+                console.log('나간 사용자 ID:', leftUserId);
+                
+                // 상대방이 나간 경우 (내가 아닌 다른 사용자)
+                if (leftUserId !== this.currentUserId) {
+                    console.log('상대방이 채팅방을 나감, UI 업데이트');
+                    
+                    // 페이지 새로고침하여 상대방 나간 상태 반영
+                    setTimeout(() => {
+                        console.log('상대방 나가기로 인한 페이지 새로고침');
+                        location.reload();
+                    }, 1000); // 시스템 메시지가 표시된 후 새로고침
+                } else {
+                    console.log('본인이 나간 메시지, UI 업데이트 안 함');
+                }
+            } else {
+                console.warn('나가기 메시지에서 사용자 ID를 추출할 수 없음:', content);
+            }
+        } catch (error) {
+            console.error('채팅방 나가기 메시지 처리 실패:', error);
+        }
+    }
+    
+    /**
      * 빈 상태 표시
      */
     displayEmptyState() {
@@ -249,6 +370,30 @@ class FirebaseChatManager {
         let html = '';
         
         messages.forEach((message, index) => {
+            // 시스템 메시지 처리
+            if (message.type === 'SYSTEM') {
+                // 상태 코드 및 나가기 코드 부분 제거하여 표시
+                let displayContent = message.content;
+                if (displayContent.includes('[STATUS:')) {
+                    displayContent = displayContent.replace(/\s*\[STATUS:[A-Z]+\]/, '');
+                }
+                if (displayContent.includes('[LEAVE:')) {
+                    displayContent = displayContent.replace(/\s*\[LEAVE:\d+\]/, '');
+                }
+                
+                html += `
+                    <div class="text-center my-3">
+                        <div class="d-inline-block px-3 py-2 bg-light rounded-pill">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                ${this.escapeHtml(displayContent)}
+                            </small>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
             const isMyMessage = message.senderId === this.currentUserId;
             const messageClass = isMyMessage ? 'message-sent' : 'message-received';
             const alignClass = isMyMessage ? 'text-end' : 'text-start';

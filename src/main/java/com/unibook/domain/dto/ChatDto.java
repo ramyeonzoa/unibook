@@ -84,12 +84,26 @@ public class ChatDto {
                 .postTitle(postTitle) // 삭제된 경우 "삭제된 게시글"
                 .postThumbnail(thumbnail) // 삭제된 경우 null
                 .postOwnerId(postOwnerId) // 삭제된 경우 null
-                .lastMessage(chatRoom.getLastMessage())
+                .lastMessage(cleanSystemMessage(chatRoom.getLastMessage()))
                 .lastMessageTime(chatRoom.getLastMessageTime())
                 .unreadCount(chatRoom.getUnreadCountForUser(currentUserId))
                 .status(chatRoom.getStatus())
                 .createdAt(chatRoom.getCreatedAt())
                 .build();
+        }
+        
+        /**
+         * 시스템 메시지에서 상태 코드 및 나가기 코드 제거
+         */
+        private static String cleanSystemMessage(String message) {
+            if (message == null) {
+                return null;
+            }
+            
+            // [STATUS:AVAILABLE], [LEAVE:123] 등의 코드 제거
+            return message.replaceAll("\\s*\\[STATUS:[A-Z]+\\]", "")
+                         .replaceAll("\\s*\\[LEAVE:\\d+\\]", "")
+                         .trim();
         }
     }
     
@@ -132,6 +146,9 @@ public class ChatDto {
         private ChatRoom.ChatRoomStatus status;
         private Integer unreadCount;
         
+        // 상대방이 채팅방을 나갔는지 여부
+        private Boolean otherUserLeft;
+        
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Seoul")
         private LocalDateTime createdAt;
         
@@ -162,6 +179,9 @@ public class ChatDto {
                 }
             }
             
+            // 상대방이 채팅방을 나갔는지 확인
+            boolean otherUserLeft = chatRoom.hasUserLeft(otherUser.getUserId());
+            
             return ChatRoomDetailResponse.builder()
                 .chatRoomId(chatRoom.getChatRoomId())
                 .firebaseRoomId(chatRoom.getFirebaseRoomId())
@@ -176,6 +196,7 @@ public class ChatDto {
                 .postOwnerId(postOwnerId) // 삭제된 경우 null
                 .status(chatRoom.getStatus())
                 .unreadCount(chatRoom.getUnreadCountForUser(currentUserId))
+                .otherUserLeft(otherUserLeft)
                 .createdAt(chatRoom.getCreatedAt())
                 .build();
         }
