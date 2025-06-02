@@ -114,7 +114,7 @@ public class Post extends BaseEntity {
     }
 
     public enum PostStatus {
-        AVAILABLE, RESERVED, COMPLETED
+        AVAILABLE, RESERVED, COMPLETED, BLOCKED
     }
     
     public enum TransactionMethod {

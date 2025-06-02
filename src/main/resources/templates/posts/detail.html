@@ -244,6 +244,11 @@
             color: #383d41;
         }
         
+        .status-badge.blocked {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
         /* 가격 표시 */
         .price-display {
             font-size: 2.5rem;
@@ -982,16 +987,49 @@
                     <div class="mb-3">
                         <span th:switch="${post.status}" class="status-badge"
                               th:classappend="${post.status.toString() == 'AVAILABLE' ? 'available' : 
-                                              (post.status.toString() == 'RESERVED' ? 'reserved' : 'completed')}">
+                                              (post.status.toString() == 'RESERVED' ? 'reserved' : 
+                                              (post.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
                             <i th:class="${post.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
-                                         (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                         (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 
+                                         (post.status.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
                             <span th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
-                                           (post.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}"></span>
+                                           (post.status.toString() == 'RESERVED' ? '예약중' : 
+                                           (post.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
                         </span>
+                        
+                        <!-- 작성자용 블락/신고 안내 -->
+                        <div th:if="${isOwner && post.status.toString() == 'BLOCKED'}" class="alert alert-warning mt-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>게시글이 임시 차단되었습니다.</strong><br>
+                            다수의 신고로 인해 게시글이 자동으로 차단되었습니다. 관리자 검토 후 처리됩니다.
+                        </div>
+                        
+                        <div th:if="${isOwner && !canChangeStatus && post.status.toString() != 'BLOCKED'}" class="alert alert-info mt-3" role="alert">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>상태 변경이 제한되었습니다.</strong><br>
+                            신고가 다수 접수되어 상태 변경이 제한되었습니다. 관리자에게 문의해주세요.
+                        </div>
                     </div>
                     
-                    <!-- 제목 -->
-                    <h1 class="post-title" th:text="${post.title}">게시글 제목</h1>
+                    <!-- 제목 및 더보기 메뉴 -->
+                    <div class="d-flex align-items-start justify-content-between mb-3">
+                        <h1 class="post-title mb-0" th:text="${post.title}">게시글 제목</h1>
+                        
+                        <!-- 더보기 메뉴 (비작성자만) -->
+                        <div th:if="${!isOwner}" sec:authorize="isAuthenticated()" class="dropdown">
+                            <button class="btn btn-sm btn-light rounded-circle" type="button" 
+                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                    style="width: 36px; height: 36px;">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item text-danger" href="#" 
+                                       onclick="showReportModal('POST', postId); return false;">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>신고하기
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
                     
                     <!-- 메타 정보 -->
                     <div class="post-meta">
@@ -1040,7 +1078,7 @@
                             </button>
                             
                             <!-- 상태 변경 드롭다운 -->
-                            <div class="dropdown" style="flex: 1;">
+                            <div class="dropdown" style="flex: 1;" th:if="${canChangeStatus}">
                                 <button class="btn-status dropdown-toggle w-100" type="button" 
                                         data-bs-toggle="dropdown" aria-expanded="false" id="statusDropdown">
                                     <i class="bi bi-gear"></i> 상태 변경
@@ -1072,7 +1110,8 @@
                                     th:data-post-id="${post.postId}"
                                     th:disabled="${post.status.toString() == 'COMPLETED'}">
                                 <i class="bi bi-chat-dots"></i> 
-                                <span th:text="${post.status.toString() == 'COMPLETED' ? '거래완료된 상품입니다' : '채팅으로 문의하기'}"></span>
+                                <span th:text="${post.status.toString() == 'COMPLETED' ? '거래완료된 상품입니다' : 
+                                               (post.status.toString() == 'BLOCKED' ? '신고로 인해 차단된 상품입니다' : '채팅으로 문의하기')}"></span>
                             </button>
                             <button class="btn-wishlist" id="wishlistBtn" 
                                     th:data-post-id="${post.postId}">
@@ -1243,11 +1282,14 @@
                             <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
                                 <span class="badge status-badge"
                                       th:classappend="${relatedPost.status.toString() == 'AVAILABLE' ? 'available' : 
-                                                      (relatedPost.status.toString() == 'RESERVED' ? 'reserved' : 'completed')}">
+                                                      (relatedPost.status.toString() == 'RESERVED' ? 'reserved' : 
+                                                      (relatedPost.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
                                     <i th:class="${relatedPost.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
-                                                 (relatedPost.status.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                                 (relatedPost.status.toString() == 'RESERVED' ? 'bi bi-clock' : 
+                                                 (relatedPost.status.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
                                     <span th:text="${relatedPost.status.toString() == 'AVAILABLE' ? '판매중' : 
-                                                   (relatedPost.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}"></span>
+                                                   (relatedPost.status.toString() == 'RESERVED' ? '예약중' : 
+                                                   (relatedPost.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
                                 </span>
                             </div>
                             
@@ -1341,11 +1383,14 @@
                             <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
                                 <span class="badge status-badge"
                                       th:classappend="${relatedPost.status.toString() == 'AVAILABLE' ? 'available' : 
-                                                      (relatedPost.status.toString() == 'RESERVED' ? 'reserved' : 'completed')}">
+                                                      (relatedPost.status.toString() == 'RESERVED' ? 'reserved' : 
+                                                      (relatedPost.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
                                     <i th:class="${relatedPost.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
-                                                 (relatedPost.status.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                                 (relatedPost.status.toString() == 'RESERVED' ? 'bi bi-clock' : 
+                                                 (relatedPost.status.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
                                     <span th:text="${relatedPost.status.toString() == 'AVAILABLE' ? '판매중' : 
-                                                   (relatedPost.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}"></span>
+                                                   (relatedPost.status.toString() == 'RESERVED' ? '예약중' : 
+                                                   (relatedPost.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
                                 </span>
                             </div>
                             
@@ -1416,6 +1461,83 @@
 <!-- 공통 Footer 포함 -->
 <footer th:replace="~{fragments/header :: footer}"></footer>
 
+<!-- 신고 모달 -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="reportModalLabel">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>신고하기
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="reportForm">
+                    <input type="hidden" id="reportType" name="reportType">
+                    <input type="hidden" id="targetId" name="targetId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">신고 사유를 선택해주세요</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="categorySpam" value="SPAM">
+                            <label class="form-check-label" for="categorySpam">
+                                스팸/도배
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="categoryFraud" value="FRAUD">
+                            <label class="form-check-label" for="categoryFraud">
+                                사기/허위매물
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="categoryInappropriate" value="INAPPROPRIATE_CONTENT">
+                            <label class="form-check-label" for="categoryInappropriate">
+                                부적절한 콘텐츠
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="categoryAbusive" value="ABUSIVE_BEHAVIOR">
+                            <label class="form-check-label" for="categoryAbusive">
+                                욕설/비방
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="categoryIllegal" value="ILLEGAL_ITEM">
+                            <label class="form-check-label" for="categoryIllegal">
+                                금지 물품
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="category" id="categoryOther" value="OTHER">
+                            <label class="form-check-label" for="categoryOther">
+                                기타
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="reportContent" class="form-label">상세 내용 (선택사항)</label>
+                        <textarea class="form-control" id="reportContent" name="content" rows="3" 
+                                  placeholder="구체적인 신고 내용을 입력해주세요."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            허위 신고 시 이용에 제한이 있을 수 있습니다.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-danger" onclick="submitReport()">신고하기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 공통 스크립트 포함 -->
 <div th:replace="~{fragments/header :: scripts}"></div>
 
@@ -1431,6 +1553,7 @@ var postId = /*[[${post.postId}]]*/ 0;
 
 // 페이지 로드 시 초기화
 $(document).ready(function() {
+    console.log('Debug - postId:', postId);
     // GLightbox 초기화
     const lightbox = GLightbox({
         selector: '.gallery-image',
@@ -1676,6 +1799,131 @@ function startChat() {
         },
         complete: function() {
             $('#startChatBtn').prop('disabled', false).html('<i class="bi bi-chat-dots"></i> 채팅으로 문의하기');
+        }
+    });
+}
+
+// 신고 모달 표시
+function showReportModal(reportType, targetId) {
+    console.log('Debug - showReportModal called with:', reportType, targetId);
+    
+    // 먼저 중복 신고 여부 확인
+    $.ajax({
+        url: '/api/reports/check',
+        type: 'GET',
+        data: {
+            reportType: reportType,
+            targetId: targetId
+        },
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+            var csrfToken = $('meta[name="_csrf"]').attr('content');
+            if (csrfHeader && csrfToken) {
+                xhr.setRequestHeader(csrfHeader, csrfToken);
+            }
+        },
+        success: function(response) {
+            if (response.success) {
+                var checkResult = response.data;
+                if (checkResult.canReport) {
+                    // 신고 가능한 경우 모달 표시
+                    $('#reportType').val(reportType);
+                    $('#targetId').val(targetId);
+                    $('#reportForm')[0].reset();
+                    
+                    // 카테고리 라디오 버튼 초기화
+                    $('input[name="category"]').prop('checked', false);
+                    
+                    $('#reportModal').modal('show');
+                } else {
+                    // 신고 불가능한 경우 메시지 표시
+                    showToast(checkResult.message);
+                }
+            } else {
+                // API 오류 시에도 모달 표시 (사용자 편의)
+                console.warn('신고 가능 여부 확인 실패:', response.message);
+                $('#reportType').val(reportType);
+                $('#targetId').val(targetId);
+                $('#reportForm')[0].reset();
+                $('input[name="category"]').prop('checked', false);
+                $('#reportModal').modal('show');
+            }
+        },
+        error: function(xhr) {
+            // 네트워크 오류 시에도 모달 표시 (사용자 편의)
+            console.warn('신고 중복 확인 요청 실패');
+            $('#reportType').val(reportType);
+            $('#targetId').val(targetId);
+            $('#reportForm')[0].reset();
+            $('input[name="category"]').prop('checked', false);
+            $('#reportModal').modal('show');
+        }
+    });
+}
+
+// 신고 제출
+function submitReport() {
+    var reportType = $('#reportType').val();
+    var targetId = $('#targetId').val();
+    var category = $('input[name="category"]:checked').val();
+    var content = $('#reportContent').val();
+    
+    console.log('Debug - reportType:', reportType, 'targetId:', targetId, 'category:', category);
+    
+    if (!category) {
+        showToast('신고 사유를 선택해주세요.');
+        return;
+    }
+    
+    if (!targetId || targetId === '') {
+        showToast('신고 대상을 찾을 수 없습니다.');
+        return;
+    }
+    
+    var parsedTargetId = parseInt(targetId);
+    if (isNaN(parsedTargetId)) {
+        showToast('올바르지 않은 신고 대상입니다.');
+        return;
+    }
+    
+    var data = {
+        reportType: reportType,
+        targetId: parsedTargetId,
+        category: category,
+        content: content.trim() || null
+    };
+    
+    console.log('Debug - Sending data:', data);
+    
+    $.ajax({
+        url: '/api/reports',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+            var csrfToken = $('meta[name="_csrf"]').attr('content');
+            if (csrfHeader && csrfToken) {
+                xhr.setRequestHeader(csrfHeader, csrfToken);
+            }
+        },
+        success: function(response) {
+            if (response.success) {
+                $('#reportModal').modal('hide');
+                showToast('신고가 접수되었습니다. 검토 후 처리하겠습니다.');
+            } else {
+                showToast(response.message || '신고 접수에 실패했습니다.');
+            }
+        },
+        error: function(xhr) {
+            if (xhr.status === 400) {
+                var response = xhr.responseJSON;
+                showToast(response.message || '신고 접수에 실패했습니다.');
+            } else {
+                showToast('신고 접수 중 오류가 발생했습니다.');
+            }
         }
     });
 }

@@ -4,6 +4,7 @@ import com.unibook.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -97,6 +98,7 @@ public class GlobalExceptionHandler {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             fieldErrors.put(fieldName, errorMessage);
+            log.warn("Validation error - Field: {}, Message: {}", fieldName, errorMessage);
         });
         
         Map<String, Object> errorResponse = new HashMap<>();
@@ -105,6 +107,25 @@ public class GlobalExceptionHandler {
         errorResponse.put("error", "Validation Failed");
         errorResponse.put("message", "입력값 검증에 실패했습니다");
         errorResponse.put("fieldErrors", fieldErrors);
+        
+        log.warn("Full validation exception: {}", e.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+    
+    /**
+     * JSON 파싱 실패 예외 처리
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("JSON parsing failed: {}", e.getMessage());
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", "요청 데이터 형식이 올바르지 않습니다");
+        errorResponse.put("errorCode", "INVALID_JSON_FORMAT");
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시글 관리 - Unibook</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- 공통 스타일 -->
+    <div th:replace="~{fragments/header :: styles}"></div>
+    
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <style>
+        .admin-sidebar {
+            min-height: calc(100vh - 76px);
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .admin-nav-link {
+            color: #495057;
+            text-decoration: none;
+            padding: 12px 20px;
+            display: block;
+            border-radius: 8px;
+            margin: 4px 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .admin-nav-link:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .admin-nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .filter-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        .posts-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .stat-icon.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .stat-icon.reserved {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .stat-icon.completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .stat-icon.deleted {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .stat-icon.blocked {
+            background: #d1d3e2;
+            color: #1e2125;
+        }
+        
+        .post-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
+        
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }
+        
+        /* 다크모드 */
+        [data-bs-theme="dark"] .admin-sidebar {
+            background: var(--bs-gray-800);
+            border-right-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .admin-nav-link {
+            color: var(--bs-gray-300);
+        }
+        
+        [data-bs-theme="dark"] .admin-nav-link:hover {
+            background: var(--bs-gray-700);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .filter-card,
+        [data-bs-theme="dark"] .posts-table,
+        [data-bs-theme="dark"] .stat-card {
+            background: var(--bs-gray-800);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav th:replace="~{fragments/header :: header}"></nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 사이드바 -->
+            <div class="col-md-3 col-lg-2 admin-sidebar">
+                <div class="py-4">
+                    <h5 class="px-3 text-muted fw-bold mb-3">관리자 메뉴</h5>
+                    <nav>
+                        <a href="/admin" class="admin-nav-link">
+                            <i class="bi bi-speedometer2 me-2"></i>대시보드
+                        </a>
+                        <a href="/admin/reports" class="admin-nav-link">
+                            <i class="bi bi-exclamation-triangle me-2"></i>신고 관리
+                        </a>
+                        <a href="/admin/users" class="admin-nav-link">
+                            <i class="bi bi-people me-2"></i>사용자 관리
+                        </a>
+                        <a href="/admin/posts" class="admin-nav-link active">
+                            <i class="bi bi-file-post me-2"></i>게시글 관리
+                        </a>
+                        <a href="/admin/statistics" class="admin-nav-link">
+                            <i class="bi bi-graph-up me-2"></i>통계
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- 메인 콘텐츠 -->
+            <div class="col-md-9 col-lg-10">
+                <div class="p-4">
+                    <!-- 페이지 헤더 -->
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2 class="mb-1">게시글 관리</h2>
+                            <nav aria-label="breadcrumb">
+                                <ol class="breadcrumb mb-0">
+                                    <li class="breadcrumb-item"><a href="/" class="text-decoration-none">홈</a></li>
+                                    <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none">관리자</a></li>
+                                    <li class="breadcrumb-item active">게시글 관리</li>
+                                </ol>
+                            </nav>
+                        </div>
+                    </div>
+                    
+                    <!-- 상태별 통계 카드 -->
+                    <div class="row mb-4">
+                        <div class="col-md-2 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon available me-3">
+                                        <i class="bi bi-check-circle"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">판매중</h6>
+                                        <h4 class="mb-0" th:text="${statusStats['AVAILABLE'] ?: 0}">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon reserved me-3">
+                                        <i class="bi bi-clock"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">예약중</h6>
+                                        <h4 class="mb-0" th:text="${statusStats['RESERVED'] ?: 0}">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon completed me-3">
+                                        <i class="bi bi-check-square"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">거래완료</h6>
+                                        <h4 class="mb-0" th:text="${statusStats['COMPLETED'] ?: 0}">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon deleted me-3">
+                                        <i class="bi bi-trash"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">삭제됨</h6>
+                                        <h4 class="mb-0" th:text="${statusStats['DELETED'] ?: 0}">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-2 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon blocked me-3">
+                                        <i class="bi bi-slash-circle"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">차단됨</h6>
+                                        <h4 class="mb-0" th:text="${statusStats['BLOCKED'] ?: 0}">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 필터 카드 -->
+                    <div class="filter-card p-4">
+                        <form method="get" action="/admin/posts">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="search" class="form-label">게시글 검색</label>
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           th:value="${search}" placeholder="제목 또는 설명으로 검색">
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="status" class="form-label">상태</label>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="">전체</option>
+                                        <option value="AVAILABLE" th:selected="${currentStatus == 'AVAILABLE'}">판매중</option>
+                                        <option value="RESERVED" th:selected="${currentStatus == 'RESERVED'}">예약중</option>
+                                        <option value="COMPLETED" th:selected="${currentStatus == 'COMPLETED'}">거래완료</option>
+                                        <option value="DELETED" th:selected="${currentStatus == 'DELETED'}">삭제됨</option>
+                                        <option value="BLOCKED" th:selected="${currentStatus == 'BLOCKED'}">차단됨</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-search"></i> 검색
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 게시글 목록 테이블 -->
+                    <div class="posts-table">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>이미지</th>
+                                        <th>제목</th>
+                                        <th>판매자</th>
+                                        <th>가격</th>
+                                        <th>상태</th>
+                                        <th>작성일</th>
+                                        <th>액션</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="post : ${posts}">
+                                        <td th:text="${post.postId}">#1</td>
+                                        <td>
+                                            <img th:if="${post.images != null and !post.images.isEmpty()}"
+                                                 th:src="@{${post.images[0].imagePath}}"
+                                                 class="post-thumbnail"
+                                                 alt="게시글 이미지">
+                                            <div th:unless="${post.images != null and !post.images.isEmpty()}"
+                                                 class="post-thumbnail bg-secondary d-flex align-items-center justify-content-center">
+                                                <i class="bi bi-image text-white"></i>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <a th:href="@{/posts/{id}(id=${post.postId})}" 
+                                               class="text-decoration-none"
+                                               target="_blank"
+                                               th:text="${post.title}">게시글 제목</a>
+                                        </td>
+                                        <td th:text="${post.user.name}">판매자명</td>
+                                        <td th:text="${#numbers.formatDecimal(post.price, 0, 'COMMA', 0, 'POINT')} + '원'">10,000원</td>
+                                        <td>
+                                            <span class="badge status-badge"
+                                                  th:classappend="${post.status.name() == 'AVAILABLE'} ? 'bg-success' : 
+                                                                 (${post.status.name() == 'RESERVED'} ? 'bg-warning' : 
+                                                                 (${post.status.name() == 'COMPLETED'} ? 'bg-secondary' : 
+                                                                 (${post.status.name() == 'DELETED'} ? 'bg-danger' : 'bg-dark')))"
+                                                  th:text="${post.status.name() == 'AVAILABLE'} ? '판매중' : 
+                                                          (${post.status.name() == 'RESERVED'} ? '예약중' : 
+                                                          (${post.status.name() == 'COMPLETED'} ? '거래완료' : 
+                                                          (${post.status.name() == 'DELETED'} ? '삭제됨' : '차단됨')))">
+                                            </span>
+                                        </td>
+                                        <td th:text="${#temporals.format(post.createdAt, 'MM-dd HH:mm')}">01-01 12:00</td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                        type="button" data-bs-toggle="dropdown">
+                                                    액션
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" 
+                                                           th:href="@{/posts/{id}(id=${post.postId})}"
+                                                           target="_blank">
+                                                            <i class="bi bi-eye"></i> 보기
+                                                        </a>
+                                                    </li>
+                                                    <li th:if="${post.status.name() != 'BLOCKED'}">
+                                                        <a class="dropdown-item text-danger" 
+                                                           href="#"
+                                                           th:onclick="'blockPost(' + ${post.postId} + ')'">
+                                                            <i class="bi bi-slash-circle"></i> 차단
+                                                        </a>
+                                                    </li>
+                                                    <li th:if="${post.status.name() == 'BLOCKED'}">
+                                                        <a class="dropdown-item text-success" 
+                                                           href="#"
+                                                           th:onclick="'unblockPost(' + ${post.postId} + ')'">
+                                                            <i class="bi bi-check-circle"></i> 차단 해제
+                                                        </a>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    <li>
+                                                        <a class="dropdown-item" 
+                                                           th:href="@{/admin/reports(targetId=${post.postId},targetType=POST)}">
+                                                            <i class="bi bi-flag"></i> 신고 내역
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- 페이지네이션 -->
+                        <div class="p-3 border-top" th:if="${posts.totalPages > 1}">
+                            <nav aria-label="게시글 목록 페이지네이션">
+                                <ul class="pagination justify-content-center mb-0">
+                                    <li class="page-item" th:classappend="${posts.first} ? 'disabled'">
+                                        <a class="page-link" 
+                                           th:href="@{/admin/posts(page=${posts.number - 1}, search=${search}, status=${currentStatus})}"
+                                           tabindex="-1">이전</a>
+                                    </li>
+                                    
+                                    <li th:each="i : ${#numbers.sequence(0, posts.totalPages - 1)}"
+                                        class="page-item" 
+                                        th:classappend="${i == posts.number} ? 'active'">
+                                        <a class="page-link" 
+                                           th:href="@{/admin/posts(page=${i}, search=${search}, status=${currentStatus})}"
+                                           th:text="${i + 1}">1</a>
+                                    </li>
+                                    
+                                    <li class="page-item" th:classappend="${posts.last} ? 'disabled'">
+                                        <a class="page-link" 
+                                           th:href="@{/admin/posts(page=${posts.number + 1}, search=${search}, status=${currentStatus})}">다음</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/dark-mode.js}"></script>
+    
+    <script th:inline="javascript">
+        const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
+        
+        function blockPost(postId) {
+            if (!confirm('이 게시글을 차단하시겠습니까?\n차단된 게시글은 사용자에게 표시되지 않습니다.')) return;
+            
+            fetch(`/posts/${postId}/block`, {
+                method: 'PUT',
+                headers: {
+                    [csrfHeader]: csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('게시글이 차단되었습니다.');
+                    location.reload();
+                } else {
+                    alert(data.message || '차단 중 오류가 발생했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('차단 중 오류가 발생했습니다.');
+            });
+        }
+        
+        function unblockPost(postId) {
+            if (!confirm('이 게시글의 차단을 해제하시겠습니까?')) return;
+            
+            fetch(`/posts/${postId}/unblock`, {
+                method: 'PUT',
+                headers: {
+                    [csrfHeader]: csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('게시글 차단이 해제되었습니다.');
+                    location.reload();
+                } else {
+                    alert(data.message || '차단 해제 중 오류가 발생했습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('차단 해제 중 오류가 발생했습니다.');
+            });
+        }
+    </script>
+</body>
+</html>

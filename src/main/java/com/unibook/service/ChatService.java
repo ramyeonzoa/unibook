@@ -441,6 +441,7 @@ public class ChatService {
             case AVAILABLE -> "판매중";
             case RESERVED -> "예약중";
             case COMPLETED -> "거래완료";
+            case BLOCKED -> "차단됨";
         };
     }
 }

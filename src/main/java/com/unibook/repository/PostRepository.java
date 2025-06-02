@@ -24,6 +24,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN FETCH u.department d " +
            "LEFT JOIN FETCH d.school " +
            "LEFT JOIN FETCH p.book " +
+           "WHERE p.status != 'BLOCKED' " +
            "ORDER BY p.createdAt DESC")
     List<Post> findRecentPostsWithDetails(Pageable pageable);
     
@@ -57,6 +58,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "ORDER BY p.createdAt DESC")
     List<Post> findByStatusWithDetails(@Param("status") Post.PostStatus status);
     List<Post> findByBook_BookId(Long bookId);
+    List<Post> findByBook_BookIdAndStatusNot(Long bookId, Post.PostStatus status);
     
     @Query("SELECT p FROM Post p " +
            "LEFT JOIN FETCH p.user u " +
@@ -78,6 +80,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "LEFT JOIN FETCH p.book " +
            "LEFT JOIN FETCH p.subject " +
            "WHERE p.subject.subjectId = :subjectId " +
+           "AND p.status != 'BLOCKED' " +
            "ORDER BY p.createdAt DESC")
     List<Post> findBySubject_SubjectIdWithDetails(@Param("subjectId") Long subjectId);
     
@@ -111,6 +114,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "  OR MATCH(s.subject_name) AGAINST(:searchQuery IN BOOLEAN MODE) " +
            "  OR MATCH(pr.professor_name) AGAINST(:searchQuery IN BOOLEAN MODE)" +
            ") " +
+           "AND p.status != 'BLOCKED' " +
            "AND (:status IS NULL OR p.status = :status) " +
            "AND (:productType IS NULL OR p.product_type = :productType) " +
            "AND (:schoolId IS NULL OR d.school_id = :schoolId) " +
@@ -130,6 +134,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "  OR MATCH(s.subject_name) AGAINST(:searchQuery IN BOOLEAN MODE) " +
            "  OR MATCH(pr.professor_name) AGAINST(:searchQuery IN BOOLEAN MODE)" +
            ") " +
+           "AND p.status != 'BLOCKED' " +
            "AND (:status IS NULL OR p.status = :status) " +
            "AND (:productType IS NULL OR p.product_type = :productType) " +
            "AND (:schoolId IS NULL OR d.school_id = :schoolId)",
@@ -156,12 +161,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /**
      * 필터링만 적용 (검색어 없을 때)
      * Pageable의 정렬 정보를 사용하도록 ORDER BY 제거
+     * BLOCKED 상태 게시글은 목록에서 제외
      */
     @Query("SELECT p FROM Post p " +
            "LEFT JOIN FETCH p.user u " +
            "LEFT JOIN FETCH u.department d " +
            "LEFT JOIN FETCH d.school " +
-           "WHERE (:status IS NULL OR p.status = :status) " +
+           "WHERE p.status != 'BLOCKED' " +
+           "AND (:status IS NULL OR p.status = :status) " +
            "AND (:productType IS NULL OR p.productType = :productType) " +
            "AND (:schoolId IS NULL OR d.school.schoolId = :schoolId)")
     Page<Post> findByFilters(@Param("status") Post.PostStatus status,
@@ -171,6 +178,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     /**
      * 사용자가 찜한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
+     * BLOCKED 상태 게시글은 제외
      */
     @Query(value = "SELECT p FROM Wishlist w " +
                    "JOIN w.post p " +
@@ -178,12 +186,13 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    "LEFT JOIN FETCH u.department d " +
                    "LEFT JOIN FETCH d.school " +
                    "LEFT JOIN FETCH p.postImages " +
-                   "WHERE w.user.userId = :userId",
-           countQuery = "SELECT COUNT(w) FROM Wishlist w WHERE w.user.userId = :userId")
+                   "WHERE w.user.userId = :userId AND p.status != 'BLOCKED'",
+           countQuery = "SELECT COUNT(w) FROM Wishlist w JOIN w.post p WHERE w.user.userId = :userId AND p.status != 'BLOCKED'")
     Page<Post> findWishlistedPostsByUser(@Param("userId") Long userId, Pageable pageable);
     
     /**
      * 사용자가 작성한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
+     * 작성자에게는 BLOCKED 상태 게시글도 표시 (상태 확인 가능하도록)
      */
     @Query(value = "SELECT p FROM Post p " +
                    "JOIN FETCH p.user u " +
@@ -200,4 +209,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Modifying
     @Query(value = "DELETE FROM posts WHERE post_id = :postId", nativeQuery = true)
     void deleteByIdNative(@Param("postId") Long postId);
+    
+    // 관리자용 검색 메서드들
+    Page<Post> findByTitleContainingOrDescriptionContaining(String title, String description, Pageable pageable);
+    Page<Post> findByTitleContainingOrDescriptionContainingAndStatus(String title, String description, Post.PostStatus status, Pageable pageable);
+    Page<Post> findByStatus(Post.PostStatus status, Pageable pageable);
+    long countByStatus(Post.PostStatus status);
 }

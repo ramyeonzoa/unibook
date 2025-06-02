@@ -96,6 +96,7 @@ public class Notification extends BaseEntity {
         WISHLIST_STATUS_CHANGED,  // 찜한 게시글 상태 변경
         POST_WISHLISTED,          // 내 게시글이 찜됨
         NEW_MESSAGE,              // 새 채팅 메시지
+        REPORT_PROCESSED,         // 신고 처리 완료
         SYSTEM_NOTICE             // 시스템 공지사항 (향후)
     }
 

@@ -11,8 +11,10 @@ import com.unibook.exception.ValidationException;
 import com.unibook.repository.BookRepository;
 import com.unibook.repository.ChatRoomRepository;
 import com.unibook.repository.PostRepository;
+import com.unibook.repository.ReportRepository;
 import com.unibook.repository.SubjectRepository;
 import com.unibook.repository.WishlistRepository;
+import com.unibook.domain.entity.Report;
 import com.unibook.repository.projection.PostSearchProjection;
 import com.unibook.util.FileUploadUtil;
 import com.unibook.util.QueryNormalizer;
@@ -47,6 +49,7 @@ public class PostService {
     private final SubjectRepository subjectRepository;
     private final WishlistRepository wishlistRepository;
     private final ChatRoomRepository chatRoomRepository;
+    private final ReportRepository reportRepository;
     private final FileUploadUtil fileUploadUtil;
     private final SubjectBookService subjectBookService;
     private final NotificationService notificationService;
@@ -185,7 +188,7 @@ public class PostService {
      * 관련 게시글 조회 (같은 책, 현재 게시글 제외)
      */
     public List<Post> getRelatedPosts(Long bookId, Long excludePostId, int limit) {
-        return postRepository.findByBook_BookId(bookId).stream()
+        return postRepository.findByBook_BookIdAndStatusNot(bookId, Post.PostStatus.BLOCKED).stream()
                 .filter(post -> !post.getPostId().equals(excludePostId))
                 .filter(post -> post.getStatus() == Post.PostStatus.AVAILABLE)
                 .limit(limit)
@@ -440,6 +443,20 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
+        // BLOCKED 상태 게시글의 상태 변경 방지 (관리자 제외)
+        if (post.getStatus() == Post.PostStatus.BLOCKED && status != Post.PostStatus.BLOCKED) {
+            throw new ValidationException("블라인드 처리된 게시글의 상태는 관리자만 변경할 수 있습니다.");
+        }
+        
+        // 신고가 많은 게시글의 상태 변경 방지 (BLOCKED로 변경하는 경우 제외)
+        if (status != Post.PostStatus.BLOCKED) {
+            long uniqueReporters = reportRepository.countUniqueReportersForTarget(
+                    Report.ReportType.POST, postId);
+            if (uniqueReporters >= 3) {
+                throw new ValidationException("다수의 신고가 접수된 게시글의 상태는 관리자만 변경할 수 있습니다.");
+            }
+        }
+        
         // 상태가 실제로 변경되는 경우에만 알림 발송
         Post.PostStatus oldStatus = post.getStatus();
         if (oldStatus != status) {
@@ -531,8 +548,49 @@ public class PostService {
     }
     
     /**
-     * 조회수 증가 (비동기, 중복 방지)
+     * 조회수 증가 (세션 기반으로 변경됨)
      */
+    @Transactional
+    public void incrementViewCount(Long postId) {
+        Post post = postRepository.findById(postId).orElse(null);
+        if (post != null) {
+            post.setViewCount(post.getViewCount() + 1);
+            postRepository.save(post);
+            log.debug("조회수 증가: postId={}, viewCount={}", postId, post.getViewCount());
+        }
+    }
+    
+    /**
+     * 게시글의 상태 변경 가능 여부 확인
+     */
+    public boolean canChangePostStatus(Long postId) {
+        try {
+            Post post = postRepository.findById(postId).orElse(null);
+            if (post == null) {
+                return false;
+            }
+            
+            // BLOCKED 상태인 경우 변경 불가
+            if (post.getStatus() == Post.PostStatus.BLOCKED) {
+                return false;
+            }
+            
+            // 3개 이상 신고된 경우 변경 불가
+            long uniqueReporters = reportRepository.countUniqueReportersForTarget(
+                    Report.ReportType.POST, postId);
+            return uniqueReporters < 3;
+            
+        } catch (Exception e) {
+            log.warn("게시글 상태 변경 가능 여부 확인 실패: postId={}", postId, e);
+            return false;
+        }
+    }
+    
+    /**
+     * 조회수 증가 (비동기, 중복 방지) - Deprecated
+     * @deprecated 세션 기반 방식으로 변경됨. Controller에서 직접 처리
+     */
+    @Deprecated
     @Async
     @Transactional
     public void incrementViewCountAsync(Long postId, Long userId) {
@@ -732,6 +790,86 @@ public class PostService {
         return getRecentPosts(limit).stream()
                 .map(PostResponseDto::listFrom)
                 .collect(Collectors.toList());
+    }
+    
+    /**
+     * 전체 게시글 수 조회 (관리자용)
+     */
+    public long getTotalPostCount() {
+        return postRepository.count();
+    }
+    
+    /**
+     * 게시글 검색 (관리자용)
+     */
+    public Page<PostResponseDto> searchPostsForAdmin(String keyword, Post.PostStatus status, Pageable pageable) {
+        Page<Post> posts;
+        
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            if (status != null) {
+                posts = postRepository.findByTitleContainingOrDescriptionContainingAndStatus(
+                        keyword, keyword, status, pageable);
+            } else {
+                posts = postRepository.findByTitleContainingOrDescriptionContaining(
+                        keyword, keyword, pageable);
+            }
+        } else {
+            if (status != null) {
+                posts = postRepository.findByStatus(status, pageable);
+            } else {
+                posts = postRepository.findAll(pageable);
+            }
+        }
+        
+        return posts.map(PostResponseDto::from);
+    }
+    
+    /**
+     * 게시글 상태별 통계 조회 (관리자용)
+     */
+    public Map<String, Long> getPostStatusStats() {
+        Map<String, Long> stats = new HashMap<>();
+        for (Post.PostStatus status : Post.PostStatus.values()) {
+            stats.put(status.name(), postRepository.countByStatus(status));
+        }
+        return stats;
+    }
+    
+    /**
+     * 게시글 차단 (관리자용)
+     */
+    @Transactional
+    public void blockPost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
+        
+        if (post.getStatus() == Post.PostStatus.BLOCKED) {
+            throw new ValidationException("이미 차단된 게시글입니다.");
+        }
+        
+        post.setStatus(Post.PostStatus.BLOCKED);
+        postRepository.save(post);
+        
+        log.info("게시글 차단 완료: postId={}", postId);
+    }
+    
+    /**
+     * 게시글 차단 해제 (관리자용)
+     */
+    @Transactional
+    public void unblockPost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
+        
+        if (post.getStatus() != Post.PostStatus.BLOCKED) {
+            throw new ValidationException("차단된 게시글이 아닙니다.");
+        }
+        
+        // 차단 해제 시 판매중 상태로 변경
+        post.setStatus(Post.PostStatus.AVAILABLE);
+        postRepository.save(post);
+        
+        log.info("게시글 차단 해제 완료: postId={}", postId);
     }
     
     /**

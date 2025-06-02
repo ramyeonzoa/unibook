@@ -15,6 +15,8 @@ import com.unibook.service.BookService;
 import com.unibook.service.PostService;
 import com.unibook.service.UserService;
 import com.unibook.service.WishlistService;
+import com.unibook.repository.ReportRepository;
+import com.unibook.domain.entity.Report;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,11 +35,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Controller
@@ -49,6 +54,7 @@ public class PostController {
     private final UserService userService;
     private final BookService bookService;
     private final WishlistService wishlistService;
+    private final ReportRepository reportRepository;
     private final ObjectMapper objectMapper;
     
     private static final int DEFAULT_PAGE_SIZE = 12;
@@ -140,19 +146,41 @@ public class PostController {
      */
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model,
-                        @AuthenticationPrincipal UserPrincipal userPrincipal) {
+                        @AuthenticationPrincipal UserPrincipal userPrincipal,
+                        HttpSession session) {
         
         try {
             // 게시글 조회 (연관 데이터 포함)
             Post post = postService.getPostByIdWithDetails(id)
                     .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
             
-            // 비동기로 조회수 증가 (중복 방지 로직 포함)
-            if (userPrincipal != null) {
-                postService.incrementViewCountAsync(id, userPrincipal.getUserId());
-            } else {
-                // 비로그인 사용자는 세션 기반으로 처리
-                postService.incrementViewCountAsync(id, null);
+            // BLOCKED 상태 게시글 접근 차단 (작성자/관리자 제외)
+            if (post.getStatus() == Post.PostStatus.BLOCKED) {
+                boolean isOwner = userPrincipal != null && 
+                                post.getUser().getUserId().equals(userPrincipal.getUserId());
+                boolean isAdmin = userPrincipal != null && 
+                                userPrincipal.getAuthorities().stream()
+                                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+                
+                if (!isOwner && !isAdmin) {
+                    log.warn("BLOCKED 게시글 비인가 접근 시도: postId={}, userId={}", 
+                            id, userPrincipal != null ? userPrincipal.getUserId() : "anonymous");
+                    model.addAttribute("blocked", true);
+                    return "error/post-deleted";
+                }
+            }
+            
+            // 세션 기반 조회수 증가 로직
+            Set<Long> viewedPosts = (Set<Long>) session.getAttribute("viewedPosts");
+            if (viewedPosts == null) {
+                viewedPosts = new HashSet<>();
+            }
+            
+            // 이미 본 게시글이 아니면 조회수 증가
+            if (!viewedPosts.contains(id)) {
+                postService.incrementViewCount(id);
+                viewedPosts.add(id);
+                session.setAttribute("viewedPosts", viewedPosts);
             }
             
             // 작성자 여부 확인
@@ -160,9 +188,10 @@ public class PostController {
             boolean canEdit = false;
             if (userPrincipal != null) {
                 isOwner = post.getUser().getUserId().equals(userPrincipal.getUserId());
-                // 작성자이거나 관리자인 경우 수정 가능
-                canEdit = isOwner || userPrincipal.getAuthorities().stream()
+                // 작성자이거나 관리자인 경우 수정 가능 (단, BLOCKED 상태는 관리자만 가능)
+                boolean isAdmin = userPrincipal.getAuthorities().stream()
                         .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+                canEdit = (isOwner && post.getStatus() != Post.PostStatus.BLOCKED) || isAdmin;
             }
             
             // 같은 책의 다른 게시글 (현재 게시글 제외)
@@ -181,9 +210,13 @@ public class PostController {
                 isWishlisted = wishlistService.isWishlisted(userPrincipal.getUserId(), id);
             }
             
+            // 상태 변경 가능 여부 확인
+            boolean canChangeStatus = isOwner && postService.canChangePostStatus(id);
+            
             model.addAttribute("post", post);
             model.addAttribute("isOwner", isOwner);
             model.addAttribute("canEdit", canEdit);
+            model.addAttribute("canChangeStatus", canChangeStatus);
             model.addAttribute("isWishlisted", isWishlisted);
             model.addAttribute("relatedPosts", relatedPosts);
             model.addAttribute("subjectRelatedPosts", subjectRelatedPosts);
@@ -572,6 +605,18 @@ public class PostController {
                 throw new AccessDeniedException("게시글 상태 변경 권한이 없습니다.");
             }
             
+            // BLOCKED 상태 게시글의 상태 변경 차단
+            if (post.getStatus() == Post.PostStatus.BLOCKED) {
+                throw new ValidationException("신고로 인해 블라인드 처리된 게시글은 상태를 변경할 수 없습니다.");
+            }
+            
+            // 3개 이상 신고된 게시글의 상태 변경 차단 (BLOCKED가 아니어도)
+            long uniqueReporters = reportRepository.countUniqueReportersForTarget(
+                    Report.ReportType.POST, id);
+            if (uniqueReporters >= 3) {
+                throw new ValidationException("다수의 신고가 접수된 게시글은 상태를 변경할 수 없습니다. 관리자에게 문의해주세요.");
+            }
+            
             postService.updatePostStatus(id, status);
             
             response.put("success", true);
@@ -675,5 +720,49 @@ public class PostController {
         model.addAttribute("pageType", "wishlist"); // 페이지 타입 구분용
         
         return "posts/list";
+    }
+    
+    /**
+     * 게시글 차단 (관리자용)
+     */
+    @PutMapping("/{id}/block")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public Map<String, Object> blockPost(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            postService.blockPost(id);
+            response.put("success", true);
+            response.put("message", "게시글이 차단되었습니다.");
+        } catch (Exception e) {
+            log.error("게시글 차단 실패: postId={}", id, e);
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        
+        return response;
+    }
+    
+    /**
+     * 게시글 차단 해제 (관리자용)
+     */
+    @PutMapping("/{id}/unblock")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public Map<String, Object> unblockPost(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            postService.unblockPost(id);
+            response.put("success", true);
+            response.put("message", "게시글 차단이 해제되었습니다.");
+        } catch (Exception e) {
+            log.error("게시글 차단 해제 실패: postId={}", id, e);
+            response.put("success", false);
+            response.put("message", e.getMessage());
+        }
+        
+        return response;
     }
 }

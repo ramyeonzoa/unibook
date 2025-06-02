@@ -59,8 +59,8 @@ server:
 
 logging:
   level:
-    com.unibook: INFO  # 기본값은 INFO
-    org.springframework.web: INFO
+    com.unibook: WARN # INFO  # 기본값은 INFO
+    org.springframework.web: WARN # INFO
 
 # Application specific settings
 app:

@@ -353,6 +353,11 @@
             color: #383d41;
         }
         
+        .status-badge.blocked {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
         /* 캐러셀 컨트롤 */
         .carousel-nav {
             position: absolute;
@@ -565,6 +570,11 @@
             background: rgba(108, 117, 125, 0.2);
             color: #adb5bd;
         }
+        
+        [data-bs-theme="dark"] .status-badge.blocked {
+            background: rgba(220, 53, 69, 0.2);
+            color: #f5c2c7;
+        }
     </style>
 </head>
 <body>
@@ -584,6 +594,8 @@
         </div>
     </div>
 
+    <!-- Main Content -->
+    <main id="main-content">
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container text-center">
@@ -729,11 +741,14 @@
                                 </div>
                                 <span class="status-badge" 
                                       th:classappend="${post.status.toString() == 'AVAILABLE' ? 'available' : 
-                                                      (post.status.toString() == 'RESERVED' ? 'reserved' : 'completed')}">
+                                                      (post.status.toString() == 'RESERVED' ? 'reserved' : 
+                                                      (post.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
                                     <i th:class="${post.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
-                                                 (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                                 (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 
+                                                 (post.status.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
                                     <span th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
-                                                   (post.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}"></span>
+                                                   (post.status.toString() == 'RESERVED' ? '예약중' : 
+                                                   (post.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
                                 </span>
                             </div>
                         </div>
@@ -798,6 +813,7 @@
             </div>
         </div>
     </section>
+    </main>
 
     <!-- 공통 Footer 포함 -->
     <footer th:replace="~{fragments/header :: footer}"></footer>

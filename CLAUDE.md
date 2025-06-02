@@ -20,7 +20,7 @@ Bootstrap: 5.3.0
 - **IDE**: IntelliJ IDEA (Windows) - Run from IntelliJ, not WSL
 - **WSL**: For git and Claude Code only
 
-## ✅ Completed Features (Day 1-12)
+## ✅ Completed Features (Day 1-15)
 
 ### Week 1: Core Features
 - **Day 1-2**: Project setup, Entity design, Basic CRUD
@@ -49,57 +49,102 @@ Bootstrap: 5.3.0
   - Hero section with gradient patterns
   - Quick search links
   - Card hover effects
+- **Day 13**: Posts List Page Complete Redesign
+  - Hero section with gradient background
+  - Floating search card with enhanced filters
+  - Quick filter pills for categories
+  - Improved card design with animations
+  - Lazy loading for images
+  - Smooth page transitions
+  - Loading states and skeleton UI
+  - Enhanced pagination design
+
+### Week 3: Admin & Advanced Features
+- **Day 14**: Report System & Post Status Management
+  - Report entity and service implementation
+  - Admin report management with detail pages
+  - Post blocking functionality (BLOCKED status)
+  - Status badge consistency across all pages
+  - Report processing with post auto-blocking
+- **Day 15**: Admin Dashboard & Enhanced Header
+  - Complete admin dashboard with statistics
+  - User management with search and pagination
+  - Post management with status filters
+  - Report statistics and charts (Chart.js)
+  - Enhanced header with glassmorphism design
+  - User avatar system with colored initials
+  - Integrated search bar in header
+  - Advanced accessibility features
 
 ## 🏗️ Project Structure
 ```
 unibook/
 ├── src/main/java/com/unibook/
 │   ├── controller/
+│   │   ├── AdminController.java (NEW)
 │   │   ├── ChatController.java
 │   │   └── api/
 │   │       ├── ChatApiController.java
+│   │       ├── ReportApiController.java (NEW)
 │   │       └── [other controllers]
 │   ├── domain/
 │   │   ├── entity/
-│   │   │   ├── ChatRoom.java (NEW)
-│   │   │   └── [14 other entities]
+│   │   │   ├── ChatRoom.java
+│   │   │   ├── Report.java (NEW)
+│   │   │   └── [15 other entities]
 │   │   └── dto/
-│   │       ├── ChatDto.java (NEW)
+│   │       ├── ChatDto.java
+│   │       ├── ReportDto.java (NEW)
 │   │       └── PostResponseDto.java (images, not postImages)
 │   ├── service/
 │   │   ├── ChatService.java
+│   │   ├── ReportService.java (NEW)
 │   │   └── [other services]
 │   └── repository/
-│       └── ChatRoomRepository.java
+│       ├── ChatRoomRepository.java
+│       ├── ReportRepository.java (NEW)
+│       └── [other repositories]
 └── src/main/resources/
     ├── static/
     │   ├── css/
-    │   │   ├── dark-mode.css (NEW)
+    │   │   ├── dark-mode.css
+    │   │   ├── enhanced-header.css (NEW)
     │   │   └── [other styles]
     │   └── js/
     │       ├── firebase-config.js
     │       ├── firebase-chat.js
     │       ├── chat-notification.js
     │       ├── chat-list.js
-    │       ├── dark-mode.js (NEW)
+    │       ├── dark-mode.js
+    │       ├── enhanced-header.js (NEW)
     │       └── [other scripts]
     └── templates/
+        ├── admin/ (NEW)
+        │   ├── dashboard.html
+        │   ├── reports.html
+        │   ├── report-detail.html
+        │   ├── users.html
+        │   ├── posts.html
+        │   └── statistics.html
         ├── chat/
         │   ├── list.html
         │   └── room.html
-        └── index.html (redesigned)
+        ├── fragments/
+        │   └── header.html (enhanced)
+        └── index.html (with main wrapper)
 ```
 
 ## 🔑 Key Technical Details
 
-### Entities (15 total, all extend BaseEntity)
-1. **User** - verified field for email auth
-2. **Post** - status (AVAILABLE/RESERVED/COMPLETED)
+### Entities (16 total, all extend BaseEntity)
+1. **User** - verified field for email auth, role-based access (ADMIN/USER)
+2. **Post** - status (AVAILABLE/RESERVED/COMPLETED/DELETED/BLOCKED)
 3. **PostImage** - imageUrl field (not imagePath)
 4. **Book** - imageUrl for cover images
 5. **ChatRoom** - Firebase integration, buyer/seller unread counts
 6. **Notification** - SSE real-time, NEW_MESSAGE type
-7. [Others: School, Department, Professor, Subject, etc.]
+7. **Report** - post reporting system with status tracking
+8. [Others: School, Department, Professor, Subject, etc.]
 
 ### PostResponseDto Structure
 ```java
@@ -123,6 +168,19 @@ public static class ImageDto {
 - Theme saved in localStorage
 - Immediate application to prevent flashing
 - All components have dark mode styles
+
+### Enhanced Header System
+- **Glassmorphism Design**: Backdrop blur, transparency effects
+- **User Avatar System**: Colored circular avatars with initials
+- **Integrated Search**: Centered desktop search with Ctrl+K shortcut
+- **Accessibility**: Skip-to-content link, keyboard navigation
+- **Responsive**: Mobile-first design with collapsible navigation
+
+### Admin Dashboard Features
+- **Statistics Dashboard**: Real-time charts with Chart.js
+- **Report Management**: Post blocking with detailed tracking
+- **User Management**: Search, pagination, role management
+- **Post Management**: Status filtering and bulk operations
 
 ## 💡 Key Principles
 1. **DTO Pattern**: Always use DTOs, never expose entities to views
@@ -150,18 +208,35 @@ public static class ImageDto {
    - Integrated with main notification system
    - Uses SSE for real-time updates
 
+5. **Admin system compilation errors**
+   - Use `Post.PostStatus.BLOCKED` not `Post.Status.BLOCKED`
+   - Use `post.getPostId()` not `post.getId()`
+   - Use `PostResponseDto::from` not `this::convertToDto`
+
+6. **Status badge transparency issues**
+   - Removed rgba with opacity for better visibility
+   - Consistent status colors across all pages
+
+7. **Enhanced header accessibility**
+   - Added main content wrapper with id="main-content"
+   - Skip-to-content link for screen readers
+
 ### Development Tips
 - Run from IntelliJ, not WSL terminal
 - Check field names in DTOs vs entities
 - Use toString() for enum comparisons in Thymeleaf
 - Test dark mode on all pages
 - Firebase rules must allow authenticated access
+- Admin pages require consistent styling approach
+- Status badges need proper color contrast
+- Enhanced header requires main content wrapper for accessibility
 
 ## 📝 Next Steps
 - **Performance**: View count system, caching improvements
-- **Features**: User reviews, reporting system
+- **Features**: User suspension system, advanced filtering
 - **Testing**: Unit tests for services, integration tests
 - **Deployment**: Docker, CI/CD pipeline
+- **Analytics**: User behavior tracking, conversion metrics
 
 ## 🛠️ Quick Commands
 ```bash

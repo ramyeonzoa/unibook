@@ -9,6 +9,10 @@
     <!-- 사용자 정보 메타 태그 -->
     <div th:replace="~{fragments/header :: user-meta}"></div>
     
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -181,7 +185,7 @@
             color: #383d41;
         }
         
-        .post-status-badge.status-deleted {
+        .post-status-badge.status-blocked {
             background: #f8d7da;
             color: #721c24;
         }
@@ -266,23 +270,23 @@
         
         /* 상태 배지 다크모드 */
         [data-bs-theme="dark"] .post-status-badge.status-available {
-            background: rgba(25, 135, 84, 0.2);
-            color: #70db8f;
+            background: #198754;
+            color: #ffffff;
         }
         
         [data-bs-theme="dark"] .post-status-badge.status-reserved {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffda6a;
+            background: #ffc107;
+            color: #000000;
         }
         
         [data-bs-theme="dark"] .post-status-badge.status-completed {
-            background: rgba(108, 117, 125, 0.2);
-            color: #adb5bd;
+            background: #6c757d;
+            color: #ffffff;
         }
         
-        [data-bs-theme="dark"] .post-status-badge.status-deleted {
-            background: rgba(220, 53, 69, 0.2);
-            color: #f8b4b4;
+        [data-bs-theme="dark"] .post-status-badge.status-blocked {
+            background: #dc3545;
+            color: #ffffff;
         }
     </style>
 </head>
@@ -315,6 +319,11 @@
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end" id="chatMenuDropdown">
+                                        <li><a class="dropdown-item text-warning" href="#" 
+                                               onclick="showReportModal('CHAT', chatRoomId); return false;">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>채팅방 신고하기
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item text-danger" href="#" onclick="leaveChatRoom(); return false;">
                                             <i class="bi bi-box-arrow-right me-2"></i>채팅방 나가기
                                         </a></li>
@@ -347,11 +356,14 @@
                                     <span class="post-status-badge"
                                           th:if="${chatRoom.postStatus != null}"
                                           th:classappend="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'status-available' : 
-                                                         chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 'status-completed'}">
+                                                         (chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 
+                                                         (chatRoom.postStatus.toString() == 'BLOCKED' ? 'status-blocked' : 'status-completed'))}">
                                         <i th:class="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
-                                                     (chatRoom.postStatus.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                                     (chatRoom.postStatus.toString() == 'RESERVED' ? 'bi bi-clock' : 
+                                                     (chatRoom.postStatus.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
                                         <span th:text="${chatRoom.postStatus.toString() == 'AVAILABLE' ? '판매중' : 
-                                                       (chatRoom.postStatus.toString() == 'RESERVED' ? '예약중' : '거래완료')}">상태</span>
+                                                       (chatRoom.postStatus.toString() == 'RESERVED' ? '예약중' : 
+                                                       (chatRoom.postStatus.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}">상태</span>
                                     </span>
                                 </div>
                                 <div class="mt-2">
@@ -466,6 +478,83 @@
         </div>
     </div>
     
+    <!-- 신고 모달 -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalLabel">
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>신고하기
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="reportForm">
+                        <input type="hidden" id="reportType" name="reportType">
+                        <input type="hidden" id="targetId" name="targetId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">신고 사유를 선택해주세요</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" id="categorySpam" value="SPAM">
+                                <label class="form-check-label" for="categorySpam">
+                                    스팸/도배
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" id="categoryFraud" value="FRAUD">
+                                <label class="form-check-label" for="categoryFraud">
+                                    사기/허위매물
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" id="categoryInappropriate" value="INAPPROPRIATE_CONTENT">
+                                <label class="form-check-label" for="categoryInappropriate">
+                                    부적절한 콘텐츠
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" id="categoryAbusive" value="ABUSIVE_BEHAVIOR">
+                                <label class="form-check-label" for="categoryAbusive">
+                                    욕설/비방
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" id="categoryIllegal" value="ILLEGAL_ITEM">
+                                <label class="form-check-label" for="categoryIllegal">
+                                    금지 물품
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="category" id="categoryOther" value="OTHER">
+                                <label class="form-check-label" for="categoryOther">
+                                    기타
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reportContent" class="form-label">상세 내용 (선택사항)</label>
+                            <textarea class="form-control" id="reportContent" name="content" rows="3" 
+                                      placeholder="구체적인 신고 내용을 입력해주세요."></textarea>
+                        </div>
+                        
+                        <div class="alert alert-warning d-flex align-items-center" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>
+                                허위 신고 시 이용에 제한이 있을 수 있습니다.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger" onclick="submitReport()">신고하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- 이미지 확대 모달 -->
     <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -486,29 +575,30 @@
     <script th:src="@{/js/firebase-chat.js}"></script>
     
     <script th:inline="javascript">
+        // 전역 변수 정의
+        const firebaseRoomId = /*[[${chatRoom.firebaseRoomId}]]*/ '';
+        const currentUserId = /*[[${currentUserId}]]*/ 0;
+        const currentUserName = /*[[${currentUserName}]]*/ '';
+        const otherUserId = /*[[${chatRoom.otherUserId}]]*/ 0;
+        const otherUserName = /*[[${chatRoom.otherUserName}]]*/ '';
+        const chatRoomId = /*[[${chatRoom.chatRoomId}]]*/ 0;
+        const otherUserLeft = /*[[${chatRoom.otherUserLeft}]]*/ false;
+        const postOwnerId = /*[[${chatRoom.postOwnerId}]]*/ 0;
+        const isBuyer = currentUserId !== postOwnerId;
+        
         $(document).ready(function() {
             // Firebase 초기화
             if (typeof initializeFirebase === 'function') {
                 initializeFirebase();
             }
             
-            // 채팅 데이터
-            const firebaseRoomId = /*[[${chatRoom.firebaseRoomId}]]*/ '';
-            const currentUserId = /*[[${currentUserId}]]*/ 0;
-            const currentUserName = /*[[${currentUserName}]]*/ '';
-            const otherUserId = /*[[${chatRoom.otherUserId}]]*/ 0;
-            const otherUserName = /*[[${chatRoom.otherUserName}]]*/ '';
-            const chatRoomId = /*[[${chatRoom.chatRoomId}]]*/ 0;
-            const otherUserLeft = /*[[${chatRoom.otherUserLeft}]]*/ false;
-            
-            // 구매자 여부 판단: 현재 사용자가 게시글 작성자가 아니면 구매자
-            const postOwnerId = /*[[${chatRoom.postOwnerId}]]*/ 0;
-            const isBuyer = currentUserId !== postOwnerId;
-            
             console.log('채팅방 데이터:', {
                 firebaseRoomId: firebaseRoomId,
                 currentUserId: currentUserId,
                 currentUserName: currentUserName,
+                otherUserId: otherUserId,
+                otherUserName: otherUserName,
+                chatRoomId: chatRoomId,
                 postOwnerId: postOwnerId,
                 isBuyer: isBuyer
             });
@@ -795,6 +885,157 @@
                 }
             });
         });
+        
+        // 신고 모달 표시
+        function showReportModal(reportType, targetId) {
+            console.log('Debug - showReportModal called with:', reportType, targetId);
+            
+            // 먼저 중복 신고 여부 확인
+            $.ajax({
+                url: '/api/reports/check',
+                type: 'GET',
+                data: {
+                    reportType: reportType,
+                    targetId: targetId
+                },
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+                    var csrfToken = $('meta[name="_csrf"]').attr('content');
+                    if (csrfHeader && csrfToken) {
+                        xhr.setRequestHeader(csrfHeader, csrfToken);
+                    }
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var checkResult = response.data;
+                        if (checkResult.canReport) {
+                            // 신고 가능한 경우 모달 표시
+                            $('#reportType').val(reportType);
+                            $('#targetId').val(targetId);
+                            $('#reportForm')[0].reset();
+                            
+                            // 카테고리 라디오 버튼 초기화
+                            $('input[name="category"]').prop('checked', false);
+                            
+                            $('#reportModal').modal('show');
+                        } else {
+                            // 신고 불가능한 경우 메시지 표시
+                            showToast(checkResult.message);
+                        }
+                    } else {
+                        // API 오류 시에도 모달 표시 (사용자 편의)
+                        console.warn('신고 가능 여부 확인 실패:', response.message);
+                        $('#reportType').val(reportType);
+                        $('#targetId').val(targetId);
+                        $('#reportForm')[0].reset();
+                        $('input[name="category"]').prop('checked', false);
+                        $('#reportModal').modal('show');
+                    }
+                },
+                error: function(xhr) {
+                    // 네트워크 오류 시에도 모달 표시 (사용자 편의)
+                    console.warn('신고 중복 확인 요청 실패');
+                    $('#reportType').val(reportType);
+                    $('#targetId').val(targetId);
+                    $('#reportForm')[0].reset();
+                    $('input[name="category"]').prop('checked', false);
+                    $('#reportModal').modal('show');
+                }
+            });
+        }
+        
+        // 신고 제출
+        function submitReport() {
+            var reportType = $('#reportType').val();
+            var targetId = $('#targetId').val();
+            var category = $('input[name="category"]:checked').val();
+            var content = $('#reportContent').val();
+            
+            console.log('Debug - reportType:', reportType, 'targetId:', targetId, 'category:', category);
+            
+            if (!category) {
+                showToast('신고 사유를 선택해주세요.');
+                return;
+            }
+            
+            if (!targetId || targetId === '') {
+                showToast('신고 대상을 찾을 수 없습니다.');
+                return;
+            }
+            
+            var parsedTargetId = parseInt(targetId);
+            if (isNaN(parsedTargetId)) {
+                showToast('올바르지 않은 신고 대상입니다.');
+                return;
+            }
+            
+            var data = {
+                reportType: reportType,
+                targetId: parsedTargetId,
+                category: category,
+                content: content.trim() || null
+            };
+            
+            console.log('Debug - Sending data:', data);
+            
+            $.ajax({
+                url: '/api/reports',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                beforeSend: function(xhr) {
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+                    var csrfToken = $('meta[name="_csrf"]').attr('content');
+                    if (csrfHeader && csrfToken) {
+                        xhr.setRequestHeader(csrfHeader, csrfToken);
+                    }
+                },
+                success: function(response) {
+                    if (response.success) {
+                        $('#reportModal').modal('hide');
+                        showToast('신고가 접수되었습니다. 검토 후 처리하겠습니다.');
+                    } else {
+                        showToast(response.message || '신고 접수에 실패했습니다.');
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 400) {
+                        var response = xhr.responseJSON;
+                        showToast(response.message || '신고 접수에 실패했습니다.');
+                    } else {
+                        showToast('신고 접수 중 오류가 발생했습니다.');
+                    }
+                }
+            });
+        }
+        
+        // 토스트 메시지 (기존 프로젝트에서 사용하는 형태에 맞춤)
+        function showToast(message) {
+            $('.toast-container').remove();
+            
+            var isWarning = message.includes('자신의') || message.includes('실패') || message.includes('오류');
+            var backgroundColor = isWarning ? 'rgba(255, 193, 7, 0.9)' : 'rgba(25, 135, 84, 0.9)';
+            var textColor = isWarning ? '#664d03' : '#ffffff';
+            
+            var toast = $('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1050;">' +
+                          '<div class="toast border-0" role="alert" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' +
+                          '<div class="toast-body text-center fw-medium">' + message + '</div>' +
+                          '</div></div>');
+            
+            $('body').append(toast);
+            
+            var bsToast = new bootstrap.Toast(toast.find('.toast')[0], {
+                autohide: true,
+                delay: isWarning ? 2500 : 2000
+            });
+            bsToast.show();
+            
+            setTimeout(function() {
+                toast.remove();
+            }, isWarning ? 3500 : 3000);
+        }
         
         // 전역 메시지 전송 함수는 firebase-chat.js에 정의됨
     </script>

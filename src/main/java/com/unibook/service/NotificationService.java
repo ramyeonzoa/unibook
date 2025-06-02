@@ -4,6 +4,7 @@ import com.unibook.domain.dto.NotificationDto;
 import com.unibook.domain.entity.Notification;
 import com.unibook.domain.entity.Post;
 import com.unibook.domain.entity.User;
+import com.unibook.domain.entity.Report;
 import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.repository.NotificationRepository;
 import com.unibook.repository.PostRepository;
@@ -241,6 +242,58 @@ public class NotificationService {
             case AVAILABLE -> "찜한 게시글이 다시 판매중으로 변경되었습니다.";
             case RESERVED -> "찜한 게시글이 예약중으로 변경되었습니다.";
             case COMPLETED -> "찜한 게시글이 거래완료되었습니다.";
+            case BLOCKED -> "찜한 게시글이 관리자에 의해 차단되었습니다.";
         };
+    }
+    
+    /**
+     * 관리자들에게 새 신고 알림 (비동기)
+     */
+    @Async
+    @Transactional
+    public void notifyAdminsOfNewReport(Report report, String targetTitle) {
+        try {
+            // TODO: 관리자 권한을 가진 사용자들 조회 로직 추가 필요
+            // 임시로 로그만 출력
+            log.info("새로운 신고 접수 - 관리자 알림 필요: reportId={}, target={}", 
+                    report.getReportId(), targetTitle);
+            
+            // 실제 구현 시:
+            // List<User> admins = userRepository.findByRole("ROLE_ADMIN");
+            // for (User admin : admins) {
+            //     NotificationDto.CreateRequest request = ...
+            //     createNotification(request);
+            // }
+        } catch (Exception e) {
+            log.error("관리자 신고 알림 발송 실패", e);
+        }
+    }
+    
+    /**
+     * 신고 처리 결과 알림 (비동기)
+     */
+    @Async
+    @Transactional
+    public void notifyReportProcessed(Long reporterId, Long reportId, Report.ReportStatus status) {
+        try {
+            String title = "신고 처리 결과";
+            String content = switch (status) {
+                case COMPLETED -> "신고하신 내용이 처리되었습니다. 감사합니다.";
+                case REJECTED -> "신고하신 내용을 검토한 결과, 규정 위반 사항이 확인되지 않았습니다.";
+                default -> "신고하신 내용이 처리 중입니다.";
+            };
+            
+            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                    .recipientUserId(reporterId)
+                    .type(Notification.NotificationType.REPORT_PROCESSED)
+                    .title(title)
+                    .content(content)
+                    .url("/reports/my") // 내 신고 내역 페이지로
+                    .build();
+            
+            createNotification(request);
+        } catch (Exception e) {
+            log.error("신고 처리 결과 알림 생성 실패: reporterId={}, reportId={}", reporterId, reportId, e);
+        }
     }
 }

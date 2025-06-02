@@ -249,6 +249,27 @@ public class UserService {
     }
     
     /**
+     * 전체 사용자 수 조회 (관리자용)
+     */
+    public long getTotalUserCount() {
+        return userRepository.count();
+    }
+    
+    /**
+     * 모든 사용자 조회 (관리자용, 페이징)
+     */
+    public org.springframework.data.domain.Page<User> getAllUsers(org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findAll(pageable);
+    }
+    
+    /**
+     * 사용자 검색 (관리자용)
+     */
+    public org.springframework.data.domain.Page<User> searchUsers(String keyword, org.springframework.data.domain.Pageable pageable) {
+        return userRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword, pageable);
+    }
+    
+    /**
      * 비밀번호 변경
      */
     @Transactional

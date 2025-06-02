@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 관리 - Unibook</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <!-- 공통 스타일 -->
+    <div th:replace="~{fragments/header :: styles}"></div>
+    
+    <style>
+        .admin-sidebar {
+            min-height: calc(100vh - 76px);
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .admin-nav-link {
+            color: #495057;
+            text-decoration: none;
+            padding: 12px 20px;
+            display: block;
+            border-radius: 8px;
+            margin: 4px 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .admin-nav-link:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .admin-nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .search-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        .users-table {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .verification-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+        }
+        
+        .verification-badge.verified {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .verification-badge.unverified {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* 다크모드 */
+        [data-bs-theme="dark"] .admin-sidebar {
+            background: var(--bs-gray-800);
+            border-right-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .admin-nav-link {
+            color: var(--bs-gray-300);
+        }
+        
+        [data-bs-theme="dark"] .admin-nav-link:hover {
+            background: var(--bs-gray-700);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .search-card,
+        [data-bs-theme="dark"] .users-table {
+            background: var(--bs-gray-800);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <nav th:replace="~{fragments/header :: header}"></nav>
+    
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 사이드바 -->
+            <div class="col-md-3 col-lg-2 admin-sidebar">
+                <div class="py-4">
+                    <h5 class="px-3 text-muted fw-bold mb-3">관리자 메뉴</h5>
+                    <nav>
+                        <a href="/admin" class="admin-nav-link">
+                            <i class="bi bi-speedometer2 me-2"></i>대시보드
+                        </a>
+                        <a href="/admin/reports" class="admin-nav-link">
+                            <i class="bi bi-exclamation-triangle me-2"></i>신고 관리
+                        </a>
+                        <a href="/admin/users" class="admin-nav-link active">
+                            <i class="bi bi-people me-2"></i>사용자 관리
+                        </a>
+                        <a href="/admin/posts" class="admin-nav-link">
+                            <i class="bi bi-file-post me-2"></i>게시글 관리
+                        </a>
+                        <a href="/admin/statistics" class="admin-nav-link">
+                            <i class="bi bi-graph-up me-2"></i>통계
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- 메인 컨텐츠 -->
+            <div class="col-md-9 col-lg-10">
+                <div class="py-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="fw-bold">사용자 관리</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise"></i> 새로고침
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 검색 -->
+                    <div class="search-card p-3">
+                        <form method="get" action="/admin/users" class="row g-3 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label">사용자 검색</label>
+                                <input type="text" name="search" class="form-control" 
+                                       placeholder="이름 또는 이메일로 검색..." 
+                                       th:value="${search}">
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i> 검색
+                                </button>
+                                <a href="/admin/users" class="btn btn-outline-secondary ms-2">
+                                    <i class="bi bi-x"></i> 초기화
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- 사용자 목록 -->
+                    <div class="users-table">
+                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">사용자 목록</h5>
+                            <span class="text-muted">총 <strong th:text="${users.totalElements}">0</strong>명</span>
+                        </div>
+                        
+                        <div th:if="${users.content.isEmpty()}" class="p-5 text-center text-muted">
+                            <i class="bi bi-person-x" style="font-size: 3rem;"></i>
+                            <p class="mt-3 mb-0">사용자가 없습니다.</p>
+                        </div>
+                        
+                        <div th:if="${!users.content.isEmpty()}">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>사용자</th>
+                                            <th>이메일</th>
+                                            <th>학교/학과</th>
+                                            <th>인증</th>
+                                            <th>가입일</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="user : ${users.content}">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="user-avatar me-3" th:text="${#strings.substring(user.name, 0, 1)}">A</div>
+                                                    <div>
+                                                        <div class="fw-medium" th:text="${user.name}">사용자명</div>
+                                                        <small class="text-muted">ID: <span th:text="${user.userId}">1</span></small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td th:text="${user.email}">이메일</td>
+                                            <td>
+                                                <div th:if="${user.department != null}">
+                                                    <div class="fw-medium" th:text="${user.department.school?.schoolName ?: '정보 없음'}">학교명</div>
+                                                    <small class="text-muted" th:text="${user.department.departmentName}">학과명</small>
+                                                </div>
+                                                <span th:if="${user.department == null}" class="text-muted">정보 없음</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge verification-badge"
+                                                      th:classappend="${user.verified ? 'verified' : 'unverified'}"
+                                                      th:text="${user.verified ? '인증됨' : '미인증'}">상태</span>
+                                            </td>
+                                            <td>
+                                                <div th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">2024-01-01</div>
+                                                <small class="text-muted" th:text="${#temporals.format(user.createdAt, 'HH:mm')}">12:00</small>
+                                            </td>
+                                            <td>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                            type="button" data-bs-toggle="dropdown">
+                                                        <i class="bi bi-three-dots"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        <li><a class="dropdown-item" href="#" 
+                                                               th:onclick="|viewUserPosts(${user.userId})|">
+                                                            <i class="bi bi-list-ul me-2"></i>게시글 보기
+                                                        </a></li>
+                                                        <li><a class="dropdown-item" href="#" 
+                                                               th:onclick="|viewUserReports(${user.userId})|">
+                                                            <i class="bi bi-exclamation-triangle me-2"></i>신고 내역
+                                                        </a></li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li><a class="dropdown-item text-warning" href="#" 
+                                                               th:onclick="|suspendUser(${user.userId})|">
+                                                            <i class="bi bi-person-x me-2"></i>계정 정지
+                                                        </a></li>
+                                                    </ul>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- 페이지네이션 -->
+                            <div th:if="${users.totalPages > 1}" class="p-3 border-top">
+                                <nav aria-label="사용자 목록 페이지네이션">
+                                    <ul class="pagination justify-content-center mb-0">
+                                        <li class="page-item" th:classappend="${users.first ? 'disabled' : ''}">
+                                            <a class="page-link" 
+                                               th:href="@{/admin/users(page=${users.number - 1}, search=${search})}"
+                                               th:if="${!users.first}">이전</a>
+                                            <span class="page-link" th:if="${users.first}">이전</span>
+                                        </li>
+                                        
+                                        <li th:each="pageNum : ${#numbers.sequence(0, users.totalPages - 1)}"
+                                            class="page-item"
+                                            th:classappend="${pageNum == users.number ? 'active' : ''}">
+                                            <a class="page-link" 
+                                               th:href="@{/admin/users(page=${pageNum}, search=${search})}"
+                                               th:text="${pageNum + 1}">1</a>
+                                        </li>
+                                        
+                                        <li class="page-item" th:classappend="${users.last ? 'disabled' : ''}">
+                                            <a class="page-link" 
+                                               th:href="@{/admin/users(page=${users.number + 1}, search=${search})}"
+                                               th:if="${!users.last}">다음</a>
+                                            <span class="page-link" th:if="${users.last}">다음</span>
+                                        </li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer th:replace="~{fragments/header :: footer}"></footer>
+    
+    <!-- Scripts -->
+    <div th:replace="~{fragments/header :: scripts}"></div>
+    
+    <script>
+        // 사용자 게시글 보기
+        function viewUserPosts(userId) {
+            window.open(`/posts?userId=${userId}`, '_blank');
+        }
+        
+        // 사용자 신고 내역 보기
+        function viewUserReports(userId) {
+            // TODO: 사용자별 신고 내역 페이지 구현
+            alert('사용자별 신고 내역 기능은 준비 중입니다.');
+        }
+        
+        // 계정 정지
+        function suspendUser(userId) {
+            // TODO: 계정 정지 기능 구현
+            alert('계정 정지 기능은 준비 중입니다.');
+        }
+    </script>
+</body>
+</html>

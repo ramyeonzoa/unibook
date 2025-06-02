@@ -323,9 +323,11 @@
                             <label for="status" class="form-label">거래 상태</label>
                             <select class="form-select" id="status" th:field="*{status}">
                                 <option th:each="status : ${statuses}" 
+                                        th:if="${status.name() != 'BLOCKED' or #authorization.expression('hasRole(''ADMIN'')')}"
                                         th:value="${status}" 
                                         th:text="${status.name() == 'AVAILABLE' ? '판매중' : 
-                                                 status.name() == 'RESERVED' ? '예약중' : '거래완료'}"></option>
+                                                 status.name() == 'RESERVED' ? '예약중' : 
+                                                 status.name() == 'BLOCKED' ? '차단됨' : '거래완료'}"></option>
                             </select>
                         </div>
                         
