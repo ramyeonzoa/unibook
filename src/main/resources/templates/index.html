@@ -22,6 +22,508 @@
     
     <!-- 사용자 정보 메타 태그 -->
     <div th:replace="~{fragments/header :: user-meta}"></div>
+    
+    <style>
+        /* 전역 스타일 개선 */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --card-hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        /* 히어로 섹션 배경 패턴 */
+        .hero-section {
+            background: var(--primary-gradient);
+            position: relative;
+            overflow: hidden;
+            padding: 80px 0;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.05) 10px,
+                rgba(255, 255, 255, 0.05) 20px
+            );
+            animation: slide 20s linear infinite;
+        }
+        
+        @keyframes slide {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+        
+        .hero-section .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .hero-section h1 {
+            color: white;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .hero-section .lead {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.25rem;
+            font-weight: 300;
+        }
+        
+        /* 검색 섹션 개선 */
+        .search-section {
+            margin-top: -40px;
+            position: relative;
+            z-index: 10;
+            padding-bottom: 40px;
+        }
+        
+        .search-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            padding: 40px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .search-input-group {
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .search-input-group input {
+            border: none;
+            padding: 20px 24px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input-group input:focus {
+            box-shadow: none;
+            background-color: #f8f9fa;
+        }
+        
+        .search-input-group button {
+            border: none;
+            background: var(--primary-gradient);
+            padding: 20px 32px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .search-input-group button:hover {
+            transform: translateX(-2px);
+            box-shadow: 4px 0 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* 퀵링크 버튼 */
+        .quick-links {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .quick-link {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 24px;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .quick-link:hover {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .quick-link i {
+            margin-right: 6px;
+        }
+        
+        /* 섹션 타이틀 개선 */
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+        }
+        
+        /* 카드 스타일 개선 */
+        .book-card {
+            border: none;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: var(--card-shadow);
+            height: 100%;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .book-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .book-card .card-img-container {
+            height: 200px;
+            background: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .book-card .card-img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .book-card:hover .card-img-container img {
+            transform: scale(1.1);
+        }
+        
+        .book-card .card-body {
+            padding: 20px;
+        }
+        
+        .book-card .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            height: 2.8em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        /* 게시글 캐러셀 스타일 */
+        .posts-carousel {
+            position: relative;
+            overflow: hidden;
+            min-height: 380px;
+        }
+        
+        .carousel-container {
+            display: flex;
+            gap: 20px;
+            transition: transform 0.5s ease;
+        }
+        
+        .post-card {
+            flex: 0 0 calc(25% - 15px);
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .post-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+        }
+        
+        .post-card-image {
+            height: 200px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .post-card-image.has-image {
+            background: none;
+        }
+        
+        .post-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .post-card-image .product-type-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .post-card-body {
+            padding: 20px;
+        }
+        
+        .post-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        
+        .post-card-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+        }
+        
+        .post-card-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .post-card-footer {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* 캐러셀 컨트롤 */
+        .carousel-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        
+        .carousel-nav.prev {
+            left: -20px;
+        }
+        
+        .carousel-nav.next {
+            right: -20px;
+        }
+        
+        .carousel-nav button {
+            background: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .carousel-nav button:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .carousel-nav button i {
+            font-size: 1.25rem;
+        }
+        
+        /* 캐러셀 인디케이터 */
+        .carousel-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+        }
+        
+        .carousel-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #dee2e6;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .carousel-indicator.active {
+            width: 24px;
+            border-radius: 4px;
+            background: var(--primary-gradient);
+        }
+        
+        /* 빈 상태 메시지 개선 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            color: #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        /* 섹션 배경 패턴 */
+        .pattern-bg {
+            position: relative;
+            background-color: #f8f9fa;
+        }
+        
+        .pattern-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(102, 126, 234, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(118, 75, 162, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        /* 모바일 반응형 개선 */
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            
+            .hero-section {
+                padding: 60px 0;
+            }
+            
+            .search-card {
+                padding: 24px;
+                margin: 0 12px;
+            }
+            
+            .search-input-group input,
+            .search-input-group button {
+                padding: 16px 20px;
+                font-size: 1rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .quick-links {
+                gap: 8px;
+            }
+            
+            .quick-link {
+                font-size: 0.85rem;
+                padding: 6px 16px;
+            }
+            
+            .posts-carousel {
+                min-height: 320px;
+            }
+            
+            .post-card {
+                flex: 0 0 calc(50% - 10px);
+            }
+            
+            .carousel-nav {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .post-card {
+                flex: 0 0 100%;
+            }
+        }
+        
+        /* 다크모드 대응 */
+        [data-bs-theme="dark"] .search-card {
+            background: var(--bs-dark);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        [data-bs-theme="dark"] .book-card,
+        [data-bs-theme="dark"] .post-item {
+            background: var(--bs-dark);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .book-card:hover,
+        [data-bs-theme="dark"] .post-item:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .quick-link {
+            background: var(--bs-gray-800);
+            border-color: var(--bs-gray-700);
+            color: var(--bs-gray-300);
+        }
+        
+        [data-bs-theme="dark"] .pattern-bg {
+            background-color: var(--bs-gray-900);
+        }
+        
+        [data-bs-theme="dark"] .post-card {
+            background: var(--bs-dark);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        [data-bs-theme="dark"] .post-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        [data-bs-theme="dark"] .carousel-nav button {
+            background: var(--bs-gray-800);
+            color: var(--bs-gray-300);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        
+        [data-bs-theme="dark"] .carousel-indicator {
+            background: var(--bs-gray-700);
+        }
+    </style>
 </head>
 <body>
     <!-- 공통 헤더 포함 -->
@@ -41,32 +543,46 @@
     </div>
 
     <!-- Hero Section -->
-    <section class="bg-light py-5">
+    <section class="hero-section">
         <div class="container text-center">
-            <h1 class="display-4 fw-bold mb-3">대학 교재, 똑똑하게 거래하세요</h1>
-            <p class="lead text-muted">우리 학교, 우리 학과 선배들의 검증된 교재를 찾아보세요</p>
+            <h1 class="mb-3">대학 교재, 똑똑하게 거래하세요</h1>
+            <p class="lead mb-0">우리 학교, 우리 학과 선배들의 검증된 교재를 찾아보세요</p>
         </div>
     </section>
 
     <!-- Search Section -->
-    <section class="py-4 bg-white shadow-sm">
+    <section class="search-section">
         <div class="container">
             <div class="row justify-content-center">
                 <div class="col-lg-8">
-                    <form action="/posts" method="get">
-                        <div class="input-group">
-                            <input type="text" name="search" class="form-control form-control-lg" 
-                                   placeholder="제목, 내용, 과목, 교수로 검색">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-search"></i> 검색
-                            </button>
+                    <div class="search-card">
+                        <form action="/posts" method="get">
+                            <div class="input-group search-input-group">
+                                <input type="text" name="search" class="form-control form-control-lg" 
+                                       placeholder="책 제목, 과목명, 교수님 이름으로 검색"
+                                       aria-label="검색어 입력">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-search me-2"></i>검색
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <!-- 퀵링크 -->
+                        <div class="quick-links">
+                            <a href="/posts" th:href="@{/posts(search='전공교재')}" class="quick-link">
+                                <i class="bi bi-book"></i>전공교재
+                            </a>
+                            <a href="/posts" th:href="@{/posts(search='자격증')}" class="quick-link">
+                                <i class="bi bi-award"></i>자격증 교재
+                            </a>
+                            <a href="/posts" th:href="@{/posts(search='필기')}" class="quick-link">
+                                <i class="bi bi-journal-text"></i>필기노트
+                            </a>
+                            <a href="/posts" th:href="@{/posts(search='족보')}" class="quick-link">
+                                <i class="bi bi-file-earmark-text"></i>족보
+                            </a>
                         </div>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                예: "데이터구조", "김교수", "컴퓨터개론"
-                            </small>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -75,77 +591,166 @@
     <!-- Popular Books Section -->
     <section class="py-5">
         <div class="container">
-            <h2 class="mb-4">🔥 이번 주 인기 교재</h2>
+            <h2 class="section-title mb-4">📚 최근 등록된 교재</h2>
             <div class="row" th:if="${!popularBooks.isEmpty()}">
                 <div class="col-md-3 mb-4" th:each="book : ${popularBooks}">
-                    <div class="card h-100 shadow-sm">
-                        <!-- 책 표지 이미지 또는 아이콘 -->
-                        <div class="position-relative" style="height: 250px;">
+                    <a class="book-card" href="/posts" th:href="@{/posts(search=${book.title})}">
+                        <div class="card-img-container">
                             <img th:if="${book.imageUrl != null and !book.imageUrl.isEmpty()}" 
                                  th:src="${book.imageUrl}" 
-                                 class="card-img-top h-100" 
-                                 style="object-fit: cover;" 
                                  alt="Book cover"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                             <div th:unless="${book.imageUrl != null and !book.imageUrl.isEmpty()}"
-                                 class="d-flex align-items-center justify-content-center h-100 bg-light">
+                                 class="d-flex align-items-center justify-content-center h-100">
                                 <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
                             </div>
                             <!-- 이미지 로드 실패 시 대체 아이콘 -->
-                            <div class="d-none align-items-center justify-content-center h-100 bg-light position-absolute top-0 start-0 w-100">
+                            <div class="d-none align-items-center justify-content-center h-100 position-absolute top-0 start-0 w-100">
                                 <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
                             </div>
                         </div>
                         <div class="card-body">
-                            <h6 class="card-title text-truncate" th:text="${book.title}">교재명</h6>
+                            <h6 class="card-title" th:text="${book.title}">교재명</h6>
                             <p class="text-muted small mb-1" th:text="${book.author}">저자</p>
-                            <p class="text-muted small">ISBN: <span th:text="${book.isbn}">-</span></p>
-                            <p class="fw-bold text-primary mb-0">판매 중</p>
+                            <p class="text-muted small mb-2">
+                                <span th:if="${book.publicationYear}" th:text="${book.publicationYear + '년'}">2024년</span>
+                                <span th:unless="${book.publicationYear}">출판연도 미상</span>
+                            </p>
                         </div>
-                    </div>
+                    </a>
                 </div>
             </div>
-            <div class="alert alert-info" th:if="${popularBooks.isEmpty()}">
-                <i class="bi bi-info-circle"></i> 아직 등록된 교재가 없습니다.
+            <div class="empty-state" th:if="${popularBooks.isEmpty()}">
+                <i class="bi bi-book"></i>
+                <p>아직 등록된 교재가 없습니다.</p>
+                <a href="/posts/new" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle me-2"></i>첫 교재 등록하기
+                </a>
             </div>
         </div>
     </section>
 
     <!-- Recent Posts Section -->
-    <section class="py-5 bg-light">
-        <div class="container">
-            <h2 class="mb-4">📝 최신 거래 게시글</h2>
-            <div class="list-group" th:if="${!recentPosts.isEmpty()}">
-                <a href="#" class="list-group-item list-group-item-action" 
-                   th:each="post : ${recentPosts}"
-                   th:href="@{/posts/{id}(id=${post.postId})}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <h6 class="mb-1" th:text="${post.title}">게시글 제목</h6>
-                            <p class="mb-1 text-muted">
-                                <span th:if="${post.book}" th:text="${post.book.title}">교재명</span>
-                                <span th:unless="${post.book}">교재 정보 없음</span>
-                                | <span th:text="${#numbers.formatInteger(post.price, 3, 'COMMA')}">0</span>원
-                            </p>
-                            <small class="text-muted">
-                                <span th:if="${post.user?.schoolName}" th:text="${post.user.schoolName}">학교명</span>
-                                <span th:unless="${post.user?.schoolName}">학교 정보 없음</span>
-                            </small>
+    <section class="py-5 pattern-bg">
+        <div class="container position-relative">
+            <h2 class="section-title mb-4">📝 최신 거래 게시글</h2>
+            
+            <div class="posts-carousel" th:if="${!recentPosts.isEmpty()}">
+                <!-- 캐러셀 네비게이션 버튼 -->
+                <div class="carousel-nav prev">
+                    <button type="button" onclick="moveCarousel(-1)" aria-label="이전">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                </div>
+                <div class="carousel-nav next">
+                    <button type="button" onclick="moveCarousel(1)" aria-label="다음">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- 캐러셀 컨테이너 -->
+                <div class="carousel-container" id="postsCarousel">
+                    <div th:each="post, iterStat : ${recentPosts}" 
+                         class="post-card"
+                         th:onclick="|window.location.href='@{/posts/{id}(id=${post.postId})}'|">
+                        <div class="post-card-image" 
+                             th:classappend="${post.images != null and !post.images.isEmpty()} ? 'has-image' : ''">
+                            <!-- 게시글 이미지가 있는 경우 -->
+                            <img th:if="${post.images != null and !post.images.isEmpty()}" 
+                                 th:src="${post.images[0].imagePath}"
+                                 alt="게시글 이미지"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <!-- 이미지가 없거나 로드 실패시 상품 타입 아이콘 -->
+                            <div class="product-type-icon"
+                                 th:style="${post.images != null and !post.images.isEmpty()} ? 'display:none' : ''">
+                                <i th:class="${post.productType.toString() == 'TEXTBOOK' ? 'bi bi-book' : 
+                                             (post.productType.toString() == 'CERTBOOK' ? 'bi bi-award' : 
+                                             (post.productType.toString() == 'NOTE' ? 'bi bi-journal-text' : 
+                                             (post.productType.toString() == 'PASTEXAM' ? 'bi bi-file-earmark-text' : 'bi bi-box')))}"></i>
+                            </div>
                         </div>
-                        <div class="text-end">
-                            <span class="badge" 
-                                  th:classappend="${post.status.toString() == 'AVAILABLE' ? 'bg-success' : (post.status.toString() == 'RESERVED' ? 'bg-warning text-dark' : 'bg-secondary')}"
-                                  th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : (post.status.toString() == 'RESERVED' ? '예약중' : '판매완료')}">
-                            </span>
-                            <div class="small text-muted mt-1" 
-                                 th:text="${#temporals.format(post.createdAt, 'MM/dd HH:mm')}">
+                        <div class="post-card-body">
+                            <h5 class="post-card-title" th:text="${post.title}">게시글 제목</h5>
+                            <div class="post-card-meta">
+                                <div class="mb-1">
+                                    <i class="bi bi-geo-alt-fill me-1"></i>
+                                    <span th:text="${post.user?.schoolName ?: '학교 정보 없음'}">학교명</span>
+                                </div>
+                                <div>
+                                    <i class="bi bi-clock me-1"></i>
+                                    <span th:text="${#temporals.format(post.createdAt, 'MM월 dd일')}">날짜</span>
+                                </div>
+                            </div>
+                            <div class="post-card-footer">
+                                <div class="post-card-price">
+                                    <span th:text="${#numbers.formatInteger(post.price, 3, 'COMMA')}">0</span>원
+                                </div>
+                                <span class="badge" 
+                                      th:classappend="${post.status.toString() == 'AVAILABLE' ? 'bg-success' : 
+                                                      (post.status.toString() == 'RESERVED' ? 'bg-warning text-dark' : 'bg-secondary')}"
+                                      th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
+                                               (post.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}">
+                                </span>
                             </div>
                         </div>
                     </div>
+                </div>
+                
+                <!-- 캐러셀 인디케이터 -->
+                <div class="carousel-indicators" id="carouselIndicators"></div>
+            </div>
+            
+            <div class="empty-state" th:if="${recentPosts.isEmpty()}">
+                <i class="bi bi-clipboard"></i>
+                <p>아직 등록된 게시글이 없습니다.</p>
+                <a href="/posts/new" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
                 </a>
             </div>
-            <div class="alert alert-info" th:if="${recentPosts.isEmpty()}">
-                <i class="bi bi-info-circle"></i> 아직 등록된 게시글이 없습니다.
+        </div>
+    </section>
+    
+    <!-- Features Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-4 mb-4">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-shield-check" style="font-size: 3rem; color: #667eea;"></i>
+                    </div>
+                    <h5 class="fw-semibold">검증된 거래</h5>
+                    <p class="text-muted">대학 이메일 인증을 통한<br>안전한 교내 거래</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-search" style="font-size: 3rem; color: #764ba2;"></i>
+                    </div>
+                    <h5 class="fw-semibold">스마트 검색</h5>
+                    <p class="text-muted">과목명, 교수님, 학과별<br>맞춤형 교재 검색</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="feature-icon mb-3">
+                        <i class="bi bi-chat-dots" style="font-size: 3rem; color: #f093fb;"></i>
+                    </div>
+                    <h5 class="fw-semibold">실시간 채팅</h5>
+                    <p class="text-muted">구매자와 판매자 간<br>실시간 소통 지원</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5 bg-light">
+        <div class="container text-center">
+            <h3 class="mb-3">지금 바로 시작하세요!</h3>
+            <p class="text-muted mb-4">우리 학교 학생들과 함께 스마트한 교재 거래를 경험해보세요</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="/posts" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-search me-2"></i>교재 둘러보기
+                </a>
+                <a href="/posts/new" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle me-2"></i>판매 등록하기
+                </a>
             </div>
         </div>
     </section>
@@ -159,7 +764,144 @@
     <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     
     <script>
+    // 캐러셀 관련 변수
+    let currentSlide = 0;
+    let totalSlides = 0;
+    let itemsPerView = 4;
+    let autoplayInterval;
+    let isTransitioning = false;
+    
+    // 캐러셀 초기화
+    function initCarousel() {
+        const carousel = document.getElementById('postsCarousel');
+        if (!carousel) return;
+        
+        const items = carousel.querySelectorAll('.post-card');
+        totalSlides = items.length;
+        
+        // 화면 크기에 따라 보여줄 아이템 수 결정
+        updateItemsPerView();
+        
+        // 인디케이터 생성
+        createIndicators();
+        
+        // 자동 재생 시작
+        startAutoplay();
+        
+        // 화면 크기 변경 감지
+        window.addEventListener('resize', () => {
+            updateItemsPerView();
+            updateCarouselPosition();
+        });
+    }
+    
+    // 화면 크기에 따른 아이템 수 업데이트
+    function updateItemsPerView() {
+        const width = window.innerWidth;
+        if (width < 576) {
+            itemsPerView = 1;
+        } else if (width < 768) {
+            itemsPerView = 2;
+        } else if (width < 992) {
+            itemsPerView = 3;
+        } else {
+            itemsPerView = 4;
+        }
+    }
+    
+    // 인디케이터 생성
+    function createIndicators() {
+        const indicatorsContainer = document.getElementById('carouselIndicators');
+        if (!indicatorsContainer) return;
+        
+        indicatorsContainer.innerHTML = '';
+        const totalPages = Math.ceil(totalSlides / itemsPerView);
+        
+        for (let i = 0; i < totalPages; i++) {
+            const indicator = document.createElement('button');
+            indicator.className = 'carousel-indicator' + (i === 0 ? ' active' : '');
+            indicator.onclick = () => goToSlide(i);
+            indicatorsContainer.appendChild(indicator);
+        }
+    }
+    
+    // 캐러셀 이동
+    function moveCarousel(direction) {
+        if (isTransitioning) return;
+        
+        const totalPages = Math.ceil(totalSlides / itemsPerView);
+        currentSlide = (currentSlide + direction + totalPages) % totalPages;
+        updateCarouselPosition();
+        
+        // 자동 재생 재시작
+        stopAutoplay();
+        startAutoplay();
+    }
+    
+    // 특정 슬라이드로 이동
+    function goToSlide(index) {
+        if (isTransitioning) return;
+        
+        currentSlide = index;
+        updateCarouselPosition();
+        
+        // 자동 재생 재시작
+        stopAutoplay();
+        startAutoplay();
+    }
+    
+    // 캐러셀 위치 업데이트
+    function updateCarouselPosition() {
+        const carousel = document.getElementById('postsCarousel');
+        if (!carousel) return;
+        
+        isTransitioning = true;
+        const offset = -(currentSlide * 100);
+        carousel.style.transform = `translateX(${offset}%)`;
+        
+        // 인디케이터 업데이트
+        updateIndicators();
+        
+        setTimeout(() => {
+            isTransitioning = false;
+        }, 500);
+    }
+    
+    // 인디케이터 업데이트
+    function updateIndicators() {
+        const indicators = document.querySelectorAll('.carousel-indicator');
+        indicators.forEach((indicator, index) => {
+            indicator.classList.toggle('active', index === currentSlide);
+        });
+    }
+    
+    // 자동 재생 시작
+    function startAutoplay() {
+        autoplayInterval = setInterval(() => {
+            moveCarousel(1);
+        }, 5000); // 5초마다
+    }
+    
+    // 자동 재생 중지
+    function stopAutoplay() {
+        if (autoplayInterval) {
+            clearInterval(autoplayInterval);
+        }
+    }
+    
+    // 캐러셀 호버 시 자동 재생 일시 정지
     $(document).ready(function() {
+        const carousel = $('.posts-carousel');
+        if (carousel.length) {
+            carousel.hover(
+                () => stopAutoplay(),
+                () => startAutoplay()
+            );
+        }
+        
+        // 캐러셀 초기화
+        initCarousel();
+        
         // 학교 자동완성 기능 (디바운싱 적용)
         let searchTimeout;
         $("#schoolSearch").autocomplete({

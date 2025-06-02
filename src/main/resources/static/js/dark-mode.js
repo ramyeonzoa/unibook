@@ -3,14 +3,6 @@
  * 모든 페이지에서 공통으로 사용
  */
 
-// 페이지 로드 전 즉시 테마 적용 (깜빡임 방지)
-(function() {
-    const savedTheme = localStorage.getItem('theme');
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const theme = savedTheme || systemTheme;
-    document.documentElement.setAttribute('data-bs-theme', theme);
-})();
-
 // 다크모드 기능 초기화
 document.addEventListener('DOMContentLoaded', function() {
     const savedTheme = localStorage.getItem('theme');

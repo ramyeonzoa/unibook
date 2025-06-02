@@ -226,7 +226,7 @@
     color: var(--bs-gray-400) !important;
 }
 
-/* 알림 및 alert 다크모드 */   
+/* 알림 및 alert 다크모드 */
 [data-bs-theme="dark"] .alert-info {
     background-color: rgba(76, 132, 255, 0.15) !important;
     border-color: rgba(76, 132, 255, 0.3) !important;
@@ -516,4 +516,34 @@
 
 [data-bs-theme="dark"] .post-thumbnail:hover {
     filter: brightness(1);
+}
+
+/* 푸터 스타일 개선 */
+footer.bg-dark {
+    background-color: #2b2b2b !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-bs-theme="dark"] footer.bg-dark {
+    background-color: #1a1a1a !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* 푸터 링크 색상 - 라이트 모드에서 밝게 */
+footer .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+footer .text-muted:hover {
+    color: rgba(255, 255, 255, 0.9) !important;
+    transition: color 0.2s ease;
+}
+
+/* 다크모드 푸터 링크 색상 */
+[data-bs-theme="dark"] footer .text-muted {
+    color: var(--bs-gray-400) !important;
+}
+
+[data-bs-theme="dark"] footer .text-muted:hover {
+    color: var(--bs-gray-200) !important;
 }
