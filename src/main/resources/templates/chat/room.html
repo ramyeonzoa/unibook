@@ -155,30 +155,35 @@
             opacity: 0.8;
         }
         
+        /* 상태 배지 - detail.html과 통일 */
         .post-status-badge {
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
         
         .post-status-badge.status-available {
-            background: #28a745;
-            color: white;
+            background: #d4edda;
+            color: #155724;
         }
         
         .post-status-badge.status-reserved {
-            background: #ffc107;
-            color: #212529;
+            background: #fff3cd;
+            color: #856404;
         }
         
         .post-status-badge.status-completed {
-            background: #6c757d;
-            color: white;
+            background: #e2e3e5;
+            color: #383d41;
         }
         
         .post-status-badge.status-deleted {
-            background: #dc3545;
-            color: white;
+            background: #f8d7da;
+            color: #721c24;
         }
         
         /* 스크롤바 스타일 */
@@ -258,6 +263,27 @@
                 padding: 15px;
             }
         }
+        
+        /* 상태 배지 다크모드 */
+        [data-bs-theme="dark"] .post-status-badge.status-available {
+            background: rgba(25, 135, 84, 0.2);
+            color: #70db8f;
+        }
+        
+        [data-bs-theme="dark"] .post-status-badge.status-reserved {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffda6a;
+        }
+        
+        [data-bs-theme="dark"] .post-status-badge.status-completed {
+            background: rgba(108, 117, 125, 0.2);
+            color: #adb5bd;
+        }
+        
+        [data-bs-theme="dark"] .post-status-badge.status-deleted {
+            background: rgba(220, 53, 69, 0.2);
+            color: #f8b4b4;
+        }
     </style>
 </head>
 <body>
@@ -321,10 +347,11 @@
                                     <span class="post-status-badge"
                                           th:if="${chatRoom.postStatus != null}"
                                           th:classappend="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'status-available' : 
-                                                         chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 'status-completed'}"
-                                          th:text="${chatRoom.postStatus.toString() == 'AVAILABLE' ? '판매중' : 
-                                                   chatRoom.postStatus.toString() == 'RESERVED' ? '예약중' : '거래완료'}">
-                                        상태
+                                                         chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 'status-completed'}">
+                                        <i th:class="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
+                                                     (chatRoom.postStatus.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                        <span th:text="${chatRoom.postStatus.toString() == 'AVAILABLE' ? '판매중' : 
+                                                       (chatRoom.postStatus.toString() == 'RESERVED' ? '예약중' : '거래완료')}">상태</span>
                                     </span>
                                 </div>
                                 <div class="mt-2">

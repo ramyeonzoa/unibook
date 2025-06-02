@@ -327,6 +327,32 @@
             gap: 8px;
         }
         
+        /* 상태 배지 - detail.html과 통일 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        
+        .status-badge.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.reserved {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
         /* 캐러셀 컨트롤 */
         .carousel-nav {
             position: absolute;
@@ -523,6 +549,22 @@
         [data-bs-theme="dark"] .carousel-indicator {
             background: var(--bs-gray-700);
         }
+        
+        /* 상태 배지 다크모드 */
+        [data-bs-theme="dark"] .status-badge.available {
+            background: rgba(25, 135, 84, 0.2);
+            color: #70db8f;
+        }
+        
+        [data-bs-theme="dark"] .status-badge.reserved {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffda6a;
+        }
+        
+        [data-bs-theme="dark"] .status-badge.completed {
+            background: rgba(108, 117, 125, 0.2);
+            color: #adb5bd;
+        }
     </style>
 </head>
 <body>
@@ -685,11 +727,13 @@
                                 <div class="post-card-price">
                                     <span th:text="${#numbers.formatInteger(post.price, 3, 'COMMA')}">0</span>원
                                 </div>
-                                <span class="badge" 
-                                      th:classappend="${post.status.toString() == 'AVAILABLE' ? 'bg-success' : 
-                                                      (post.status.toString() == 'RESERVED' ? 'bg-warning text-dark' : 'bg-secondary')}"
-                                      th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
-                                               (post.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}">
+                                <span class="status-badge" 
+                                      th:classappend="${post.status.toString() == 'AVAILABLE' ? 'available' : 
+                                                      (post.status.toString() == 'RESERVED' ? 'reserved' : 'completed')}">
+                                    <i th:class="${post.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
+                                                 (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                                    <span th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
+                                                   (post.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}"></span>
                                 </span>
                             </div>
                         </div>

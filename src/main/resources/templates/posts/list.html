@@ -17,117 +17,611 @@
     <!-- 공통 스타일 (알림 등) -->
     <div th:replace="~{fragments/header :: styles}"></div>
     <style>
-        .post-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            height: 100%;
+        /* CSS 변수 정의 */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --card-hover-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+            --border-radius: 16px;
         }
         
-        .post-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        /* 히어로 섹션 */
+        .hero-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 60px 0 120px;
+            position: relative;
+            overflow: hidden;
         }
         
-        .post-image {
-            height: 200px;
-            object-fit: cover;
-            background-color: #f8f9fa;
-        }
-        
-        .no-image {
-            height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f8f9fa;
-            color: #6c757d;
-        }
-        
-        .price {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #0d6efd;
-        }
-        
-        .status-badge {
+        .hero-section::before {
+            content: '';
             position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 1;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.05'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 200px 200px;
         }
         
-        .filter-section {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
+        .hero-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        /* 검색/필터 카드 */
+        .search-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* 빠른 필터 버튼 */
+        .quick-filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+        
+        .filter-pill {
+            padding: 8px 20px;
+            border-radius: 25px;
+            border: 1px solid #dee2e6;
+            background: white;
+            color: #495057;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .filter-pill:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .filter-pill.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
+        
+        /* 정렬 옵션 스타일 개선 */
+        .sort-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px 20px;
             margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         
-        .filter-toolbar {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+        .sort-links {
+            display: flex;
+            gap: 5px;
+            align-items: center;
         }
         
         .sort-links a {
+            padding: 6px 16px;
+            border-radius: 20px;
             color: #6c757d;
             text-decoration: none;
-            padding: 0 10px;
-            border-right: 1px solid #dee2e6;
-            transition: color 0.2s;
-        }
-        
-        .sort-links a:last-child {
-            border-right: none;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
         }
         
         .sort-links a:hover {
-            color: #0d6efd;
+            background: #e9ecef;
+            color: #495057;
         }
         
         .sort-links a.active {
-            color: #0d6efd;
-            font-weight: 600;
+            background: var(--primary-gradient);
+            color: white;
+            font-weight: 500;
         }
         
-        .pagination {
-            justify-content: center;
-        }
-        
-        .wishlist-heart-icon {
-            transition: all 0.2s ease;
-        }
-        
-        .wishlist-heart-icon:hover {
-            transform: scale(1.2);
-            color: #dc3545 !important; /* 호버 시 빨간색 */
-        }
-        
-        .wishlist-heart-icon.processing {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        
-        .my-post-heart-icon {
-            transition: all 0.2s ease;
-        }
-        
-        .my-post-heart-icon:hover {
-            transform: scale(1.1);
-            color: #6c757d !important; /* 호버 시 조금 더 진한 회색 */
-        }
-        
-        .card-text {
+        /* 게시글 카드 개선 */
+        .post-card {
+            background: white;
+            border: none;
+            border-radius: var(--border-radius);
             overflow: hidden;
-            text-overflow: ellipsis;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            height: 100%;
+            cursor: pointer;
+            will-change: transform, box-shadow;
+        }
+        
+        .post-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--card-hover-shadow);
+        }
+        
+        .post-image-container {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e9ecef 100%);
+        }
+        
+        .post-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .post-card:hover .post-image {
+            transform: scale(1.05);
+        }
+        
+        .no-image {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+        }
+        
+        .no-image i {
+            font-size: 4rem;
+            color: #667eea40;
+        }
+        
+        /* 상태 배지 개선 */
+        /* 상태 배지 - detail.html과 통일 */
+        .status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            z-index: 2;
+        }
+        
+        .status-badge.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-badge.reserved {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-badge.completed {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        /* 카드 바디 스타일 */
+        .card-body {
+            padding: 20px;
+        }
+        
+        .product-type {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .product-type.textbook {
+            background: #e7f3ff;
+            color: #0066cc;
+        }
+        
+        .product-type.certbook {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .product-type.note {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .product-type.pastexam {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .product-type.other {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .post-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            overflow: hidden;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
         }
         
-        .author-info {
-            font-size: 0.875rem;
+        .post-title:hover {
+            color: #667eea;
+        }
+        
+        .price {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 12px;
+        }
+        
+        /* 메타 정보 스타일 */
+        .meta-info {
+            font-size: 0.85rem;
             color: #6c757d;
+            line-height: 1.6;
+        }
+        
+        .meta-info i {
+            width: 16px;
+        }
+        
+        /* 하단 정보 스타일 */
+        .card-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+        }
+        
+        /* 찜하기 하트 스타일 */
+        .wishlist-heart-icon {
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .wishlist-heart-icon:hover {
+            transform: scale(1.3);
+            color: #dc3545 !important;
+        }
+        
+        .wishlist-heart-icon.bi-heart-fill {
+            color: #dc3545 !important;
+        }
+        
+        /* 페이지네이션 개선 */
+        .pagination {
+            justify-content: center;
+            margin-top: 50px;
+            gap: 5px;
+        }
+        
+        .page-link {
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            color: #6c757d;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .page-link:hover {
+            background: #f0f0f0;
+            color: #495057;
+        }
+        
+        .page-item.active .page-link {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .page-item.disabled .page-link {
+            background: transparent;
+            color: #dee2e6;
+        }
+        
+        /* 빈 상태 디자인 */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 5rem;
+            color: #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .empty-state p {
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+        
+        /* 애니메이션 효과 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        .post-card {
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        .col:nth-child(1) .post-card { animation-delay: 0.1s; }
+        .col:nth-child(2) .post-card { animation-delay: 0.15s; }
+        .col:nth-child(3) .post-card { animation-delay: 0.2s; }
+        .col:nth-child(4) .post-card { animation-delay: 0.25s; }
+        .col:nth-child(5) .post-card { animation-delay: 0.3s; }
+        .col:nth-child(6) .post-card { animation-delay: 0.35s; }
+        .col:nth-child(7) .post-card { animation-delay: 0.4s; }
+        .col:nth-child(8) .post-card { animation-delay: 0.45s; }
+        
+        /* 로딩 상태 스켈레톤 */
+        .skeleton {
+            position: relative;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: skeleton-loading 1.5s infinite;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .skeleton-card {
+            height: 400px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+        
+        /* 이미지 레이지 로딩 */
+        .post-image.lazy {
+            filter: blur(5px);
+            transition: filter 0.3s;
+        }
+        
+        .post-image.loaded {
+            filter: blur(0);
+        }
+        
+        /* 부드러운 전환 효과 */
+        .page-transition {
+            transition: opacity 0.3s ease;
+        }
+        
+        .page-transition.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        /* 검색 결과 정보 */
+        .search-info {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .search-info .search-term {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        /* 로딩 스타일 */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            padding: 60px;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.3em;
+        }
+        
+        /* 학교 필터 체크박스 스타일 */
+        .school-filter-wrapper {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            border: 1px solid #dee2e6;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .school-filter-wrapper:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+        
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 2rem;
+            }
+            
+            .search-card {
+                padding: 20px;
+                margin-top: -60px;
+            }
+            
+            .sort-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .quick-filters {
+                justify-content: center;
+            }
+            
+            .filter-pill {
+                font-size: 0.85rem;
+                padding: 6px 15px;
+            }
+            
+            .post-image-container {
+                height: 180px;
+            }
+        }
+        
+        /* 다크모드 스타일 */
+        [data-bs-theme="dark"] .search-card {
+            background: var(--bs-dark);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        
+        [data-bs-theme="dark"] .filter-pill {
+            background: var(--bs-gray-800);
+            border-color: var(--bs-gray-700);
+            color: var(--bs-gray-300);
+        }
+        
+        [data-bs-theme="dark"] .filter-pill:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .sort-section {
+            background: var(--bs-gray-800);
+        }
+        
+        [data-bs-theme="dark"] .sort-links a {
+            color: var(--bs-gray-400);
+        }
+        
+        [data-bs-theme="dark"] .sort-links a:hover {
+            background: var(--bs-gray-700);
+            color: var(--bs-gray-200);
+        }
+        
+        [data-bs-theme="dark"] .post-card {
+            background: var(--bs-dark);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        [data-bs-theme="dark"] .post-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        [data-bs-theme="dark"] .post-title {
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .post-title:hover {
+            color: #8b9bff;
+        }
+        
+        [data-bs-theme="dark"] .card-footer-info {
+            border-top-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .search-info {
+            background: var(--bs-gray-800);
+            border-color: #8b9bff;
+        }
+        
+        [data-bs-theme="dark"] .school-filter-wrapper {
+            background: var(--bs-gray-800);
+            border-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .page-link {
+            background: transparent;
+            color: var(--bs-gray-400);
+        }
+        
+        [data-bs-theme="dark"] .page-link:hover {
+            background: var(--bs-gray-700);
+            color: var(--bs-gray-200);
+        }
+        
+        [data-bs-theme="dark"] .empty-state i {
+            color: var(--bs-gray-600);
+        }
+        
+        [data-bs-theme="dark"] .empty-state h3 {
+            color: var(--bs-gray-200);
+        }
+        
+        [data-bs-theme="dark"] .meta-info {
+            color: var(--bs-gray-400);
+        }
+        
+        /* 상태 배지 다크모드 */
+        [data-bs-theme="dark"] .status-badge.available {
+            background: rgba(25, 135, 84, 0.2);
+            color: #70db8f;
+        }
+        
+        [data-bs-theme="dark"] .status-badge.reserved {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffda6a;
+        }
+        
+        [data-bs-theme="dark"] .status-badge.completed {
+            background: rgba(108, 117, 125, 0.2);
+            color: #adb5bd;
         }
     </style>
 </head>
@@ -138,94 +632,60 @@
 <!-- 공통 메시지 포함 -->
 <div th:replace="~{fragments/header :: messages}"></div>
 
-<div class="container mt-4">
-    
-    <!-- 페이지 타이틀 -->
-    <h2 class="mb-4" th:text="${pageTitle ?: '게시글 목록'}">게시글 목록</h2>
-    
-    <!-- 필터 및 정렬 옵션 -->
-    <div class="filter-toolbar">
-        <div class="d-flex justify-content-between align-items-center">
-            <!-- 우리 학교 필터 (일반 게시글 목록에서만 표시) -->
-            <div th:if="${pageType == null}">
-                <!-- 이메일 인증된 사용자만 우리 학교 필터 사용 가능 -->
-                <div th:if="${userSchoolId != null}" sec:authorize="isAuthenticated()">
-                    <form method="get" action="/posts" class="d-flex align-items-center" 
-                          th:if="${#authentication.principal.verified}">
-                        <input type="hidden" name="search" th:value="${search}">
-                        <input type="hidden" name="productType" th:value="${productType}">
-                        <input type="hidden" name="status" th:value="${status}">
-                        <input type="hidden" name="sortBy" th:value="${sortBy}">
-                        
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" id="schoolFilter" 
-                                   name="schoolId" th:value="${userSchoolId}" 
-                                   th:checked="${schoolId == userSchoolId}"
-                                   onchange="this.form.submit()">
-                            <label class="form-check-label" for="schoolFilter">
-                                <i class="bi bi-building-fill"></i> 우리 학교 게시글만 보기
-                            </label>
-                        </div>
-                    </form>
-                    <span class="text-muted" th:unless="${#authentication.principal.verified}">
-                        <i class="bi bi-info-circle"></i> 이메일 인증 후 우리 학교 필터를 사용할 수 있습니다
-                    </span>
-                </div>
-                <div th:unless="${userSchoolId != null}">
-                    <span class="text-muted">전체 학교 게시글</span>
-                </div>
-            </div>
-            <!-- 내 게시글/찜 목록 페이지 표시 -->
-            <div th:if="${pageType != null}">
-                <span class="text-muted" th:switch="${pageType}">
-                    <span th:case="'my'"><i class="bi bi-person-fill"></i> 내가 작성한 게시글</span>
-                    <span th:case="'wishlist'"><i class="bi bi-heart-fill"></i> 내가 찜한 게시글</span>
-                </span>
-            </div>
-            
-            <!-- 정렬 옵션 -->
-            <div class="d-flex align-items-center sort-links">
-                <!-- 동적 URL 설정 -->
-                <span th:with="baseUrl=${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}">
-                    <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
-                                       schoolId=${schoolId}, sortBy='RELEVANCE')}"
-                       th:classappend="${sortBy == 'RELEVANCE' ? 'active' : ''}"
-                       th:style="${search == null or search.isEmpty() ? 'display: none;' : ''}">
-                        관련도순
-                    </a>
-                    <a th:href="@{${baseUrl}(sortBy='NEWEST')}"
-                       th:classappend="${sortBy == 'NEWEST' ? 'active' : ''}">
-                        최신순
-                    </a>
-                    <a th:href="@{${baseUrl}(sortBy='PRICE_ASC')}"
-                       th:classappend="${sortBy == 'PRICE_ASC' ? 'active' : ''}">
-                        가격 낮은순
-                    </a>
-                    <a th:href="@{${baseUrl}(sortBy='PRICE_DESC')}"
-                       th:classappend="${sortBy == 'PRICE_DESC' ? 'active' : ''}">
-                        가격 높은순
-                    </a>
-                    <a th:href="@{${baseUrl}(sortBy='VIEW_COUNT')}"
-                       th:classappend="${sortBy == 'VIEW_COUNT' ? 'active' : ''}">
-                        조회수순
-                    </a>
-                </span>
-            </div>
-        </div>
+<!-- 히어로 섹션 -->
+<section class="hero-section">
+    <div class="container position-relative">
+        <h1 th:text="${pageTitle ?: '게시글 둘러보기'}">게시글 둘러보기</h1>
+        <p class="lead mb-0" th:switch="${pageType}">
+            <span th:case="'my'">내가 등록한 모든 게시글을 한눈에 확인하세요</span>
+            <span th:case="'wishlist'">관심있는 게시글을 모아서 확인하세요</span>
+            <span th:case="*">우리 학교, 우리 학과 선배들의 거래 게시글을 찾아보세요</span>
+        </p>
     </div>
-    
-    <!-- 필터 섹션 -->
-    <div class="filter-section">
+</section>
+
+<!-- 메인 컨테이너 -->
+<div class="container">
+    <!-- 검색 카드 -->
+    <div class="search-card">
+        <!-- 빠른 필터 (일반 게시글 목록에서만 표시) -->
+        <div th:if="${pageType == null}" class="quick-filters">
+            <span class="text-muted me-3"><i class="bi bi-funnel"></i> 빠른 필터:</span>
+            <a href="/posts?productType=TEXTBOOK" class="filter-pill" 
+               th:classappend="${productType == 'TEXTBOOK' ? 'active' : ''}">
+                <i class="bi bi-book"></i> 전공교재
+            </a>
+            <a href="/posts?productType=CERTBOOK" class="filter-pill"
+               th:classappend="${productType == 'CERTBOOK' ? 'active' : ''}">
+                <i class="bi bi-award"></i> 자격증 교재
+            </a>
+            <a href="/posts?productType=NOTE" class="filter-pill"
+               th:classappend="${productType == 'NOTE' ? 'active' : ''}">
+                <i class="bi bi-journal-text"></i> 필기노트
+            </a>
+            <a href="/posts?productType=PASTEXAM" class="filter-pill"
+               th:classappend="${productType == 'PASTEXAM' ? 'active' : ''}">
+                <i class="bi bi-file-earmark-text"></i> 족보/기출
+            </a>
+            <a href="/posts?status=AVAILABLE" class="filter-pill"
+               th:classappend="${status == 'AVAILABLE' ? 'active' : ''}">
+                <i class="bi bi-check-circle"></i> 판매중만 보기
+            </a>
+        </div>
+        
+        <!-- 상세 검색 폼 -->
         <form method="get" th:action="${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}" 
               class="row g-3" id="searchForm">
-            <div class="col-md-4">
-                <label for="search" class="form-label">검색</label>
-                <input type="text" class="form-control" id="search" name="search" 
-                       th:value="${search}" placeholder="제목, 내용, 과목, 교수 검색">
+            <div class="col-md-6">
+                <label for="search" class="form-label fw-medium">
+                    <i class="bi bi-search"></i> 통합 검색
+                </label>
+                <input type="text" class="form-control form-control-lg" id="search" name="search" 
+                       th:value="${search}" placeholder="제목, 내용, 과목명, 교수명으로 검색">
             </div>
-            <div class="col-md-3">
-                <label for="productType" class="form-label">상품 유형</label>
-                <select class="form-select" id="productType" name="productType">
+            <div class="col-md-2">
+                <label for="productType" class="form-label fw-medium">상품 유형</label>
+                <select class="form-select form-select-lg" id="productType" name="productType">
                     <option value="">전체</option>
                     <option th:each="type : ${productTypes}" 
                             th:value="${type}" 
@@ -236,9 +696,9 @@
                                      type.name() == 'PASTEXAM' ? '족보/기출' : '기타'}"></option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label for="status" class="form-label">거래 상태</label>
-                <select class="form-select" id="status" name="status">
+            <div class="col-md-2">
+                <label for="status" class="form-label fw-medium">거래 상태</label>
+                <select class="form-select form-select-lg" id="status" name="status">
                     <option value="">전체</option>
                     <option value="AVAILABLE" th:selected="${status == 'AVAILABLE'}">판매중</option>
                     <option value="RESERVED" th:selected="${status == 'RESERVED'}">예약중</option>
@@ -246,34 +706,93 @@
                 </select>
             </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> 검색
+                <button type="submit" class="btn btn-primary btn-lg w-100" id="searchButton">
+                    <i class="bi bi-search"></i> <span class="button-text">검색</span>
+                    <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
                 </button>
             </div>
             <!-- 학교 필터 유지를 위한 hidden input -->
             <input type="hidden" name="schoolId" th:value="${schoolId}">
-            <!-- sortBy는 제거하여 검색 시 자동으로 관련도순이 되도록 함 -->
         </form>
     </div>
     
+    <!-- 정렬 및 필터 옵션 -->
+    <div class="sort-section">
+        <!-- 학교 필터 -->
+        <div th:if="${pageType == null and userSchoolId != null}" sec:authorize="isAuthenticated()">
+            <form method="get" action="/posts" class="d-inline-block" 
+                  th:if="${#authentication.principal.verified}">
+                <input type="hidden" name="search" th:value="${search}">
+                <input type="hidden" name="productType" th:value="${productType}">
+                <input type="hidden" name="status" th:value="${status}">
+                <input type="hidden" name="sortBy" th:value="${sortBy}">
+                
+                <div class="school-filter-wrapper">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="schoolFilter" 
+                               name="schoolId" th:value="${userSchoolId}" 
+                               th:checked="${schoolId == userSchoolId}"
+                               onchange="this.form.submit()">
+                        <label class="form-check-label" for="schoolFilter">
+                            <i class="bi bi-building-fill"></i> 우리 학교 게시글만 보기
+                        </label>
+                    </div>
+                </div>
+            </form>
+            <span class="text-muted" th:unless="${#authentication.principal.verified}">
+                <i class="bi bi-info-circle"></i> 이메일 인증 후 우리 학교 필터를 사용할 수 있습니다
+            </span>
+        </div>
+        
+        <!-- 정렬 옵션 -->
+        <div class="sort-links">
+            <span class="text-muted me-2">정렬:</span>
+            <span th:with="baseUrl=${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}">
+                <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
+                                   schoolId=${schoolId}, sortBy='RELEVANCE')}"
+                   th:classappend="${sortBy == 'RELEVANCE' ? 'active' : ''}"
+                   th:style="${search == null or search.isEmpty() ? 'display: none;' : ''}">
+                    <i class="bi bi-star"></i> 관련도순
+                </a>
+                <a th:href="@{${baseUrl}(sortBy='NEWEST')}"
+                   th:classappend="${sortBy == 'NEWEST' ? 'active' : ''}">
+                    <i class="bi bi-clock"></i> 최신순
+                </a>
+                <a th:href="@{${baseUrl}(sortBy='PRICE_ASC')}"
+                   th:classappend="${sortBy == 'PRICE_ASC' ? 'active' : ''}">
+                    <i class="bi bi-arrow-down"></i> 가격 낮은순
+                </a>
+                <a th:href="@{${baseUrl}(sortBy='PRICE_DESC')}"
+                   th:classappend="${sortBy == 'PRICE_DESC' ? 'active' : ''}">
+                    <i class="bi bi-arrow-up"></i> 가격 높은순
+                </a>
+                <a th:href="@{${baseUrl}(sortBy='VIEW_COUNT')}"
+                   th:classappend="${sortBy == 'VIEW_COUNT' ? 'active' : ''}">
+                    <i class="bi bi-eye"></i> 조회수순
+                </a>
+            </span>
+        </div>
+    </div>
+    
     <!-- 검색 정보 표시 -->
-    <div th:if="${search != null and !search.isEmpty()}" class="search-info mb-4">
+    <div th:if="${search != null and !search.isEmpty()}" class="search-info">
         <i class="bi bi-search"></i> 
         "<span class="search-term" th:text="${search}"></span>" 검색 결과 
-        <span th:text="${posts.totalElements}">0</span>개
+        <strong th:text="${posts.totalElements}">0</strong>개
     </div>
     
     <!-- 게시글 목록 -->
-    <div th:if="${posts.content.isEmpty()}" class="text-center py-5">
-        <i class="bi bi-inbox fs-1 text-muted"></i>
+    <div th:if="${posts.content.isEmpty()}" class="empty-state">
+        <i class="bi bi-inbox"></i>
         <!-- pageType에 따른 메시지 분기 -->
         <div th:switch="${pageType}">
             <!-- 내 게시글 -->
             <div th:case="'my'">
-                <p class="mt-3 text-muted">아직 작성한 게시글이 없습니다.</p>
+                <h3>아직 작성한 게시글이 없습니다</h3>
+                <p>첫 번째 거래를 시작해보세요!</p>
                 <div sec:authorize="isAuthenticated()">
-                    <a href="/posts/new" class="btn btn-primary" th:if="${#authentication.principal.verified}">
-                        첫 게시글 작성하기
+                    <a href="/posts/new" class="btn btn-primary btn-lg" th:if="${#authentication.principal.verified}">
+                        <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
                     </a>
                     <div th:unless="${#authentication.principal.verified}">
                         <p class="text-muted">게시글을 작성하려면 <a href="/verification-required">이메일 인증</a>이 필요합니다.</p>
@@ -282,127 +801,132 @@
             </div>
             <!-- 찜 목록 -->
             <div th:case="'wishlist'">
-                <p class="mt-3 text-muted">아직 찜한 게시글이 없습니다.</p>
+                <h3>아직 찜한 게시글이 없습니다</h3>
+                <p>관심있는 게시글을 찜해서 나중에 다시 확인하세요!</p>
                 <div sec:authorize="isAuthenticated()">
-                    <a href="/posts" class="btn btn-primary">게시글 둘러보기</a>
+                    <a href="/posts" class="btn btn-primary btn-lg">
+                        <i class="bi bi-search me-2"></i>게시글 둘러보기
+                    </a>
                     <div th:unless="${#authentication.principal.verified}">
-                        <p class="text-muted mt-2">찜하기 기능을 사용하려면 <a href="/verification-required">이메일 인증</a>이 필요합니다.</p>
+                        <p class="text-muted mt-3">찜하기 기능을 사용하려면 <a href="/verification-required">이메일 인증</a>이 필요합니다.</p>
                     </div>
                 </div>
             </div>
             <!-- 일반 목록 -->
             <div th:case="*">
-                <p class="mt-3 text-muted">등록된 게시글이 없습니다.</p>
-                <a href="/posts/new" class="btn btn-primary" sec:authorize="isAuthenticated()">
-                    첫 게시글 작성하기
+                <h3>등록된 게시글이 없습니다</h3>
+                <p>첫 번째 게시글을 작성해보세요!</p>
+                <a href="/posts/new" class="btn btn-primary btn-lg" sec:authorize="isAuthenticated()">
+                    <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
                 </a>
             </div>
         </div>
     </div>
     
-    <div th:if="${!posts.content.isEmpty()}" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+    <div th:if="${!posts.content.isEmpty()}" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mt-2">
         <div th:each="post : ${posts.content}" class="col">
-            <div class="card post-card">
-                <!-- 상태 배지 -->
-                <span class="badge status-badge"
-                      th:classappend="${post.status.toString() == 'AVAILABLE' ? 'bg-success' : 
-                                      post.status.toString() == 'RESERVED' ? 'bg-warning text-dark' : 
-                                      'bg-secondary'}"
-                      th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
-                               post.status.toString() == 'RESERVED' ? '예약중' : 
-                               '거래완료'}"></span>
-                
-                <!-- 이미지 -->
-                <a th:href="@{/posts/{id}(id=${post.postId})}" class="text-decoration-none">
+            <div class="card post-card" th:onclick="|window.location.href='/posts/${post.postId}'|">
+                <!-- 이미지 영역 -->
+                <div class="post-image-container">
+                    <!-- 상태 배지 -->
+                    <span class="status-badge"
+                          th:classappend="${post.status.toString() == 'AVAILABLE' ? 'available' : 
+                                          (post.status.toString() == 'RESERVED' ? 'reserved' : 'completed')}">
+                        <i th:class="${post.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
+                                     (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 'bi bi-check-square')}"></i>
+                        <span th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
+                                       (post.status.toString() == 'RESERVED' ? '예약중' : '거래완료')}"></span>
+                    </span>
+                    
+                    <!-- 이미지 -->
                     <img th:if="${post.images != null and !post.images.isEmpty()}" 
-                         th:src="@{${post.images[0].imagePath}}" 
-                         class="card-img-top post-image" 
+                         th:data-src="@{${post.images[0].imagePath}}"
+                         src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E"
+                         class="post-image lazy" 
                          alt="상품 이미지">
                     <div th:if="${post.images == null or post.images.isEmpty()}" class="no-image">
-                        <i class="bi bi-image fs-1"></i>
+                        <i th:class="${post.productType.toString() == 'TEXTBOOK' ? 'bi bi-book' : 
+                                     (post.productType.toString() == 'CERTBOOK' ? 'bi bi-award' : 
+                                     (post.productType.toString() == 'NOTE' ? 'bi bi-journal-text' : 
+                                     (post.productType.toString() == 'PASTEXAM' ? 'bi bi-file-earmark-text' : 'bi bi-box')))}"></i>
                     </div>
-                </a>
+                </div>
                 
                 <div class="card-body">
                     <!-- 상품 유형 -->
-                    <small class="text-muted">
-                        <span th:text="${post.productType.name() == 'TEXTBOOK' ? '전공교재' : 
-                                       post.productType.name() == 'CERTBOOK' ? '자격증 교재' :
-                                       post.productType.name() == 'NOTE' ? '필기노트' :
-                                       post.productType.name() == 'PASTEXAM' ? '족보/기출' : '기타'}"></span>
-                    </small>
+                    <span class="product-type"
+                          th:classappend="${post.productType.toString() == 'TEXTBOOK' ? 'textbook' : 
+                                          (post.productType.toString() == 'CERTBOOK' ? 'certbook' : 
+                                          (post.productType.toString() == 'NOTE' ? 'note' : 
+                                          (post.productType.toString() == 'PASTEXAM' ? 'pastexam' : 'other')))}"
+                          th:text="${post.productType.name() == 'TEXTBOOK' ? '전공교재' : 
+                                   post.productType.name() == 'CERTBOOK' ? '자격증 교재' :
+                                   post.productType.name() == 'NOTE' ? '필기노트' :
+                                   post.productType.name() == 'PASTEXAM' ? '족보/기출' : '기타'}"></span>
                     
                     <!-- 제목 -->
-                    <h5 class="card-title mt-2">
-                        <a th:href="@{/posts/{id}(id=${post.postId})}" 
-                           class="text-decoration-none text-dark post-title"
-                           th:text="${post.title}">제목</a>
-                    </h5>
+                    <h5 class="post-title" th:text="${post.title}">제목</h5>
                     
                     <!-- 가격 -->
-                    <p class="price mb-2" th:text="${#numbers.formatInteger(post.price, 0, 'COMMA') + '원'}">0원</p>
+                    <p class="price mb-3" th:text="${#numbers.formatInteger(post.price, 0, 'COMMA') + '원'}">0원</p>
                     
-                    <!-- 과목/교수 정보 (있을 경우) -->
-                    <div th:if="${post.subjectName != null}" class="subject-info mb-2">
-                        <small class="text-muted">
-                            <i class="bi bi-book"></i>
+                    <!-- 메타 정보 -->
+                    <div class="meta-info">
+                        <!-- 과목/교수 정보 -->
+                        <div th:if="${post.subjectName != null}" class="mb-1">
+                            <i class="bi bi-book-fill"></i>
                             <span class="post-subject-name" th:text="${post.subjectName}">과목명</span>
                             <span th:if="${post.professorName != null}">
                                 · <span class="post-professor-name" th:text="${post.professorName}">교수명</span>
                             </span>
-                        </small>
-                    </div>
-                    
-                    <!-- 책 정보 (있을 경우) -->
-                    <div th:if="${post.bookTitle != null}" class="book-info mb-2">
-                        <small class="text-muted">
-                            <i class="bi bi-journal-text"></i>
+                        </div>
+                        
+                        <!-- 책 정보 -->
+                        <div th:if="${post.bookTitle != null}" class="mb-1">
+                            <i class="bi bi-journal-bookmark-fill"></i>
                             <span class="post-book-title" th:text="${post.bookTitle}">책 제목</span>
-                            <span th:if="${post.bookAuthor != null}">
-                                · <span class="post-book-author" th:text="${post.bookAuthor}">저자</span>
+                        </div>
+                        
+                        <!-- 작성자 정보 -->
+                        <div class="mb-1">
+                            <i class="bi bi-person-fill"></i>
+                            <span th:text="${post.user.name}">작성자</span>
+                            <span th:if="${post.user.departmentName != null}">
+                                · <span th:text="${post.user.departmentName}">학과</span>
                             </span>
-                        </small>
+                        </div>
                     </div>
                     
-                    <!-- 작성자 정보 -->
-                    <div class="author-info">
-                        <i class="bi bi-person"></i> 
-                        <span th:text="${post.user.name}">작성자</span>
-                        <span th:if="${post.user.departmentName != null}">
-                            · <span th:text="${post.user.departmentName}">학과</span>
-                        </span>
-                    </div>
-                    
-                    <!-- 추가 정보 -->
-                    <div class="d-flex justify-content-between align-items-center mt-3">
+                    <!-- 하단 정보 -->
+                    <div class="card-footer-info">
                         <small class="text-muted">
-                            <i class="bi bi-eye"></i> <span th:text="${post.viewCount}">0</span>
+                            <i class="bi bi-eye-fill"></i> <span th:text="${post.viewCount}">0</span>
                             
-                            <!-- 찜하기 하트 아이콘 (로그인 사용자만, 타인의 게시글) -->
-                            <span sec:authorize="isAuthenticated()" 
-                                  th:if="${post.user.userId != #authentication.principal.userId}">
-                                <i class="bi bi-heart ms-2 wishlist-heart-icon" 
-                                   style="cursor: pointer; font-size: 1.1em; color: #6c757d;"
-                                   th:data-post-id="${post.postId}"
-                                   title="찜하기"></i>
+                            <!-- 찜하기 하트 아이콘 -->
+                            <span class="ms-2">
+                                <!-- 로그인한 사용자 -->
+                                <span sec:authorize="isAuthenticated()">
+                                    <!-- 타인의 게시글 -->
+                                    <i th:if="${post.user.userId != #authentication.principal.userId}"
+                                       class="bi bi-heart wishlist-heart-icon" 
+                                       th:data-post-id="${post.postId}"
+                                       onclick="event.stopPropagation();"
+                                       title="찜하기"></i>
+                                    <!-- 자신의 게시글 -->
+                                    <i th:if="${post.user.userId == #authentication.principal.userId}"
+                                       class="bi bi-heart my-post-heart-icon" 
+                                       style="color: #adb5bd; cursor: not-allowed;"
+                                       onclick="event.stopPropagation();"
+                                       title="내 게시글"></i>
+                                </span>
+                                <!-- 비로그인 사용자 -->
+                                <i sec:authorize="!isAuthenticated()" class="bi bi-heart text-muted"></i>
+                                
+                                <span th:text="${post.wishlistCount}" class="wishlist-count">0</span>
                             </span>
-                            <!-- 자신의 게시글인 경우 클릭 가능하지만 비활성화된 하트 -->
-                            <span sec:authorize="isAuthenticated()" 
-                                  th:if="${post.user.userId == #authentication.principal.userId}">
-                                <i class="bi bi-heart ms-2 my-post-heart-icon" 
-                                   style="cursor: pointer; font-size: 1.1em; color: #adb5bd;"
-                                   th:data-post-id="${post.postId}"
-                                   title="내 게시글"></i>
-                            </span>
-                            <!-- 비로그인 사용자인 경우 일반 하트 -->
-                            <span sec:authorize="!isAuthenticated()">
-                                <i class="bi bi-heart ms-2 text-muted"></i>
-                            </span>
-                            
-                            <span th:text="${post.wishlistCount}" class="wishlist-count">0</span>
                         </small>
                         <small class="text-muted" 
-                               th:text="${#temporals.format(post.createdAt, 'MM.dd')}">01.01</small>
+                               th:text="${#temporals.format(post.createdAt, 'MM.dd HH:mm')}">01.01</small>
                     </div>
                 </div>
             </div>
@@ -412,21 +936,31 @@
     <!-- 페이지네이션 -->
     <nav th:if="${posts.totalPages > 1}" class="mt-5">
         <ul class="pagination">
+            <!-- 처음 페이지 -->
+            <li class="page-item" th:classappend="${posts.first} ? 'disabled'">
+                <a class="page-link" 
+                   th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=0, search=${search}, 
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+            </li>
+            
             <!-- 이전 페이지 -->
             <li class="page-item" th:classappend="${!posts.hasPrevious()} ? 'disabled'">
                 <a class="page-link" 
-                   th:href="@{/posts(page=${posts.number - 1}, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}"
-                   tabindex="-1">이전</a>
+                   th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${posts.number - 1}, search=${search}, 
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
             </li>
             
-            <!-- 페이지 번호 -->
+            <!-- 페이지 번호 (현재 페이지 주변 5개만 표시) -->
             <li th:each="pageNum : ${#numbers.sequence(0, posts.totalPages - 1)}" 
                 class="page-item" 
                 th:classappend="${pageNum == posts.number} ? 'active'"
                 th:if="${pageNum >= posts.number - 2 and pageNum <= posts.number + 2}">
                 <a class="page-link" 
-                   th:href="@{/posts(page=${pageNum}, search=${search}, 
+                   th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${pageNum}, search=${search}, 
                            productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}"
                    th:text="${pageNum + 1}">1</a>
             </li>
@@ -434,8 +968,19 @@
             <!-- 다음 페이지 -->
             <li class="page-item" th:classappend="${!posts.hasNext()} ? 'disabled'">
                 <a class="page-link" 
-                   th:href="@{/posts(page=${posts.number + 1}, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">다음</a>
+                   th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${posts.number + 1}, search=${search}, 
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            
+            <!-- 마지막 페이지 -->
+            <li class="page-item" th:classappend="${posts.last} ? 'disabled'">
+                <a class="page-link" 
+                   th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${posts.totalPages - 1}, search=${search}, 
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
             </li>
         </ul>
     </nav>
@@ -454,26 +999,54 @@
     /*]]>*/
 </script>
 <script>
-    // 학교 필터는 이미 onchange로 처리되므로 추가 이벤트 리스너 불필요
-    
-    // 검색어가 없을 때 관련도순 링크 숨기기
     document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('search');
-        const relevanceLink = document.querySelector('.sort-links a[href*="sortBy=\'RELEVANCE\'"]');
+        // 이미지 레이지 로딩
+        const lazyImages = document.querySelectorAll('img.lazy');
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.add('loaded');
+                    img.classList.remove('lazy');
+                    observer.unobserve(img);
+                }
+            });
+        }, {
+            rootMargin: '50px 0px',
+            threshold: 0.01
+        });
         
-        function updateSortOptions() {
-            const hasSearch = searchInput.value.trim().length > 0;
-            
-            if (relevanceLink) {
-                relevanceLink.style.display = hasSearch ? 'inline' : 'none';
-            }
+        lazyImages.forEach(img => imageObserver.observe(img));
+        
+        // 스크롤 위치 저장 및 복원
+        const scrollKey = 'posts-list-scroll-' + window.location.pathname;
+        const savedScroll = sessionStorage.getItem(scrollKey);
+        if (savedScroll) {
+            window.scrollTo(0, parseInt(savedScroll));
+            sessionStorage.removeItem(scrollKey);
         }
         
-        // 초기 상태 설정
-        updateSortOptions();
+        // 페이지 이동 시 스크롤 위치 저장
+        document.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', function() {
+                sessionStorage.setItem(scrollKey, window.scrollY);
+            });
+        });
         
-        // 검색어 입력 시 업데이트
-        searchInput.addEventListener('input', updateSortOptions);
+        // 페이지 전환 효과
+        const pageContainer = document.querySelector('.container');
+        document.querySelectorAll('.pagination a, .filter-pill, .sort-links a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!e.ctrlKey && !e.metaKey) {
+                    e.preventDefault();
+                    pageContainer.classList.add('page-transition', 'loading');
+                    setTimeout(() => {
+                        window.location.href = this.href;
+                    }, 300);
+                }
+            });
+        });
         
         // 찜하기 하트 아이콘 이벤트 처리
         $('.wishlist-heart-icon').on('click', function(e) {
@@ -482,8 +1055,6 @@
             
             var postId = $(this).data('post-id');
             var heartIcon = $(this);
-            
-            console.log('찜하기 하트 클릭, postId:', postId);
             
             // 아이콘 클릭 중복 방지
             if (heartIcon.hasClass('processing')) {
@@ -503,27 +1074,20 @@
                     }
                 },
                 success: function(response) {
-                    console.log('찜하기 응답:', response);
                     if (response.success) {
                         updateWishlistHeartIcon(heartIcon, response.isWishlisted);
                         updateWishlistCountInList(heartIcon, response.isWishlisted);
                         showToast(response.message);
                     } else {
-                        alert(response.message || '찜하기 처리에 실패했습니다.');
+                        showToast(response.message || '찜하기 처리에 실패했습니다.');
                     }
                 },
                 error: function(xhr) {
-                    console.error('찜하기 에러:', xhr.status, xhr.responseText);
                     if (xhr.status === 400) {
                         var response = xhr.responseJSON;
-                        if (response.needVerification) {
-                            // 이메일 인증 필요한 경우 노란색 Toast
-                            showToast(response.message || '이메일 인증이 필요합니다.');
-                        } else {
-                            alert(response.message || '찜하기 처리에 실패했습니다.');
-                        }
+                        showToast(response.message || '찜하기 처리에 실패했습니다.');
                     } else {
-                        alert('찜하기 처리 중 오류가 발생했습니다.');
+                        showToast('찜하기 처리 중 오류가 발생했습니다.');
                     }
                 },
                 complete: function() {
@@ -536,31 +1100,47 @@
         $('.my-post-heart-icon').on('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
-            console.log('내 게시글 하트 클릭');
             showToast('자신의 게시글은 찜할 수 없습니다 😊');
         });
         
         // 페이지 로드 시 찜 상태 확인
         loadWishlistStatusForList();
+        
+        // 검색 폼 제출 시 로딩 표시
+        $('#searchForm').on('submit', function() {
+            const button = $('#searchButton');
+            button.find('.button-text').text('검색중...');
+            button.find('.spinner-border').removeClass('d-none');
+            button.prop('disabled', true);
+        });
+        
+        // 브라우저 뒤로가기 시 로딩 상태 초기화
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                const button = $('#searchButton');
+                button.find('.button-text').text('검색');
+                button.find('.spinner-border').addClass('d-none');
+                button.prop('disabled', false);
+            }
+        });
     });
     
     // 찜하기 하트 아이콘 UI 업데이트 (목록용)
     function updateWishlistHeartIcon(heartIcon, isWishlisted) {
         if (isWishlisted) {
             heartIcon.removeClass('bi-heart').addClass('bi-heart-fill');
-            heartIcon.css('color', '#dc3545'); // Bootstrap danger color
+            heartIcon.css('color', '#dc3545');
             heartIcon.attr('title', '찜 해제');
         } else {
             heartIcon.removeClass('bi-heart-fill').addClass('bi-heart');
-            heartIcon.css('color', '#6c757d'); // Bootstrap secondary color
+            heartIcon.css('color', '#6c757d');
             heartIcon.attr('title', '찜하기');
         }
     }
     
     // 찜 개수 업데이트 (목록용)
     function updateWishlistCountInList(heartIcon, isWishlisted) {
-        var countElement = heartIcon.closest('.text-muted').find('.wishlist-count');
+        var countElement = heartIcon.closest('.ms-2').find('.wishlist-count');
         var currentCount = parseInt(countElement.text()) || 0;
         var newCount = isWishlisted ? currentCount + 1 : Math.max(0, currentCount - 1);
         countElement.text(newCount);
@@ -587,15 +1167,15 @@
         });
     }
     
-    // 토스트 메시지 (목록용)
+    // 토스트 메시지
     function showToast(message) {
         $('.toast-container').remove();
         
         var isWarning = message.includes('자신의 게시글') || message.includes('이메일 인증');
-        var backgroundColor = isWarning ? 'rgba(255, 193, 7, 0.9)' : 'rgba(25, 135, 84, 0.9)'; // 투명도 90%
+        var backgroundColor = isWarning ? 'rgba(255, 193, 7, 0.9)' : 'rgba(25, 135, 84, 0.9)';
         var textColor = isWarning ? '#664d03' : '#ffffff';
         
-        var toast = $('<div class="toast-container position-fixed top-0 end-0 p-3">' +
+        var toast = $('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1050;">' +
                       '<div class="toast border-0" role="alert" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' +
                       '<div class="toast-body text-center fw-medium">' + message + '</div>' +
                       '</div></div>');
