@@ -2,7 +2,7 @@
 nixPkgs = ['openjdk21']
 
 [phases.build]
-cmds = ['./gradlew bootJar --no-daemon']
+cmds = ['gradle bootJar --no-daemon']
 
 [phases.start]
 cmd = 'java -jar build/libs/*.jar'

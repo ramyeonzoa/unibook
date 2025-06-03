@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.Arrays;
 
 @Slf4j
 @Component
@@ -33,10 +34,68 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         try {
-            initializeData();
+            // 운영환경에서는 최소 데이터만 로드
+            String profile = System.getProperty("spring.profiles.active", "");
+            if ("prod".equals(profile)) {
+                log.info("Production environment detected. Loading minimal data only.");
+                initializeMinimalData();
+            } else {
+                initializeData();
+            }
         } catch (Exception e) {
             log.error("Failed to initialize data", e);
             // 애플리케이션 시작은 계속되도록 함
+        }
+    }
+    
+    @Transactional(rollbackFor = Exception.class)
+    public void initializeMinimalData() throws Exception {
+        log.info("=== Starting Minimal Data Initialization ===");
+        
+        // 기본 학교만 생성 (서울대, 연세대, 고려대 등 몇 개만)
+        if (schoolRepository.count() == 0) {
+            createBasicSchools();
+        }
+        
+        // 기본 학과만 생성
+        createBasicDepartments();
+        
+        log.info("=== Minimal Data Initialization Completed ===");
+    }
+    
+    private void createBasicSchools() {
+        List<School> basicSchools = Arrays.asList(
+            School.builder().schoolName("서울대학교").primaryDomain("snu.ac.kr").allDomains(Set.of("snu.ac.kr")).build(),
+            School.builder().schoolName("연세대학교").primaryDomain("yonsei.ac.kr").allDomains(Set.of("yonsei.ac.kr")).build(),
+            School.builder().schoolName("고려대학교").primaryDomain("korea.ac.kr").allDomains(Set.of("korea.ac.kr")).build(),
+            School.builder().schoolName("성균관대학교").primaryDomain("skku.edu").allDomains(Set.of("skku.edu")).build(),
+            School.builder().schoolName("한양대학교").primaryDomain("hanyang.ac.kr").allDomains(Set.of("hanyang.ac.kr")).build()
+        );
+        
+        schoolRepository.saveAll(basicSchools);
+        log.info("Created {} basic schools", basicSchools.size());
+    }
+    
+    private void createBasicDepartments() {
+        List<School> schools = schoolRepository.findAll();
+        List<Department> departments = new ArrayList<>();
+        
+        String[] basicDepts = {"컴퓨터공학과", "경영학과", "경제학과", "교양학부"};
+        
+        for (School school : schools) {
+            for (String deptName : basicDepts) {
+                if (!departmentRepository.existsByDepartmentNameAndSchool_SchoolId(deptName, school.getSchoolId())) {
+                    departments.add(Department.builder()
+                        .departmentName(deptName)
+                        .school(school)
+                        .build());
+                }
+            }
+        }
+        
+        if (!departments.isEmpty()) {
+            departmentRepository.saveAll(departments);
+            log.info("Created {} basic departments", departments.size());
         }
     }
     
