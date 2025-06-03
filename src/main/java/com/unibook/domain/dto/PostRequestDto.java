@@ -48,7 +48,7 @@ public class PostRequestDto {
     @Size(max = 100, message = "거래 장소는 100자 이하여야 합니다")
     private String campusLocation;
     
-    private Post.PostStatus status; // 수정 시에만 사용
+    private Post.PostStatus status; // 거래 상태 (수정 시에만 사용)
     
     /**
      * Subject 검증: 과목 선택 시 연도와 학기는 필수
@@ -104,7 +104,7 @@ public class PostRequestDto {
         post.setTransactionMethod(this.transactionMethod);
         post.setCampusLocation(this.campusLocation);
         
-        // 상태는 별도 메서드로 업데이트하거나 수정 폼에서만 변경 가능
+        // 상태는 수정 폼에서만 변경 가능
         if (this.status != null) {
             post.setStatus(this.status);
         }

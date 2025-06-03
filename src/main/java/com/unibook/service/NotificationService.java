@@ -247,6 +247,31 @@ public class NotificationService {
     }
     
     /**
+     * 가격 변동 메시지 생성
+     */
+    private String generatePriceChangeMessage(Integer oldPrice, Integer newPrice) {
+        if (oldPrice == null || newPrice == null) {
+            return "찜한 게시글의 가격이 변경되었습니다.";
+        }
+        
+        int priceDiff = newPrice - oldPrice;
+        String formattedOldPrice = String.format("%,d원", oldPrice);
+        String formattedNewPrice = String.format("%,d원", newPrice);
+        
+        if (priceDiff > 0) {
+            String increase = String.format("%,d원", priceDiff);
+            return String.format("찜한 게시글의 가격이 %s에서 %s로 %s 올랐어요.", 
+                    formattedOldPrice, formattedNewPrice, increase);
+        } else if (priceDiff < 0) {
+            String decrease = String.format("%,d원", Math.abs(priceDiff));
+            return String.format("찜한 게시글의 가격이 %s에서 %s로 %s 내렸어요! 🎉", 
+                    formattedOldPrice, formattedNewPrice, decrease);
+        } else {
+            return "찜한 게시글의 가격 정보가 업데이트되었습니다.";
+        }
+    }
+    
+    /**
      * 관리자들에게 새 신고 알림 (비동기)
      */
     @Async
@@ -295,6 +320,79 @@ public class NotificationService {
         } catch (Exception e) {
             log.error("신고 처리 결과 알림 생성 실패: reporterId={}, reportId={}", reporterId, reportId, e);
         }
+    }
+    
+    /**
+     * 찜한 게시글 가격 변동 알림 생성 (비동기)
+     */
+    @Async
+    @Transactional
+    public void createWishlistPriceChangeNotificationAsync(Long recipientUserId, Long postId, Integer oldPrice, Integer newPrice) {
+        try {
+            String title = "찜한 게시글 가격 변경 💰";
+            String content = generatePriceChangeMessage(oldPrice, newPrice);
+            String url = "/posts/" + postId;
+
+            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                    .recipientUserId(recipientUserId)
+                    .type(Notification.NotificationType.WISHLIST_PRICE_CHANGED)
+                    .relatedPostId(postId)
+                    .title(title)
+                    .content(content)
+                    .url(url)
+                    .build();
+
+            // createNotification을 직접 호출하는 대신 커스텀 로직으로 payload 포함 알림 생성
+            createPriceChangeNotification(request, oldPrice, newPrice);
+            log.info("찜한 게시글 가격 변동 알림 생성: userId={}, postId={}, {}원 -> {}원", 
+                    recipientUserId, postId, oldPrice, newPrice);
+        } catch (Exception e) {
+            log.error("찜한 게시글 가격 변동 알림 생성 실패: userId={}, postId={}", recipientUserId, postId, e);
+        }
+    }
+    
+    /**
+     * 가격 변동 알림 생성 (payload 포함)
+     */
+    private NotificationDto.Response createPriceChangeNotification(NotificationDto.CreateRequest request, Integer oldPrice, Integer newPrice) {
+        // getReferenceById 사용으로 불필요한 DB 조회 최소화
+        User recipient = userRepository.getReferenceById(request.getRecipientUserId());
+
+        User actor = null;
+        if (request.getActorUserId() != null) {
+            actor = userRepository.getReferenceById(request.getActorUserId());
+        }
+
+        Post relatedPost = null;
+        if (request.getRelatedPostId() != null) {
+            relatedPost = postRepository.getReferenceById(request.getRelatedPostId());
+        }
+
+        Notification notification = Notification.builder()
+                .recipient(recipient)
+                .actor(actor)
+                .type(request.getType())
+                .relatedPost(relatedPost)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .url(request.getUrl())
+                .build();
+        
+        // 가격 정보를 payload에 추가
+        notification.addPayload("oldPrice", oldPrice);
+        notification.addPayload("newPrice", newPrice);
+        notification.addPayload("priceChange", newPrice - oldPrice);
+
+        Notification saved = notificationRepository.save(notification);
+        log.info("가격 변동 알림 생성됨: userId={}, type={}, title={}", 
+                request.getRecipientUserId(), request.getType(), request.getTitle());
+        
+        NotificationDto.Response response = NotificationDto.Response.from(saved);
+        
+        // 실시간 알림 전송
+        emitterService.sendNotificationToUser(request.getRecipientUserId(), response);
+        
+        return response;
     }
     
     /**

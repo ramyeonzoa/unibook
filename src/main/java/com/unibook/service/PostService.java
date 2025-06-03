@@ -319,6 +319,12 @@ public class PostService {
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
         try {
+            // 가격 변동 감지를 위한 이전 가격 저장
+            Integer oldPrice = post.getPrice();
+            
+            // 상태 변경 감지를 위한 이전 상태 저장
+            Post.PostStatus oldStatus = post.getStatus();
+            
             // 기존 SubjectBook 연결 정보 저장 (reference count 관리용)
             Long oldSubjectId = post.getSubject() != null ? post.getSubject().getSubjectId() : null;
             Long oldBookId = post.getBook() != null ? post.getBook().getBookId() : null;
@@ -407,6 +413,25 @@ public class PostService {
             // Note: SubjectBook reference count는 위에서 이미 처리됨
             
             Post updatedPost = postRepository.save(post);
+            
+            // 가격 변동 감지 및 알림 발송
+            Integer newPrice = updatedPost.getPrice();
+            if (oldPrice != null && newPrice != null && !oldPrice.equals(newPrice)) {
+                log.info("가격 변동 감지: postId={}, {}원 -> {}원", postId, oldPrice, newPrice);
+                
+                // 가격이 변경된 경우에만 위시리스트 사용자들에게 알림 발송
+                notifyWishlistUsersOfPriceChange(updatedPost, oldPrice, newPrice);
+            }
+            
+            // 상태 변경 감지 및 알림 발송
+            Post.PostStatus newStatus = updatedPost.getStatus();
+            if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
+                log.info("상태 변경 감지: postId={}, {} -> {}", postId, oldStatus, newStatus);
+                
+                // 상태가 변경된 경우에만 위시리스트 사용자들에게 알림 발송
+                publishWishlistStatusChangeNotifications(updatedPost, newStatus);
+            }
+            
             log.info("게시글 수정 완료: postId={}", postId);
             
             return updatedPost;
@@ -478,7 +503,7 @@ public class PostService {
         
         // 상태가 실제로 변경되는 경우에만 알림 발송
         Post.PostStatus oldStatus = post.getStatus();
-        if (oldStatus != status) {
+        if (!oldStatus.equals(status)) {
             post.setStatus(status);
             postRepository.save(post);
             
@@ -486,6 +511,8 @@ public class PostService {
             
             // 찜한 사용자들에게 알림 발송 (비동기)
             publishWishlistStatusChangeNotifications(postId, status);
+        } else {
+            log.info("상태 변경 없음 - updatePostStatus: postId={}, status={}", postId, status);
         }
     }
     
@@ -529,11 +556,8 @@ public class PostService {
      * 테스트 및 직접 호출용
      */
     public void publishWishlistStatusChangeNotifications(Post post, Post.PostStatus newStatus) {
-        // 현재 상태와 새 상태가 같으면 알림 발송하지 않음
-        if (post.getStatus() == newStatus) {
-            log.debug("현재 상태와 동일하여 알림 발송 생략: postId={}, status={}", post.getPostId(), newStatus);
-            return;
-        }
+        // 이 메서드는 이미 상태가 변경된 후 호출되므로 post.getStatus() == newStatus가 항상 true
+        // 따라서 이 체크는 불필요함 - 호출하는 쪽에서 이미 상태 변경을 확인했음
 
         try {
             // 해당 게시글을 찜한 모든 사용자 조회
@@ -563,6 +587,44 @@ public class PostService {
         } catch (Exception e) {
             // 알림 발송 실패가 게시글 상태 변경을 방해하면 안 됨
             log.warn("알림 발송 중 오류 발생: postId={}, error={}", post.getPostId(), e.getMessage());
+        }
+    }
+    
+    /**
+     * 게시글을 찜한 사용자들에게 가격 변동 알림 발송
+     */
+    private void notifyWishlistUsersOfPriceChange(Post post, Integer oldPrice, Integer newPrice) {
+        try {
+            // 해당 게시글을 찜한 모든 사용자 조회
+            List<Wishlist> wishlists = wishlistRepository.findByPostIdWithUser(post.getPostId());
+            
+            if (wishlists.isEmpty()) {
+                log.debug("게시글을 찜한 사용자가 없음: postId={}", post.getPostId());
+                return;
+            }
+            
+            log.info("찜한 게시글 가격 변동 알림 발송 시작: postId={}, userCount={}, {}원 -> {}원", 
+                    post.getPostId(), wishlists.size(), oldPrice, newPrice);
+            
+            // 각 사용자에게 비동기로 알림 발송
+            for (Wishlist wishlist : wishlists) {
+                try {
+                    Long recipientUserId = wishlist.getUser().getUserId();
+                    notificationService.createWishlistPriceChangeNotificationAsync(
+                            recipientUserId, post.getPostId(), oldPrice, newPrice);
+                } catch (Exception e) {
+                    // 개별 사용자 알림 실패는 로그만 남기고 계속 진행
+                    log.warn("개별 가격 변동 알림 발송 실패: userId={}, postId={}, error={}", 
+                            wishlist.getUser().getUserId(), post.getPostId(), e.getMessage());
+                }
+            }
+            
+            log.info("찜한 게시글 가격 변동 알림 발송 완료: postId={}", post.getPostId());
+            
+        } catch (Exception e) {
+            // 알림 발송 실패가 게시글 수정을 방해하면 안 됨
+            log.warn("가격 변동 알림 발송 중 오류 발생: postId={}, oldPrice={}, newPrice={}, error={}", 
+                    post.getPostId(), oldPrice, newPrice, e.getMessage());
         }
     }
     
