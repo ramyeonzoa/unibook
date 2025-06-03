@@ -118,6 +118,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "AND (:status IS NULL OR p.status = :status) " +
            "AND (:productType IS NULL OR p.product_type = :productType) " +
            "AND (:schoolId IS NULL OR d.school_id = :schoolId) " +
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice) " +
            "ORDER BY totalScore DESC, p.created_at DESC",
            countQuery = "SELECT COUNT(DISTINCT p.post_id) " +
            "FROM posts p " +
@@ -137,12 +139,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "AND p.status != 'BLOCKED' " +
            "AND (:status IS NULL OR p.status = :status) " +
            "AND (:productType IS NULL OR p.product_type = :productType) " +
-           "AND (:schoolId IS NULL OR d.school_id = :schoolId)",
+           "AND (:schoolId IS NULL OR d.school_id = :schoolId) " +
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice)",
            nativeQuery = true)
     Page<PostSearchProjection> searchPostsWithFulltext(@Param("searchQuery") String searchQuery,
                                                       @Param("status") String status,
                                                       @Param("productType") String productType,
                                                       @Param("schoolId") Long schoolId,
+                                                      @Param("minPrice") Integer minPrice,
+                                                      @Param("maxPrice") Integer maxPrice,
                                                       Pageable pageable);
     
     /**
@@ -170,10 +176,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "WHERE p.status != 'BLOCKED' " +
            "AND (:status IS NULL OR p.status = :status) " +
            "AND (:productType IS NULL OR p.productType = :productType) " +
-           "AND (:schoolId IS NULL OR d.school.schoolId = :schoolId)")
+           "AND (:schoolId IS NULL OR d.school.schoolId = :schoolId) " +
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
     Page<Post> findByFilters(@Param("status") Post.PostStatus status,
                             @Param("productType") Post.ProductType productType,
                             @Param("schoolId") Long schoolId,
+                            @Param("minPrice") Integer minPrice,
+                            @Param("maxPrice") Integer maxPrice,
                             Pageable pageable);
     
     /**
@@ -191,6 +201,26 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findWishlistedPostsByUser(@Param("userId") Long userId, Pageable pageable);
     
     /**
+     * 사용자가 찜한 게시글 목록 조회 (가격 필터링 포함)
+     */
+    @Query(value = "SELECT p FROM Wishlist w " +
+                   "JOIN w.post p " +
+                   "JOIN FETCH p.user u " +
+                   "LEFT JOIN FETCH u.department d " +
+                   "LEFT JOIN FETCH d.school " +
+                   "LEFT JOIN FETCH p.postImages " +
+                   "WHERE w.user.userId = :userId AND p.status != 'BLOCKED' " +
+                   "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+                   "AND (:maxPrice IS NULL OR p.price <= :maxPrice)",
+           countQuery = "SELECT COUNT(w) FROM Wishlist w JOIN w.post p WHERE w.user.userId = :userId AND p.status != 'BLOCKED' " +
+                        "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+                        "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
+    Page<Post> findWishlistedPostsByUserWithPriceFilter(@Param("userId") Long userId, 
+                                                         @Param("minPrice") Integer minPrice, 
+                                                         @Param("maxPrice") Integer maxPrice, 
+                                                         Pageable pageable);
+    
+    /**
      * 사용자가 작성한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
      * 작성자에게는 BLOCKED 상태 게시글도 표시 (상태 확인 가능하도록)
      */
@@ -202,6 +232,25 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    "WHERE p.user.userId = :userId",
            countQuery = "SELECT COUNT(p) FROM Post p WHERE p.user.userId = :userId")
     Page<Post> findByUserIdWithDetails(@Param("userId") Long userId, Pageable pageable);
+    
+    /**
+     * 사용자가 작성한 게시글 목록 조회 (가격 필터링 포함)
+     */
+    @Query(value = "SELECT p FROM Post p " +
+                   "JOIN FETCH p.user u " +
+                   "LEFT JOIN FETCH u.department d " +
+                   "LEFT JOIN FETCH d.school " +
+                   "LEFT JOIN FETCH p.postImages " +
+                   "WHERE p.user.userId = :userId " +
+                   "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+                   "AND (:maxPrice IS NULL OR p.price <= :maxPrice)",
+           countQuery = "SELECT COUNT(p) FROM Post p WHERE p.user.userId = :userId " +
+                        "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+                        "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
+    Page<Post> findByUserIdWithDetailsAndPriceFilter(@Param("userId") Long userId, 
+                                                      @Param("minPrice") Integer minPrice, 
+                                                      @Param("maxPrice") Integer maxPrice, 
+                                                      Pageable pageable);
     
     /**
      * Native Query로 직접 Post 삭제 (외래키 제약 회피)

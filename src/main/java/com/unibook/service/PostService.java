@@ -64,7 +64,8 @@ public class PostService {
      * Full-text 검색 및 필터링 지원
      */
     public Page<Post> getPostsPage(Pageable pageable, String search, 
-                                  Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy) {
+                                  Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy,
+                                  Integer minPrice, Integer maxPrice) {
         
         // 검색어가 있는 경우
         if (search != null && !search.trim().isEmpty()) {
@@ -86,6 +87,8 @@ public class PostService {
                         status != null ? status.name() : null,
                         productType != null ? productType.name() : null,
                         schoolId,
+                        minPrice,
+                        maxPrice,
                         pageable
                 );
                 
@@ -159,8 +162,9 @@ public class PostService {
         }
         
         // 검색어가 없거나 너무 짧은 경우 - 필터링만 적용
-        log.info("필터링 조회: productType={}, status={}, schoolId={}", productType, status, schoolId);
-        return postRepository.findByFilters(status, productType, schoolId, pageable);
+        log.info("필터링 조회: productType={}, status={}, schoolId={}, minPrice={}, maxPrice={}", 
+                productType, status, schoolId, minPrice, maxPrice);
+        return postRepository.findByFilters(status, productType, schoolId, minPrice, maxPrice, pageable);
     }
     
     /**
@@ -214,6 +218,17 @@ public class PostService {
      */
     public Page<Post> getPostsByUserId(Long userId, Pageable pageable) {
         return postRepository.findByUserIdWithDetails(userId, pageable);
+    }
+    
+    /**
+     * 사용자별 게시글 조회 (가격 필터링 포함)
+     */
+    public Page<Post> getPostsByUserId(Long userId, Pageable pageable, Integer minPrice, Integer maxPrice) {
+        if (minPrice == null && maxPrice == null) {
+            return postRepository.findByUserIdWithDetails(userId, pageable);
+        } else {
+            return postRepository.findByUserIdWithDetailsAndPriceFilter(userId, minPrice, maxPrice, pageable);
+        }
     }
     
     /**

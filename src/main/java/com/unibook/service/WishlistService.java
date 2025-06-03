@@ -97,6 +97,17 @@ public class WishlistService {
     }
     
     /**
+     * 사용자의 찜한 게시글 목록 조회 (가격 필터링 포함)
+     */
+    public Page<Post> getUserWishlistPosts(Long userId, Pageable pageable, Integer minPrice, Integer maxPrice) {
+        if (minPrice == null && maxPrice == null) {
+            return postRepository.findWishlistedPostsByUser(userId, pageable);
+        } else {
+            return postRepository.findWishlistedPostsByUserWithPriceFilter(userId, minPrice, maxPrice, pageable);
+        }
+    }
+    
+    /**
      * 찜하기 제거 (특정)
      */
     @Transactional

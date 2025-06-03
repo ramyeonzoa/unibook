@@ -607,69 +607,113 @@
     <!-- 검색 카드 -->
     <div class="search-card">
         <!-- 빠른 필터 (일반 게시글 목록에서만 표시) -->
-        <div th:if="${pageType == null}" class="quick-filters">
-            <span class="text-muted me-3"><i class="bi bi-funnel"></i> 빠른 필터:</span>
-            <a href="/posts?productType=TEXTBOOK" class="filter-pill" 
-               th:classappend="${productType == 'TEXTBOOK' ? 'active' : ''}">
-                <i class="bi bi-book"></i> 전공교재
-            </a>
-            <a href="/posts?productType=CERTBOOK" class="filter-pill"
-               th:classappend="${productType == 'CERTBOOK' ? 'active' : ''}">
-                <i class="bi bi-award"></i> 자격증 교재
-            </a>
-            <a href="/posts?productType=NOTE" class="filter-pill"
-               th:classappend="${productType == 'NOTE' ? 'active' : ''}">
-                <i class="bi bi-journal-text"></i> 필기노트
-            </a>
-            <a href="/posts?productType=PASTEXAM" class="filter-pill"
-               th:classappend="${productType == 'PASTEXAM' ? 'active' : ''}">
-                <i class="bi bi-file-earmark-text"></i> 족보/기출
-            </a>
-            <a href="/posts?status=AVAILABLE" class="filter-pill"
-               th:classappend="${status == 'AVAILABLE' ? 'active' : ''}">
-                <i class="bi bi-check-circle"></i> 판매중만 보기
-            </a>
+        <div th:if="${pageType == null}" class="quick-filters-container mb-3">
+            <span class="text-muted me-2 flex-shrink-0 d-none d-sm-inline"><i class="bi bi-funnel"></i> 빠른 필터:</span>
+            <div class="quick-filters-scroll">
+                <div class="quick-filters">
+                    <a href="/posts?productType=TEXTBOOK" class="filter-pill" 
+                       th:classappend="${productType == 'TEXTBOOK' ? 'active' : ''}">
+                        <i class="bi bi-book"></i> 전공교재
+                    </a>
+                    <a href="/posts?productType=CERTBOOK" class="filter-pill"
+                       th:classappend="${productType == 'CERTBOOK' ? 'active' : ''}">
+                        <i class="bi bi-award"></i> 자격증 교재
+                    </a>
+                    <a href="/posts?productType=NOTE" class="filter-pill"
+                       th:classappend="${productType == 'NOTE' ? 'active' : ''}">
+                        <i class="bi bi-journal-text"></i> 필기노트
+                    </a>
+                    <a href="/posts?productType=PASTEXAM" class="filter-pill"
+                       th:classappend="${productType == 'PASTEXAM' ? 'active' : ''}">
+                        <i class="bi bi-file-earmark-text"></i> 족보/기출
+                    </a>
+                    <a href="/posts?status=AVAILABLE" class="filter-pill"
+                       th:classappend="${status == 'AVAILABLE' ? 'active' : ''}">
+                        <i class="bi bi-check-circle"></i> 판매중만 보기
+                    </a>
+                    <a href="/posts?maxPrice=10000" class="filter-pill"
+                       th:classappend="${maxPrice != null and maxPrice <= 10000 ? 'active' : ''}">
+                        <i class="bi bi-currency-dollar"></i> 1만원 이하
+                    </a>
+                    <a href="/posts?maxPrice=30000" class="filter-pill"
+                       th:classappend="${maxPrice != null and maxPrice <= 30000 ? 'active' : ''}">
+                        <i class="bi bi-currency-dollar"></i> 3만원 이하
+                    </a>
+                </div>
+            </div>
         </div>
         
-        <!-- 상세 검색 폼 -->
+        <!-- 검색 폼 -->
         <form method="get" th:action="${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}" 
-              class="row g-3" id="searchForm">
-            <div class="col-md-6">
-                <label for="search" class="form-label fw-medium">
-                    <i class="bi bi-search"></i> 통합 검색
-                </label>
-                <input type="text" class="form-control form-control-lg" id="search" name="search" 
-                       th:value="${search}" placeholder="제목, 내용, 과목명, 교수명으로 검색">
+              id="searchForm">
+            <!-- 기본 검색 줄 -->
+            <div class="row g-2 mb-3">
+                <div class="col-8 col-lg-8">
+                    <label for="search" class="form-label fw-medium">
+                        <i class="bi bi-search"></i> 통합 검색
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="search" name="search" 
+                           th:value="${search}" placeholder="제목, 내용, 과목명, 교수명으로 검색">
+                </div>
+                <div class="col-2 col-lg-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-outline-secondary btn-lg w-100" 
+                            data-bs-toggle="collapse" data-bs-target="#advancedFilters" 
+                            aria-expanded="false" aria-controls="advancedFilters" id="filterToggle"
+                            title="상세필터">
+                        <i class="bi bi-funnel"></i> 
+                        <span class="d-none d-xl-inline ms-1">상세필터</span>
+                        <i class="bi bi-chevron-down ms-1" id="filterChevron"></i>
+                    </button>
+                </div>
+                <div class="col-2 col-lg-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-lg w-100" id="searchButton"
+                            title="검색">
+                        <i class="bi bi-search"></i> 
+                        <span class="d-none d-xl-inline ms-1">검색</span>
+                        <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
+                    </button>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label for="productType" class="form-label fw-medium">상품 유형</label>
-                <select class="form-select form-select-lg" id="productType" name="productType">
-                    <option value="">전체</option>
-                    <option th:each="type : ${productTypes}" 
-                            th:value="${type}" 
-                            th:selected="${type == productType}"
-                            th:text="${type.name() == 'TEXTBOOK' ? '전공교재' : 
-                                     type.name() == 'CERTBOOK' ? '자격증 교재' :
-                                     type.name() == 'NOTE' ? '필기노트' :
-                                     type.name() == 'PASTEXAM' ? '족보/기출' : '기타'}"></option>
-                </select>
+            
+            <!-- 접을 수 있는 상세 필터 -->
+            <div class="collapse mt-3 p-3 bg-light rounded" id="advancedFilters">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="productType" class="form-label fw-medium">상품 유형</label>
+                        <select class="form-select" id="productType" name="productType">
+                            <option value="">전체</option>
+                            <option th:each="type : ${productTypes}" 
+                                    th:value="${type}" 
+                                    th:selected="${type == productType}"
+                                    th:text="${type.name() == 'TEXTBOOK' ? '전공교재' : 
+                                             type.name() == 'CERTBOOK' ? '자격증 교재' :
+                                             type.name() == 'NOTE' ? '필기노트' :
+                                             type.name() == 'PASTEXAM' ? '족보/기출' : '기타'}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label fw-medium">거래 상태</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">전체</option>
+                            <option value="AVAILABLE" th:selected="${status == 'AVAILABLE'}">판매중</option>
+                            <option value="RESERVED" th:selected="${status == 'RESERVED'}">예약중</option>
+                            <option value="COMPLETED" th:selected="${status == 'COMPLETED'}">거래완료</option>
+                            <option value="BLOCKED" th:selected="${status == 'BLOCKED'}" sec:authorize="hasRole('ADMIN')">차단됨</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="minPrice" class="form-label fw-medium">최소가격</label>
+                        <input type="number" class="form-control" id="minPrice" name="minPrice" 
+                               th:value="${minPrice}" placeholder="0원" min="0" max="999999">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="maxPrice" class="form-label fw-medium">최대가격</label>
+                        <input type="number" class="form-control" id="maxPrice" name="maxPrice" 
+                               th:value="${maxPrice}" placeholder="무제한" min="0" max="999999">
+                    </div>
+                </div>
             </div>
-            <div class="col-md-2">
-                <label for="status" class="form-label fw-medium">거래 상태</label>
-                <select class="form-select form-select-lg" id="status" name="status">
-                    <option value="">전체</option>
-                    <option value="AVAILABLE" th:selected="${status == 'AVAILABLE'}">판매중</option>
-                    <option value="RESERVED" th:selected="${status == 'RESERVED'}">예약중</option>
-                    <option value="COMPLETED" th:selected="${status == 'COMPLETED'}">거래완료</option>
-                    <option value="BLOCKED" th:selected="${status == 'BLOCKED'}" sec:authorize="hasRole('ADMIN')">차단됨</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary btn-lg w-100" id="searchButton">
-                    <i class="bi bi-search"></i> <span class="button-text">검색</span>
-                    <span class="spinner-border spinner-border-sm ms-2 d-none" role="status"></span>
-                </button>
-            </div>
+            
             <!-- 학교 필터 유지를 위한 hidden input -->
             <input type="hidden" name="schoolId" th:value="${schoolId}">
         </form>
@@ -1154,6 +1198,106 @@
             toast.remove();
         }, isWarning ? 3500 : 3000);
     }
+    
+    // 상세 필터 토글 기능
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterToggle = document.getElementById('filterToggle');
+        const filterChevron = document.getElementById('filterChevron');
+        const advancedFilters = document.getElementById('advancedFilters');
+        
+        // 필터가 활성화되어 있으면 자동으로 펼치기
+        const hasActiveFilters = [
+            /*[[${productType}]]*/ null,
+            /*[[${status}]]*/ null,
+            /*[[${minPrice}]]*/ null,
+            /*[[${maxPrice}]]*/ null
+        ].some(value => value !== null && value !== undefined && value !== '');
+        
+        if (hasActiveFilters) {
+            advancedFilters.classList.add('show');
+            filterChevron.classList.add('rotate-180');
+        }
+        
+        // 토글 버튼 클릭 이벤트
+        filterToggle.addEventListener('click', function() {
+            const isExpanded = advancedFilters.classList.contains('show');
+            
+            // chevron 아이콘 회전
+            if (isExpanded) {
+                filterChevron.classList.remove('rotate-180');
+            } else {
+                filterChevron.classList.add('rotate-180');
+            }
+        });
+        
+        // Bootstrap collapse 이벤트 리스너
+        advancedFilters.addEventListener('shown.bs.collapse', function() {
+            filterChevron.classList.add('rotate-180');
+        });
+        
+        advancedFilters.addEventListener('hidden.bs.collapse', function() {
+            filterChevron.classList.remove('rotate-180');
+        });
+    });
 </script>
+
+<style>
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+    
+    #filterChevron {
+        transition: transform 0.35s ease;
+    }
+    
+    /* Bootstrap collapse의 기본 transition을 유지 */
+    #advancedFilters {
+        transition: none; /* Bootstrap이 자체 transition 처리 */
+    }
+    
+    /* collapse가 완전히 나타났을 때만 내용 표시 */
+    #advancedFilters.collapsing {
+        overflow: hidden;
+    }
+    
+    /* 빠른 필터 슬라이더블 스타일 */
+    .quick-filters-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-height: 38px; /* 최소 높이 보장 */
+    }
+    
+    .quick-filters-scroll {
+        flex: 1;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+        padding: 2px 0; /* 스크롤바 공간 확보 */
+    }
+    
+    .quick-filters-scroll::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    
+    .quick-filters {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        padding: 0;
+        margin: 0;
+        min-width: max-content; /* 내용물 크기만큼 최소 너비 */
+    }
+    
+    .filter-pill {
+        flex-shrink: 0; /* 버튼이 줄어들지 않도록 */
+        white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+        display: inline-flex;
+        align-items: center;
+    }
+</style>
 </body>
 </html>

@@ -72,6 +72,8 @@ public class PostController {
             @RequestParam(required = false) Post.PostStatus status,
             @RequestParam(required = false) Long schoolId,
             @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
@@ -116,7 +118,7 @@ public class PostController {
             }
         }
         
-        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId, sortBy);
+        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId, sortBy, minPrice, maxPrice);
         
         // Post 엔티티를 PostResponseDto로 변환하여 Hibernate proxy 문제 방지
         Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
@@ -130,6 +132,8 @@ public class PostController {
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("statuses", Post.PostStatus.values());
         model.addAttribute("sortBy", sortBy);
+        model.addAttribute("minPrice", minPrice);
+        model.addAttribute("maxPrice", maxPrice);
         
         // 검색어 하이라이팅을 위해 정규화된 키워드 배열 전달
         if (search != null && !search.trim().isEmpty()) {
@@ -641,6 +645,8 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
@@ -664,13 +670,15 @@ public class PostController {
         Pageable pageable = PageRequest.of(page, size, sort);
         
         // 내 게시글 조회
-        Page<Post> posts = postService.getPostsByUserId(userPrincipal.getUserId(), pageable);
+        Page<Post> posts = postService.getPostsByUserId(userPrincipal.getUserId(), pageable, minPrice, maxPrice);
         Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
         
         model.addAttribute("posts", postDtos);
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("statuses", Post.PostStatus.values());
         model.addAttribute("sortBy", sortBy);
+        model.addAttribute("minPrice", minPrice);
+        model.addAttribute("maxPrice", maxPrice);
         model.addAttribute("pageTitle", "내 게시글");
         model.addAttribute("pageType", "my"); // 페이지 타입 구분용
         
@@ -686,6 +694,8 @@ public class PostController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int size,
             @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) Integer minPrice,
+            @RequestParam(required = false) Integer maxPrice,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
@@ -709,13 +719,15 @@ public class PostController {
         Pageable pageable = PageRequest.of(page, size, sort);
         
         // 찜한 게시글 조회
-        Page<Post> posts = wishlistService.getUserWishlistPosts(userPrincipal.getUserId(), pageable);
+        Page<Post> posts = wishlistService.getUserWishlistPosts(userPrincipal.getUserId(), pageable, minPrice, maxPrice);
         Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
         
         model.addAttribute("posts", postDtos);
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("statuses", Post.PostStatus.values());
         model.addAttribute("sortBy", sortBy);
+        model.addAttribute("minPrice", minPrice);
+        model.addAttribute("maxPrice", maxPrice);
         model.addAttribute("pageTitle", "찜한 게시글");
         model.addAttribute("pageType", "wishlist"); // 페이지 타입 구분용
         
