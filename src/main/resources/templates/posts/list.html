@@ -14,6 +14,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link th:href="@{/css/search-highlight.css}" rel="stylesheet">
+    <link th:href="@{/css/status-badge.css}" rel="stylesheet">
     <!-- 공통 스타일 (알림 등) -->
     <div th:replace="~{fragments/header :: styles}"></div>
     <style>
@@ -185,41 +186,7 @@
             color: #667eea40;
         }
         
-        /* 상태 배지 개선 */
-        /* 상태 배지 - detail.html과 통일 */
-        .status-badge {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            z-index: 2;
-        }
-        
-        .status-badge.available {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.reserved {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-badge.completed {
-            background: #e2e3e5;
-            color: #383d41;
-        }
-        
-        .status-badge.blocked {
-            background: #f8d7da;
-            color: #721c24;
-        }
+        /* Status badge styles moved to status-badge.css */
         
         /* 카드 바디 스타일 */
         .card-body {
@@ -613,26 +580,7 @@
             color: var(--bs-gray-400);
         }
         
-        /* 상태 배지 다크모드 */
-        [data-bs-theme="dark"] .status-badge.available {
-            background: rgba(25, 135, 84, 0.2);
-            color: #70db8f;
-        }
-        
-        [data-bs-theme="dark"] .status-badge.reserved {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffda6a;
-        }
-        
-        [data-bs-theme="dark"] .status-badge.completed {
-            background: rgba(108, 117, 125, 0.2);
-            color: #adb5bd;
-        }
-        
-        [data-bs-theme="dark"] .status-badge.blocked {
-            background: rgba(220, 53, 69, 0.2);
-            color: #f5c2c7;
-        }
+        /* Dark mode status badge styles moved to status-badge.css */
     </style>
 </head>
 <body>

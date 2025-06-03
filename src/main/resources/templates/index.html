@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <!-- Loading CSS -->
     <link rel="stylesheet" href="/css/loading.css">
+    <!-- Status Badge CSS -->
+    <link rel="stylesheet" th:href="@{/css/status-badge.css}">
     <!-- Custom Styles -->
     <div th:replace="~{fragments/header :: styles}"></div>
     <!-- CSRF Token -->
@@ -327,36 +329,7 @@
             gap: 8px;
         }
         
-        /* 상태 배지 - detail.html과 통일 */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-        
-        .status-badge.available {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.reserved {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-badge.completed {
-            background: #e2e3e5;
-            color: #383d41;
-        }
-        
-        .status-badge.blocked {
-            background: #f8d7da;
-            color: #721c24;
-        }
+        /* Status badge styles moved to status-badge.css */
         
         /* 캐러셀 컨트롤 */
         .carousel-nav {
@@ -555,26 +528,7 @@
             background: var(--bs-gray-700);
         }
         
-        /* 상태 배지 다크모드 */
-        [data-bs-theme="dark"] .status-badge.available {
-            background: rgba(25, 135, 84, 0.2);
-            color: #70db8f;
-        }
-        
-        [data-bs-theme="dark"] .status-badge.reserved {
-            background: rgba(255, 193, 7, 0.2);
-            color: #ffda6a;
-        }
-        
-        [data-bs-theme="dark"] .status-badge.completed {
-            background: rgba(108, 117, 125, 0.2);
-            color: #adb5bd;
-        }
-        
-        [data-bs-theme="dark"] .status-badge.blocked {
-            background: rgba(220, 53, 69, 0.2);
-            color: #f5c2c7;
-        }
+        /* Dark mode status badge styles moved to status-badge.css */
     </style>
 </head>
 <body>
@@ -709,6 +663,18 @@
                          th:onclick="|window.location.href='@{/posts/{id}(id=${post.postId})}'|">
                         <div class="post-card-image" 
                              th:classappend="${post.images != null and !post.images.isEmpty()} ? 'has-image' : ''">
+                            <!-- 상태 배지 -->
+                            <span class="status-badge" 
+                                  th:classappend="${post.status.toString() == 'AVAILABLE' ? 'available' : 
+                                                  (post.status.toString() == 'RESERVED' ? 'reserved' : 
+                                                  (post.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
+                                <i th:class="${post.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
+                                             (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 
+                                             (post.status.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
+                                <span th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
+                                               (post.status.toString() == 'RESERVED' ? '예약중' : 
+                                               (post.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
+                            </span>
                             <!-- 게시글 이미지가 있는 경우 -->
                             <img th:if="${post.images != null and !post.images.isEmpty()}" 
                                  th:src="${post.images[0].imagePath}"
@@ -739,17 +705,6 @@
                                 <div class="post-card-price">
                                     <span th:text="${#numbers.formatInteger(post.price, 3, 'COMMA')}">0</span>원
                                 </div>
-                                <span class="status-badge" 
-                                      th:classappend="${post.status.toString() == 'AVAILABLE' ? 'available' : 
-                                                      (post.status.toString() == 'RESERVED' ? 'reserved' : 
-                                                      (post.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
-                                    <i th:class="${post.status.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
-                                                 (post.status.toString() == 'RESERVED' ? 'bi bi-clock' : 
-                                                 (post.status.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
-                                    <span th:text="${post.status.toString() == 'AVAILABLE' ? '판매중' : 
-                                                   (post.status.toString() == 'RESERVED' ? '예약중' : 
-                                                   (post.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
-                                </span>
                             </div>
                         </div>
                     </div>

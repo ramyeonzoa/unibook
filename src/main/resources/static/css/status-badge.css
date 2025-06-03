@@ -1,0 +1,112 @@
+/* ===============================================
+   STATUS BADGE - CONSISTENT STYLING
+   =============================================== */
+
+/* Base status badge style */
+.status-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+/* Light theme colors - No transparency */
+.status-badge.available {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.status-badge.reserved {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-badge.completed {
+    background: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+.status-badge.blocked {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Dark theme colors - No transparency, bright colors */
+[data-bs-theme="dark"] .status-badge.available {
+    background: #198754;
+    color: #ffffff;
+    border: 1px solid #146c43;
+}
+
+[data-bs-theme="dark"] .status-badge.reserved {
+    background: #ffc107;
+    color: #000000;
+    border: 1px solid #ffca2c;
+}
+
+[data-bs-theme="dark"] .status-badge.completed {
+    background: #6c757d;
+    color: #ffffff;
+    border: 1px solid #545b62;
+}
+
+[data-bs-theme="dark"] .status-badge.blocked {
+    background: #dc3545;
+    color: #ffffff;
+    border: 1px solid #b02a37;
+}
+
+/* Status badge icons */
+.status-badge i {
+    font-size: 0.9em;
+}
+
+/* Hover effect */
+.status-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* For cards with images - ensure badge stays on top */
+.post-image-container .status-badge,
+.card .status-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+/* For detail page header */
+.content-section .status-badge {
+    position: static;
+    display: inline-flex;
+    margin-bottom: 15px;
+}
+
+/* For inline usage (like in tables or lists) */
+.status-badge.inline {
+    position: static;
+    display: inline-flex;
+    margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .status-badge {
+        padding: 5px 12px;
+        font-size: 0.8rem;
+    }
+}

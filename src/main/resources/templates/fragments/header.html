@@ -5,26 +5,37 @@
     <!-- Enhanced Header Fragment -->
     <nav th:fragment="header" class="navbar navbar-expand-lg">
         <div class="container position-relative">
-            <!-- Brand Logo -->
-            <a class="navbar-brand" href="/">
-                <i class="bi bi-book"></i> Unibook
-            </a>
+            <!-- Left Group (Logo + Posts) -->
+            <div class="header-left-group">
+                <!-- Brand Logo -->
+                <a class="navbar-brand" href="/">
+                    <i class="bi bi-book"></i> Unibook
+                </a>
+                
+                <!-- Posts Link (항상 표시) -->
+                <a class="nav-link posts-link" href="/posts">
+                    <i class="bi bi-grid-2x2 me-1"></i>
+                    <span>게시글</span>
+                </a>
+            </div>
             
-            <!-- Search Bar (데스크톱과 모바일 모두) -->
-            <div class="header-search me-3">
+            <!-- Centered Search Bar -->
+            <div class="header-search">
                 <form action="/posts" method="get" class="position-relative">
                     <input type="text" 
                            id="headerSearch"
                            name="search" 
                            class="header-search-input" 
-                           placeholder="교재, 과목, 교수명 검색 (Ctrl+K)"
+                           placeholder="교재, 과목, 교수명 검색"
                            autocomplete="off">
                     <i class="bi bi-search header-search-icon"></i>
                 </form>
             </div>
             
-            <!-- Mobile Quick Actions (로그인 사용자만) -->
-            <div class="d-flex align-items-center d-lg-none ms-auto" sec:authorize="isAuthenticated()" style="gap: 12px;">
+            <!-- Right Group -->
+            <div class="header-right-group">
+                <!-- Mobile Quick Actions (로그인 사용자) -->
+                <div class="d-flex align-items-center d-lg-none" sec:authorize="isAuthenticated()" style="gap: 8px;">
                 <!-- 채팅 아이콘 -->
                 <a class="nav-link position-relative" href="/chat" title="채팅">
                     <i class="bi bi-chat-dots fs-5"></i>
@@ -77,11 +88,11 @@
                 
                 <!-- 프로필 아이콘 (모바일용) -->
                 <div class="dropdown">
-                    <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="프로필">
+                    <a class="nav-link" href="#" id="mobileProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="프로필">
                         <i class="bi bi-person-circle fs-5"></i>
                     </a>
                     
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileProfileDropdown">
                         <li>
                             <h6 class="dropdown-header">
                                 <i class="bi bi-person-circle"></i>
@@ -135,71 +146,41 @@
                         aria-label="테마 변경" title="다크모드 토글">
                     <i class="bi bi-sun-fill" id="themeIconMobile"></i>
                 </button>
-            </div>
-            
-            <!-- Mobile Menu Toggle (Guest Users Only) -->
-            <button sec:authorize="!isAuthenticated()" class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="메뉴 토글">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <!-- Guest User Dark Mode Toggle (맨 오른쪽) -->
-            <div sec:authorize="!isAuthenticated()" class="d-flex align-items-center ms-2">
-                <button class="btn btn-outline-secondary btn-sm mobile-theme-toggle" id="themeToggleGuest" type="button" 
-                        aria-label="테마 변경" title="다크모드 토글">
-                    <i class="bi bi-sun-fill" id="themeIconGuest"></i>
-                </button>
-            </div>
-            
-            <!-- Navigation Menu -->
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <!-- Left Navigation -->
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/posts">
-                            <i class="bi bi-grid-2x2 me-1"></i>
-                            <span>게시글</span>
-                        </a>
-                    </li>
-                </ul>
-                
-                <!-- Mobile Search Section (Guest Users Only) -->
-                <div sec:authorize="!isAuthenticated()" class="mobile-search-section d-lg-none">
-                    <div class="text-center mb-3">
-                        <h6 class="mb-3">🔍 교재 검색</h6>
-                        <div class="header-search">
-                            <form action="/posts" method="get" class="position-relative">
-                                <input type="text" 
-                                       name="search" 
-                                       class="header-search-input" 
-                                       placeholder="교재, 과목, 교수명으로 검색..."
-                                       autocomplete="off">
-                                <i class="bi bi-search header-search-icon"></i>
-                            </form>
-                        </div>
-                    </div>
-                    <hr class="my-3">
                 </div>
                 
-                <!-- Right Navigation -->
-                <ul class="navbar-nav ms-auto">
-                    <!-- Guest Users -->
-                    <div sec:authorize="!isAuthenticated()" class="d-flex align-items-center flex-wrap justify-content-center justify-content-lg-start">
-                        <li class="nav-item me-2">
-                            <a class="nav-link" href="/login">
-                                <i class="bi bi-box-arrow-in-right me-1"></i>로그인
-                            </a>
-                        </li>
-                        <li class="nav-item me-2">
-                            <a class="btn btn-primary btn-sm" href="/signup">
-                                <i class="bi bi-person-plus me-1"></i>회원가입
-                            </a>
-                        </li>
-                    </div>
+                <!-- Guest User Mobile Actions -->
+                <div class="d-flex align-items-center d-lg-none" sec:authorize="!isAuthenticated()" style="gap: 8px;">
+                    <a class="nav-link" href="/login">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                    </a>
+                    <a class="btn btn-primary btn-sm" href="/signup">
+                        <i class="bi bi-person-plus"></i>
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm mobile-theme-toggle" id="themeToggleGuest" type="button" 
+                            aria-label="테마 변경" title="다크모드 토글">
+                        <i class="bi bi-sun-fill" id="themeIconGuest"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Desktop Navigation -->
+            <div class="d-none d-lg-flex align-items-center" style="gap: 10px;">
+                <!-- Guest Users Desktop -->
+                <div sec:authorize="!isAuthenticated()" class="d-flex align-items-center" style="gap: 10px;">
+                    <a class="nav-link" href="/login">
+                        <i class="bi bi-box-arrow-in-right me-1"></i>로그인
+                    </a>
+                    <a class="btn btn-primary btn-sm" href="/signup">
+                        <i class="bi bi-person-plus me-1"></i>회원가입
+                    </a>
+                    <button class="btn btn-outline-secondary btn-sm" id="themeToggleGuestDesktop" type="button" 
+                            aria-label="테마 변경" title="다크모드 토글">
+                        <i class="bi bi-sun-fill" id="themeIconGuestDesktop"></i>
+                    </button>
+                </div>
                     
-                    
-                    <!-- Authenticated Users -->
-                    <div sec:authorize="isAuthenticated()" class="d-flex align-items-center d-none d-lg-flex" style="gap: 12px;">
+                <!-- Authenticated Users Desktop -->
+                <div sec:authorize="isAuthenticated()" class="d-flex align-items-center" style="gap: 10px;">
                         <!-- Desktop Chat -->
                         <a class="nav-link position-relative" href="/chat" title="채팅">
                             <i class="bi bi-chat-dots fs-5"></i>
@@ -253,11 +234,11 @@
                         
                         <!-- User Profile Dropdown -->
                         <div class="dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" 
-                               role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle"></i>
+                            <button class="btn btn-link nav-link dropdown-toggle" type="button" id="navbarDropdown" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i>
                                 <span class="d-none d-xl-inline" sec:authentication="principal.name">사용자</span>
-                            </a>
+                            </button>
                             
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <li>
@@ -307,8 +288,7 @@
                                 aria-label="테마 변경" title="다크모드 토글">
                             <i class="bi bi-sun-fill" id="themeIcon"></i>
                         </button>
-                    </div>
-                </ul>
+                </div>
             </div>
         </div>
         
@@ -412,6 +392,7 @@
         <link rel="stylesheet" th:href="@{/css/enhanced-header.css}">
         <link rel="stylesheet" th:href="@{/css/notification.css}">
         <link rel="stylesheet" th:href="@{/css/dark-mode.css}">
+        <link rel="stylesheet" th:href="@{/css/simple-header-fix.css}">
         
         <!-- Additional Enhanced Styles -->
         <style>
@@ -477,6 +458,7 @@
         
         <!-- Enhanced Header Scripts -->
         <script th:src="@{/js/enhanced-header.js}"></script>
+        <script th:src="@{/js/simple-header-fix.js}"></script>
         
         <!-- Performance and Analytics (Optional) -->
         <script>

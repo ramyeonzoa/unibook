@@ -1,0 +1,160 @@
+/* ===============================================
+   SIMPLE HEADER FIX
+   =============================================== */
+
+/* Center search bar on desktop */
+@media (min-width: 992px) {
+    .navbar .container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+    }
+    
+    .header-left-group {
+        flex: 0 0 auto;
+    }
+    
+    .header-search {
+        flex: 1;
+        max-width: 500px;
+        margin: 0 auto;
+        position: relative !important;
+        left: auto !important;
+        transform: none !important;
+    }
+    
+    .d-none.d-lg-flex {
+        flex: 0 0 auto;
+    }
+}
+
+/* Ensure dropdowns work */
+.navbar,
+.navbar .container,
+.header-left-group,
+.header-right-group,
+.d-none.d-lg-flex {
+    overflow: visible !important;
+}
+
+/* Profile dropdown button style */
+#navbarDropdown {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    color: var(--bs-body-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+#navbarDropdown:hover {
+    background-color: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+}
+
+/* Fix dropdown menu position */
+.dropdown-menu {
+    z-index: 1050 !important;
+}
+
+/* Mobile compact layout */
+@media (max-width: 991px) {
+    .navbar .container {
+        padding: 0 8px;
+    }
+    
+    .header-search {
+        flex: 1;
+        min-width: 0;
+        margin: 0 4px;
+    }
+    
+    .header-search-input {
+        font-size: 13px;
+        padding: 8px 30px 8px 35px;
+    }
+    
+    /* Hide desktop navigation on mobile */
+    .d-none.d-lg-flex {
+        display: none !important;
+    }
+    
+    /* Show mobile navigation */
+    .header-right-group {
+        display: flex !important;
+    }
+}
+
+/* Remove unnecessary elements */
+#navbarNav,
+.navbar-collapse,
+.mobile-search-section {
+    display: none !important;
+}
+
+/* Guest user buttons alignment */
+.d-flex.align-items-center {
+    gap: 8px;
+}
+
+/* Dropdown header horizontal layout */
+.dropdown-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px;
+    padding: 12px 20px;
+}
+
+.dropdown-header i,
+.dropdown-header .user-avatar {
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.dropdown-header .user-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+    margin-right: 0 !important;
+}
+
+.dropdown-header span {
+    font-weight: 600;
+    white-space: nowrap;
+    margin: 0;
+}
+
+/* Ensure profile icon and name stay on same line */
+#navbarDropdown i {
+    flex-shrink: 0;
+}
+
+#navbarDropdown span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
+/* Fix dropdown arrow position */
+#navbarDropdown::after {
+    flex-shrink: 0;
+    margin-left: 0.255em;
+}
+
+/* Dropdown email item styling */
+.dropdown-item-text {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px;
+}
+
+.dropdown-item-text i {
+    flex-shrink: 0;
+}

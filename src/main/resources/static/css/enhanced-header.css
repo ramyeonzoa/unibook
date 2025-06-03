@@ -18,11 +18,15 @@
     padding-bottom: 12px;
 }
 
-/* Container height alignment */
+/* Container height alignment and layout */
 .navbar .container {
     min-height: 48px;
     display: flex;
     align-items: center;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    position: relative;
+    justify-content: space-between;
 }
 
 /* 다크모드 글래스모피즘 */
@@ -93,13 +97,72 @@
 }
 
 /* ===============================================
-   ENHANCED SEARCH BAR
+   POSTS LINK (ALWAYS VISIBLE)
+   =============================================== */
+
+.posts-link {
+    position: relative;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin: 0 8px;
+    padding: 8px 12px !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+    color: var(--bs-body-color) !important;
+    text-decoration: none !important;
+}
+
+.posts-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.posts-link:hover::before {
+    opacity: 1;
+}
+
+.posts-link:hover {
+    transform: translateY(-1px);
+    color: #667eea !important;
+}
+
+/* ===============================================
+   ENHANCED SEARCH BAR (CENTERED)
    =============================================== */
 
 .header-search {
-    position: relative;
-    max-width: 400px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 350px;
     width: 100%;
+    z-index: 1;
+}
+
+/* Left side group (logo + posts) */
+.header-left-group {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    z-index: 2;
+    gap: 4px;
+}
+
+/* Right side group (actions) */
+.header-right-group {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    z-index: 2;
 }
 
 .header-search-input {
@@ -349,6 +412,7 @@
     border-radius: 16px;
     padding: 12px 0;
     margin-top: 8px;
+    z-index: 1050 !important;
 }
 
 [data-bs-theme="dark"] .dropdown-menu {
@@ -376,73 +440,137 @@
     color: #667eea;
 }
 
+/* Fix dropdown positioning and interaction */
+.dropdown {
+    position: relative;
+}
+
+.dropdown-toggle::after {
+    margin-left: 0.5em;
+}
+
+/* Ensure dropdowns work properly with centered search */
+.header-right-group .dropdown {
+    position: static;
+}
+
+.header-right-group .dropdown-menu {
+    position: absolute;
+    right: 0;
+    left: auto;
+}
+
+/* ===============================================
+   COMPACT LAYOUT OPTIMIZATIONS
+   =============================================== */
+
+/* Mobile Quick Actions - more compact */
+.d-lg-none.ms-auto {
+    gap: 8px !important;
+    flex-shrink: 0;
+}
+
+.d-lg-none .nav-link {
+    padding: 6px !important;
+    margin: 0 !important;
+}
+
+.d-lg-none .btn-sm {
+    padding: 6px 8px;
+    margin: 0 !important;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Mobile theme toggle more compact */
+.mobile-theme-toggle {
+    padding: 6px 8px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    flex-shrink: 0;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
 /* ===============================================
    MOBILE OPTIMIZATIONS
    =============================================== */
 
 @media (max-width: 768px) {
     .navbar-brand {
-        font-size: 1.3rem !important;
+        font-size: 1.2rem !important;
+        margin-right: 4px !important;
     }
     
-    .header-search {
-        max-width: 100%;
-        margin: 8px 0;
-    }
-    
-    .user-avatar {
-        width: 32px;
-        height: 32px;
-        font-size: 12px;
-    }
-    
-    .btn-primary {
-        padding: 6px 16px;
+    .posts-link {
+        padding: 6px 8px !important;
+        margin: 0 4px !important;
         font-size: 0.9rem;
     }
     
-    /* Mobile Quick Actions Improvements */
-    .d-lg-none.ms-auto {
-        gap: 12px;
+    .posts-link span {
+        display: none;
     }
     
-    .d-lg-none .nav-link {
-        padding: 8px !important;
-        margin: 0 !important;
+    .header-search {
+        position: relative;
+        left: auto;
+        transform: none;
+        max-width: 140px;
+        min-width: 120px;
+        margin: 0 4px;
+        flex: 1;
     }
     
-    .d-lg-none .btn-sm {
+    .header-search-input {
+        font-size: 12px;
+        padding: 8px 10px 8px 30px;
+    }
+    
+    .header-search-input::placeholder {
+        font-size: 11px;
+    }
+    
+    .header-search-icon {
+        left: 10px;
+        font-size: 12px;
+    }
+    
+    .user-avatar {
+        width: 30px;
+        height: 30px;
+        font-size: 11px;
+    }
+    
+    .btn-primary {
         padding: 6px 12px;
-        margin: 0 !important;
-        min-width: 38px;
-        min-height: 38px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        font-size: 0.85rem;
     }
-    
-    /* Mobile theme toggle specific styling */
-    .mobile-theme-toggle {
-        padding: 8px 12px !important;
-        min-width: 44px !important;
-        min-height: 38px !important;
-        flex-shrink: 0;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    /* Guest user theme toggle */
-    [sec-authorize="!isAuthenticated()"] .mobile-theme-toggle {
-        margin-left: 8px !important;
-    }
-    
-    /* Hamburger menu visibility control is handled by HTML conditionally */
     
     /* Improve mobile layout spacing */
     .container.position-relative {
-        padding-left: 12px;
-        padding-right: 12px;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+@media (max-width: 576px) {
+    .navbar-brand {
+        font-size: 1.1rem !important;
+    }
+    
+    .header-search {
+        max-width: 100px;
+        min-width: 80px;
+    }
+    
+    .header-search-input::placeholder {
+        content: "검색";
     }
 }
 
@@ -532,12 +660,16 @@
 @media (min-width: 992px) {
     .header-search {
         max-width: 420px;
-        width: 100%;
+        width: 40%;
+    }
+    
+    .posts-link span {
+        display: inline;
     }
     
     /* Desktop Quick Actions Improvements */
     .d-none.d-lg-flex {
-        gap: 12px !important;
+        gap: 10px !important;
     }
     
     .d-none.d-lg-flex .nav-link {
@@ -553,17 +685,21 @@
 
 @media (max-width: 991px) {
     .header-search {
-        max-width: 250px;
-        margin-right: 12px;
+        position: relative;
+        left: auto;
+        transform: none;
+        max-width: 180px;
+        margin: 0 4px;
+        flex: 1;
     }
     
     .header-search .header-search-input {
-        font-size: 14px;
-        padding: 8px 12px 8px 32px;
+        font-size: 13px;
+        padding: 8px 12px 8px 30px;
     }
     
     .header-search .header-search-input::placeholder {
-        font-size: 13px;
+        font-size: 12px;
     }
     
     .mobile-search-section {
@@ -581,6 +717,7 @@
     .navbar-toggler {
         order: 99;
         margin-left: 8px;
+        flex-shrink: 0;
     }
     
     /* Hide hamburger menu for authenticated users */

@@ -17,6 +17,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     
+    <!-- Status Badge CSS -->
+    <link th:href="@{/css/status-badge.css}" rel="stylesheet">
+    
     <!-- 공통 스타일 -->
     <div th:replace="~{fragments/header :: styles}"></div>
     
@@ -268,26 +271,7 @@
             }
         }
         
-        /* 상태 배지 다크모드 */
-        [data-bs-theme="dark"] .post-status-badge.status-available {
-            background: #198754;
-            color: #ffffff;
-        }
-        
-        [data-bs-theme="dark"] .post-status-badge.status-reserved {
-            background: #ffc107;
-            color: #000000;
-        }
-        
-        [data-bs-theme="dark"] .post-status-badge.status-completed {
-            background: #6c757d;
-            color: #ffffff;
-        }
-        
-        [data-bs-theme="dark"] .post-status-badge.status-blocked {
-            background: #dc3545;
-            color: #ffffff;
-        }
+        /* Dark mode status badge styles moved to status-badge.css */
     </style>
 </head>
 <body>
@@ -353,11 +337,11 @@
                                             <span th:text="${#numbers.formatInteger(chatRoom.postPrice, 0, 'COMMA')}">가격</span>원
                                         </div>
                                     </div>
-                                    <span class="post-status-badge"
+                                    <span class="status-badge inline"
                                           th:if="${chatRoom.postStatus != null}"
-                                          th:classappend="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'status-available' : 
-                                                         (chatRoom.postStatus.toString() == 'RESERVED' ? 'status-reserved' : 
-                                                         (chatRoom.postStatus.toString() == 'BLOCKED' ? 'status-blocked' : 'status-completed'))}">
+                                          th:classappend="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'available' : 
+                                                         (chatRoom.postStatus.toString() == 'RESERVED' ? 'reserved' : 
+                                                         (chatRoom.postStatus.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
                                         <i th:class="${chatRoom.postStatus.toString() == 'AVAILABLE' ? 'bi bi-check-circle' : 
                                                      (chatRoom.postStatus.toString() == 'RESERVED' ? 'bi bi-clock' : 
                                                      (chatRoom.postStatus.toString() == 'BLOCKED' ? 'bi bi-exclamation-triangle' : 'bi bi-check-square'))}"></i>
