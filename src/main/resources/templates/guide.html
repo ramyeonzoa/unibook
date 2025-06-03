@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이용 가이드 - Unibook</title>
+    <meta name="description" content="Unibook 완벽 사용법을 단계별로 알려드려요.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <div th:replace="~{fragments/header :: styles}"></div>
+    <style>
+        .guide-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 0;
+        }
+        .step-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .step-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .feature-highlight {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 10px 10px 0;
+        }
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .tab-content {
+            min-height: 400px;
+        }
+        .screenshot-placeholder {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            color: #6c757d;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- 공통 헤더 포함 -->
+    <nav th:replace="~{fragments/header :: header}"></nav>
+
+    <!-- 공통 메시지 포함 -->
+    <div th:replace="~{fragments/header :: messages}"></div>
+
+    <main id="main-content">
+        <!-- Header Section -->
+        <section class="guide-header">
+            <div class="container text-center">
+                <h1 class="display-5 fw-bold mb-4">
+                    <i class="bi bi-book-half me-3"></i>이용 가이드
+                </h1>
+                <p class="lead">Unibook을 처음 사용하시나요? 단계별로 쉽게 알려드려요!</p>
+            </div>
+        </section>
+
+        <section class="py-5">
+            <div class="container">
+                <!-- Quick Start -->
+                <div class="text-center mb-5">
+                    <h2 class="fw-bold mb-4">빠른 시작 가이드</h2>
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="step-card card h-100 p-4 text-center">
+                                <div class="step-number mx-auto">1</div>
+                                <h5>회원가입</h5>
+                                <p class="text-muted">학교 이메일로 간편하게 가입하세요</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="step-card card h-100 p-4 text-center">
+                                <div class="step-number mx-auto">2</div>
+                                <h5>교재 찾기</h5>
+                                <p class="text-muted">필요한 교재를 검색하고 찜해보세요</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="step-card card h-100 p-4 text-center">
+                                <div class="step-number mx-auto">3</div>
+                                <h5>채팅하기</h5>
+                                <p class="text-muted">판매자와 실시간으로 소통하세요</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="step-card card h-100 p-4 text-center">
+                                <div class="step-number mx-auto">4</div>
+                                <h5>안전거래</h5>
+                                <p class="text-muted">학교에서 만나거나 택배로 거래하세요</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Guide -->
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="nav nav-pills flex-column sticky-top" style="top: 100px;">
+                            <button class="nav-link active text-start" data-bs-toggle="pill" data-bs-target="#signup-guide">
+                                <i class="bi bi-person-plus me-2"></i>회원가입 & 인증
+                            </button>
+                            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#search-guide">
+                                <i class="bi bi-search me-2"></i>교재 검색하기
+                            </button>
+                            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#post-guide">
+                                <i class="bi bi-plus-circle me-2"></i>교재 판매하기
+                            </button>
+                            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#chat-guide">
+                                <i class="bi bi-chat-dots me-2"></i>채팅 & 거래
+                            </button>
+                            <button class="nav-link text-start" data-bs-toggle="pill" data-bs-target="#features-guide">
+                                <i class="bi bi-star me-2"></i>유용한 기능들
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-9">
+                        <div class="tab-content">
+                            <!-- 회원가입 & 인증 -->
+                            <div class="tab-pane fade show active" id="signup-guide">
+                                <h3 class="mb-4">회원가입 & 이메일 인증</h3>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-1-circle me-2"></i>회원가입하기</h5>
+                                        <ol>
+                                            <li>우상단의 "회원가입" 버튼을 클릭하세요</li>
+                                            <li>이름, 이메일, 비밀번호를 입력하세요</li>
+                                            <li><strong>학교 이메일(.ac.kr)</strong>을 사용하면 소속 대학이 자동으로 인증됩니다</li>
+                                            <li>"회원가입" 버튼을 클릭하세요</li>
+                                        </ol>
+                                        
+                                        <div class="feature-highlight">
+                                            <strong>💡 팁:</strong> 학교 이메일을 사용하면 같은 학교 학생들과 더 쉽게 거래할 수 있어요!
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-2-circle me-2"></i>이메일 인증하기</h5>
+                                        <ol>
+                                            <li>가입한 이메일의 받은편지함을 확인하세요</li>
+                                            <li>Unibook에서 발송한 "이메일 인증" 메일을 찾으세요</li>
+                                            <li>메일 내의 "이메일 인증하기" 버튼을 클릭하세요</li>
+                                            <li>인증이 완료되면 모든 기능을 사용할 수 있어요</li>
+                                        </ol>
+                                        
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            메일이 오지 않는다면 스팸 메일함을 확인하거나, 상단의 "인증 메일 재발송" 버튼을 눌러주세요.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 교재 검색하기 -->
+                            <div class="tab-pane fade" id="search-guide">
+                                <h3 class="mb-4">교재 검색하기</h3>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-search me-2"></i>기본 검색</h5>
+                                        <ol>
+                                            <li>헤더의 검색창에 교재명, 과목명, 교수명을 입력하세요</li>
+                                            <li>Enter를 누르거나 돋보기 아이콘을 클릭하세요</li>
+                                            <li>검색 결과가 관련도 순으로 표시됩니다</li>
+                                        </ol>
+                                        
+                                        <div class="feature-highlight">
+                                            <strong>검색 팁:</strong>
+                                            <ul class="mb-0">
+                                                <li>"경영학원론" - 교재명으로 검색</li>
+                                                <li>"김철수" - 교수명으로 검색</li>
+                                                <li>"자료구조" - 과목명으로 검색</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-funnel me-2"></i>필터 & 정렬</h5>
+                                        <p>게시글 목록 페이지에서 더 정확한 검색을 할 수 있어요:</p>
+                                        <ul>
+                                            <li><strong>상품 유형:</strong> 전공교재, 자격증 교재, 필기노트, 족보/기출</li>
+                                            <li><strong>거래 상태:</strong> 판매중, 예약중, 거래완료</li>
+                                            <li><strong>가격 범위:</strong> 최소가격 ~ 최대가격</li>
+                                            <li><strong>학교 필터:</strong> 같은 학교 게시글만 보기</li>
+                                            <li><strong>정렬:</strong> 최신순, 가격순, 조회수순, 관련도순</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-heart me-2"></i>찜하기</h5>
+                                        <ol>
+                                            <li>관심 있는 게시글을 클릭해서 상세 페이지로 이동하세요</li>
+                                            <li>우상단의 하트 아이콘을 클릭하세요</li>
+                                            <li>찜한 게시글은 "찜 목록"에서 모아볼 수 있어요</li>
+                                            <li>가격 변동이나 상태 변경 시 실시간 알림을 받아요</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 교재 판매하기 -->
+                            <div class="tab-pane fade" id="post-guide">
+                                <h3 class="mb-4">교재 판매하기</h3>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-plus-circle me-2"></i>게시글 작성하기</h5>
+                                        <ol>
+                                            <li>"판매글 작성" 버튼을 클릭하세요</li>
+                                            <li><strong>상품 유형</strong>을 선택하세요 (전공교재, 자격증 교재, 필기노트, 족보/기출, 기타)</li>
+                                            <li>교재의 경우 "책 검색하기"로 정확한 도서 정보를 입력하세요</li>
+                                            <li>과목과 교수님을 선택하면 다른 학생들이 찾기 쉬워져요</li>
+                                            <li>제목, 가격, 설명을 입력하세요</li>
+                                            <li>사진을 최대 5장까지 업로드하세요</li>
+                                            <li>거래 방법(직거래/택배/둘 다)을 선택하세요</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-camera me-2"></i>좋은 사진 촬영 팁</h5>
+                                        <ul>
+                                            <li>밝은 곳에서 촬영하세요</li>
+                                            <li>책의 전체적인 모습을 보여주세요</li>
+                                            <li>손상된 부분이 있다면 솔직하게 촬영하세요</li>
+                                            <li>필기나 밑줄이 있다면 해당 페이지도 촬영하세요</li>
+                                            <li>첫 번째 사진이 대표 이미지가 됩니다</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-arrow-repeat me-2"></i>거래 상태 관리</h5>
+                                        <p>게시글 등록 후 상태를 관리할 수 있어요:</p>
+                                        <ul>
+                                            <li><strong>판매중:</strong> 구매자를 찾고 있는 상태</li>
+                                            <li><strong>예약중:</strong> 구매자와 거래가 진행 중인 상태</li>
+                                            <li><strong>거래완료:</strong> 거래가 모두 완료된 상태</li>
+                                        </ul>
+                                        <p class="mb-0">게시글 상세 페이지에서 "상태 변경" 버튼으로 언제든지 변경할 수 있어요.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 채팅 & 거래 -->
+                            <div class="tab-pane fade" id="chat-guide">
+                                <h3 class="mb-4">채팅 & 안전한 거래</h3>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-chat-dots me-2"></i>채팅 시작하기</h5>
+                                        <ol>
+                                            <li>관심 있는 게시글의 상세 페이지로 이동하세요</li>
+                                            <li>"채팅하기" 버튼을 클릭하세요</li>
+                                            <li>실시간으로 판매자와 대화할 수 있어요</li>
+                                            <li>이미지도 주고받을 수 있어요 (클립 아이콘 클릭)</li>
+                                        </ol>
+                                        
+                                        <div class="feature-highlight">
+                                            <strong>채팅 팁:</strong>
+                                            <ul class="mb-0">
+                                                <li>정중하고 명확하게 의사소통하세요</li>
+                                                <li>거래 조건을 구체적으로 확인하세요</li>
+                                                <li>연락처는 안전이 확인된 후에 공유하세요</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-shield-check me-2"></i>안전한 직거래</h5>
+                                        <ul>
+                                            <li><strong>만날 장소:</strong> 학교 내 공개된 장소 (도서관, 학생회관 등)</li>
+                                            <li><strong>만날 시간:</strong> 낮 시간대 추천</li>
+                                            <li><strong>확인 사항:</strong> 책 상태, 가격, 거스름돈 등</li>
+                                            <li><strong>주의사항:</strong> 혼자서 만나기 불안하면 친구와 함께 가세요</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-box me-2"></i>택배 거래</h5>
+                                        <ul>
+                                            <li><strong>결제:</strong> 안전한 계좌이체 또는 무통장입금</li>
+                                            <li><strong>배송:</strong> 입금 확인 후 24시간 내 발송</li>
+                                            <li><strong>운송장:</strong> 발송 후 운송장 번호 공유</li>
+                                            <li><strong>확인:</strong> 받은 후 상품 상태 확인 및 거래완료 처리</li>
+                                        </ul>
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            택배비는 보통 구매자 부담이지만, 판매자와 협의하여 결정하세요.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 유용한 기능들 -->
+                            <div class="tab-pane fade" id="features-guide">
+                                <h3 class="mb-4">유용한 기능들</h3>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-bell me-2"></i>키워드 알림</h5>
+                                        <p>관심 있는 키워드를 등록하면, 해당 키워드가 포함된 게시글이 올라올 때 실시간으로 알림을 받을 수 있어요.</p>
+                                        <ol>
+                                            <li>마이페이지로 이동하세요</li>
+                                            <li>"키워드 알림 관리" 섹션을 찾으세요</li>
+                                            <li>원하는 키워드를 추가하세요 (예: "자료구조", "경영학원론")</li>
+                                            <li>해당 키워드가 포함된 게시글이 등록되면 알림을 받아요</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-moon me-2"></i>다크 모드</h5>
+                                        <p>눈이 편한 다크 모드를 사용할 수 있어요.</p>
+                                        <ul>
+                                            <li>우상단의 태양/달 아이콘을 클릭하세요</li>
+                                            <li>라이트 모드와 다크 모드를 자유롭게 전환할 수 있어요</li>
+                                            <li>설정은 자동으로 저장되어 다음에 접속할 때도 유지돼요</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-4">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-flag me-2"></i>신고 기능</h5>
+                                        <p>문제가 있는 게시글이나 사용자를 신고할 수 있어요.</p>
+                                        <ol>
+                                            <li>게시글 상세 페이지 하단의 "신고하기" 버튼을 클릭하세요</li>
+                                            <li>신고 사유를 선택하세요</li>
+                                            <li>상세 내용을 작성하세요</li>
+                                            <li>관리자가 검토 후 적절한 조치를 취해드려요</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                                
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5><i class="bi bi-person-gear me-2"></i>마이페이지</h5>
+                                        <p>마이페이지에서 다양한 정보를 관리할 수 있어요:</p>
+                                        <ul>
+                                            <li><strong>내 게시글:</strong> 등록한 게시글 관리</li>
+                                            <li><strong>찜 목록:</strong> 찜한 게시글 모아보기</li>
+                                            <li><strong>알림 설정:</strong> 키워드 알림 관리</li>
+                                            <li><strong>알림 기록:</strong> 받은 알림 확인</li>
+                                            <li><strong>프로필 수정:</strong> 개인정보 변경</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact -->
+                <div class="text-center mt-5 p-4 bg-primary text-white rounded">
+                    <h4>더 자세한 도움이 필요하신가요?</h4>
+                    <p class="mb-3">언제든지 문의해주세요. 친절하게 도와드릴게요!</p>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="mailto:unibooknotify@gmail.com" class="btn btn-light">
+                            <i class="bi bi-envelope me-2"></i>이메일 문의
+                        </a>
+                        <a href="/faq" class="btn btn-outline-light">
+                            <i class="bi bi-question-circle me-2"></i>자주 묻는 질문
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 공통 Footer 포함 -->
+    <footer th:replace="~{fragments/header :: footer}"></footer>
+
+    <!-- Scripts -->
+    <div th:replace="~{fragments/header :: scripts}"></div>
+</body>
+</html>

@@ -96,6 +96,17 @@ public class SecurityConfig {
             // CSRF 설정 - API 엔드포인트에서는 비활성화
             .csrf(csrf -> csrf
                 .ignoringRequestMatchers("/api/**")
+            )
+            // 접근 거부 시 처리
+            .exceptionHandling(exceptions -> exceptions
+                // 인증되지 않은 사용자가 보호된 리소스에 접근 시
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.sendRedirect("/login?returnUrl=" + request.getRequestURI());
+                })
+                // 인증은 되었지만 권한이 없는 경우
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.sendRedirect("/access-denied");
+                })
             );
 
         return http.build();

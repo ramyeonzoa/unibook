@@ -340,49 +340,318 @@
     </div>
     
     <!-- Enhanced Footer Fragment -->
-    <footer th:fragment="footer" class="bg-dark text-white py-5 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4 mb-4 mb-md-0">
-                    <h5 class="mb-3">
-                        <i class="bi bi-book me-2"></i>Unibook
-                    </h5>
-                    <p class="text-muted mb-3">대학생을 위한 스마트한 교재 거래 플랫폼</p>
-                    <div class="d-flex gap-3">
-                        <a href="#" class="text-muted fs-5" title="페이스북"><i class="bi bi-facebook"></i></a>
-                        <a href="#" class="text-muted fs-5" title="인스타그램"><i class="bi bi-instagram"></i></a>
-                        <a href="#" class="text-muted fs-5" title="트위터"><i class="bi bi-twitter"></i></a>
+    <footer th:fragment="footer" class="enhanced-footer">
+        <!-- Wave Animation -->
+        <div class="footer-wave">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 100" preserveAspectRatio="none">
+                <path d="M0,50 Q360,0 720,50 T1440,50 L1440,100 L0,100 Z" fill="currentColor"></path>
+            </svg>
+        </div>
+        
+        <div class="footer-content bg-dark text-white py-5">
+            <div class="container">
+                <!-- Main Footer Content -->
+                <div class="row">
+                    <div class="col-lg-4 mb-4 mb-lg-0">
+                        <div class="footer-brand">
+                            <h3 class="mb-3 d-flex align-items-center">
+                                <span class="footer-logo me-2">
+                                    <i class="bi bi-book-half"></i>
+                                </span>
+                                Unibook
+                            </h3>
+                            <p class="text-muted mb-4">
+                                대학생을 위한 스마트한 교재 거래 플랫폼<br>
+                                학업에 필요한 모든 교재를 쉽고 빠르게
+                            </p>
+                            
+                            <!-- Social Links -->
+                            <div class="social-links mb-4">
+                                <a href="#" class="social-link" title="페이스북">
+                                    <i class="bi bi-facebook"></i>
+                                </a>
+                                <a href="#" class="social-link" title="인스타그램">
+                                    <i class="bi bi-instagram"></i>
+                                </a>
+                                <a href="#" class="social-link" title="트위터">
+                                    <i class="bi bi-twitter"></i>
+                                </a>
+                                <a href="#" class="social-link" title="유튜브">
+                                    <i class="bi bi-youtube"></i>
+                                </a>
+                            </div>
+                            
+                            <!-- App Download Buttons -->
+                            <div class="app-buttons">
+                                <a href="#" class="app-button d-inline-flex align-items-center me-2 mb-2">
+                                    <i class="bi bi-google-play me-2"></i>
+                                    <div class="text-start">
+                                        <small class="d-block">Google Play</small>
+                                        <strong>다운로드</strong>
+                                    </div>
+                                </a>
+                                <a href="#" class="app-button d-inline-flex align-items-center mb-2">
+                                    <i class="bi bi-apple me-2"></i>
+                                    <div class="text-start">
+                                        <small class="d-block">App Store</small>
+                                        <strong>다운로드</strong>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-8">
+                        <div class="row">
+                            <div class="col-md-4 mb-4 mb-md-0">
+                                <h6 class="footer-title mb-3">서비스</h6>
+                                <ul class="footer-links list-unstyled">
+                                    <li><a href="/posts" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>게시글 둘러보기
+                                    </a></li>
+                                    <li><a href="/posts/new" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>판매 등록하기
+                                    </a></li>
+                                    <li><a href="/about" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>서비스 소개
+                                    </a></li>
+                                    <li><a href="/posts/wishlist" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>찜 목록
+                                    </a></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="col-md-4 mb-4 mb-md-0">
+                                <h6 class="footer-title mb-3">고객지원</h6>
+                                <ul class="footer-links list-unstyled">
+                                    <li><a href="/guide" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>이용 가이드
+                                    </a></li>
+                                    <li><a href="/faq" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>자주 묻는 질문
+                                    </a></li>
+                                    <li><a href="/profile#support" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>1:1 문의
+                                    </a></li>
+                                    <li><a href="mailto:unibooknotify@gmail.com" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>이메일 문의
+                                    </a></li>
+                                </ul>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <h6 class="footer-title mb-3">정보</h6>
+                                <ul class="footer-links list-unstyled">
+                                    <li><a href="/privacy" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>개인정보처리방침
+                                    </a></li>
+                                    <li><a href="/terms" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>이용약관
+                                    </a></li>
+                                    <li><a href="#" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>판매자 약관
+                                    </a></li>
+                                    <li><a href="#" class="footer-link">
+                                        <i class="bi bi-chevron-right me-1"></i>위치기반서비스
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4 mb-4 mb-md-0">
-                    <h6 class="mb-3">바로가기</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><a href="/posts" class="text-muted text-decoration-none hover-primary">게시글 둘러보기</a></li>
-                        <li class="mb-2"><a href="/posts/new" class="text-muted text-decoration-none hover-primary">판매 등록하기</a></li>
-                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-primary">서비스 소개</a></li>
-                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-primary">이용약관</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-4">
-                    <h6 class="mb-3">고객지원</h6>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-primary">이용 가이드</a></li>
-                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-primary">자주 묻는 질문</a></li>
-                        <li class="mb-2"><a href="mailto:unibooknotify@gmail.com" class="text-muted text-decoration-none hover-primary">문의하기</a></li>
-                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none hover-primary">개인정보처리방침</a></li>
-                    </ul>
-                </div>
-            </div>
-            <hr class="my-4 border-secondary">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <p class="mb-0 text-muted">&copy; 2025 Unibook. All rights reserved.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0 text-muted">Made with 💜 for students</p>
+                
+                <hr class="my-5 border-secondary">
+                
+                <!-- Bottom Footer -->
+                <div class="row align-items-center">
+                    <div class="col-md-6 text-center text-md-start">
+                        <p class="mb-0 text-muted">
+                            &copy; 2025 Unibook. All rights reserved. 
+                            <span class="d-none d-md-inline">|</span>
+                            <br class="d-md-none">
+                            <a href="#" class="text-muted ms-md-2">사업자 정보</a>
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-center text-md-end mt-3 mt-md-0">
+                        <p class="mb-0 text-muted">
+                            <small>© 2025 Unibook. 교재 거래의 새로운 기준</small>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Enhanced Footer Styles -->
+        <style>
+            .enhanced-footer {
+                position: relative;
+                margin-top: 100px;
+            }
+            
+            /* Wave Animation */
+            .footer-wave {
+                position: absolute;
+                top: -99px;
+                left: 0;
+                width: 100%;
+                height: 100px;
+                overflow: hidden;
+            }
+            
+            .footer-wave svg {
+                position: absolute;
+                bottom: 0;
+                width: 100%;
+                height: 100%;
+                color: #212529;
+            }
+            
+            /* Dark mode wave color */
+            [data-bs-theme="dark"] .footer-wave svg {
+                color: #212529;
+            }
+            
+            /* Footer Content */
+            .footer-content {
+                position: relative;
+                background: linear-gradient(180deg, #212529 0%, #1a1d20 100%);
+            }
+            
+            /* Footer Brand */
+            .footer-logo {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 50px;
+                height: 50px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 12px;
+                font-size: 24px;
+            }
+            
+            /* Social Links */
+            .social-links {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .social-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 40px;
+                height: 40px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                color: #adb5bd;
+                transition: all 0.3s ease;
+                text-decoration: none;
+            }
+            
+            .social-link:hover {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                transform: translateY(-3px);
+            }
+            
+            /* App Buttons */
+            .app-button {
+                padding: 10px 20px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 10px;
+                color: white;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+            
+            .app-button:hover {
+                background: rgba(255, 255, 255, 0.15);
+                transform: translateY(-2px);
+                color: white;
+            }
+            
+            .app-button i {
+                font-size: 24px;
+            }
+            
+            .app-button small {
+                font-size: 10px;
+                opacity: 0.8;
+            }
+            
+            /* Footer Links */
+            .footer-title {
+                color: white;
+                font-weight: 600;
+                position: relative;
+                padding-bottom: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .footer-title::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 30px;
+                height: 2px;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            }
+            
+            .footer-links {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .footer-links li {
+                margin-bottom: 12px;
+            }
+            
+            .footer-link {
+                color: #adb5bd;
+                text-decoration: none;
+                transition: all 0.3s ease;
+                display: inline-flex;
+                align-items: center;
+            }
+            
+            .footer-link:hover {
+                color: #667eea;
+                transform: translateX(5px);
+            }
+            
+            .footer-link i {
+                font-size: 10px;
+                transition: transform 0.3s ease;
+            }
+            
+            .footer-link:hover i {
+                transform: translateX(3px);
+            }
+            
+            /* Responsive adjustments */
+            @media (max-width: 768px) {
+                .footer-wave {
+                    top: -49px;
+                    height: 50px;
+                }
+            }
+            
+            /* Animation */
+            @keyframes float {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+            
+            .footer-logo {
+                animation: float 3s ease-in-out infinite;
+            }
+        </style>
     </footer>
     
     <!-- Enhanced Styles Fragment -->

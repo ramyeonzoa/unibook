@@ -238,8 +238,12 @@ public class PostController {
      * 게시글 작성 폼
      */
     @GetMapping("/new")
-    @PreAuthorize("isAuthenticated() and hasRole('USER')")
     public String createForm(Model model, @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        // 로그인 체크
+        if (userPrincipal == null) {
+            return "redirect:/login?returnUrl=/posts/new";
+        }
+        
         // 이메일 인증 확인
         if (!userPrincipal.isVerified()) {
             log.warn("이메일 미인증 사용자의 게시글 작성 폼 접근 시도: {}", userPrincipal.getEmail());

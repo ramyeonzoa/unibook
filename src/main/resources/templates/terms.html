@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이용약관 - Unibook</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <div th:replace="~{fragments/header :: styles}"></div>
+    <style>
+        .terms-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 100px 0 80px;
+            margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .terms-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        .terms-nav {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.1);
+            padding: 20px;
+            position: sticky;
+            top: 100px;
+        }
+        
+        .terms-nav h5 {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .terms-nav .nav-link {
+            color: #6c757d;
+            padding: 10px 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            margin-bottom: 5px;
+        }
+        
+        .terms-nav .nav-link:hover {
+            background: #f8f9fa;
+            color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .terms-nav .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .terms-content {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.1);
+            padding: 40px;
+        }
+        
+        .terms-content h2 {
+            color: #333;
+            font-weight: 700;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .terms-content h3 {
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .terms-content h4 {
+            color: #495057;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .terms-content p {
+            color: #6c757d;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        .terms-content ul {
+            color: #6c757d;
+            line-height: 1.8;
+            padding-left: 30px;
+        }
+        
+        .terms-content ul li {
+            margin-bottom: 10px;
+        }
+        
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            margin: 40px 0;
+            opacity: 0.3;
+        }
+        
+        .effective-date {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .highlight-box {
+            background: #f0f4ff;
+            border: 1px solid #d4e0ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 991px) {
+            .terms-nav {
+                position: static;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+    
+    <main id="main-content">
+        <!-- Hero Section -->
+        <section class="terms-hero text-white">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-12 text-center">
+                        <h1 class="display-4 fw-bold mb-4">이용약관</h1>
+                        <p class="lead mb-0">Unibook 서비스 이용에 관한 약관을 안내해 드립니다</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Terms Content -->
+        <div class="container mb-5">
+            <div class="row">
+                <!-- Navigation -->
+                <div class="col-lg-3">
+                    <nav class="terms-nav">
+                        <h5>목차</h5>
+                        <div class="nav flex-column">
+                            <a class="nav-link active" href="#section1">제1장 총칙</a>
+                            <a class="nav-link" href="#section2">제2장 회원가입</a>
+                            <a class="nav-link" href="#section3">제3장 서비스 이용</a>
+                            <a class="nav-link" href="#section4">제4장 거래 및 결제</a>
+                            <a class="nav-link" href="#section5">제5장 책임과 의무</a>
+                            <a class="nav-link" href="#section6">제6장 개인정보보호</a>
+                            <a class="nav-link" href="#section7">제7장 기타</a>
+                        </div>
+                    </nav>
+                </div>
+                
+                <!-- Content -->
+                <div class="col-lg-9">
+                    <div class="terms-content">
+                        <div class="effective-date">
+                            <strong>시행일:</strong> 2025년 1월 1일
+                        </div>
+                        
+                        <!-- Section 1 -->
+                        <section id="section1">
+                            <h2>제1장 총칙</h2>
+                            
+                            <h3>제1조 (목적)</h3>
+                            <p>이 약관은 Unibook(이하 "회사")이 제공하는 대학생 교재 거래 플랫폼 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+                            
+                            <h3>제2조 (정의)</h3>
+                            <p>이 약관에서 사용하는 용어의 정의는 다음과 같습니다:</p>
+                            <ul>
+                                <li><strong>"서비스"</strong>란 회사가 제공하는 대학생 교재 거래 중개 플랫폼을 의미합니다.</li>
+                                <li><strong>"회원"</strong>이란 회사와 서비스 이용계약을 체결하고 회원번호를 부여받은 자를 의미합니다.</li>
+                                <li><strong>"판매자"</strong>란 서비스를 통해 교재를 판매하는 회원을 의미합니다.</li>
+                                <li><strong>"구매자"</strong>란 서비스를 통해 교재를 구매하는 회원을 의미합니다.</li>
+                                <li><strong>"게시물"</strong>이란 회원이 서비스에 게시한 교재 판매 정보를 의미합니다.</li>
+                            </ul>
+                            
+                            <h3>제3조 (약관의 효력 및 변경)</h3>
+                            <p>① 이 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력을 발생합니다.</p>
+                            <p>② 회사는 필요한 경우 관련 법령을 위배하지 않는 범위에서 이 약관을 변경할 수 있으며, 변경된 약관은 제1항과 같은 방법으로 공지함으로써 효력을 발생합니다.</p>
+                        </section>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <!-- Section 2 -->
+                        <section id="section2">
+                            <h2>제2장 회원가입</h2>
+                            
+                            <h3>제4조 (회원가입)</h3>
+                            <p>① 회원가입은 이용자가 약관의 내용에 대하여 동의를 한 다음 회원가입 신청을 하고, 회사가 이러한 신청에 대하여 승낙함으로써 체결됩니다.</p>
+                            <p>② 회사는 다음 각 호에 해당하는 신청에 대하여는 승낙을 하지 않거나 사후에 이용계약을 해지할 수 있습니다:</p>
+                            <ul>
+                                <li>가입신청자가 이 약관에 의하여 이전에 회원자격을 상실한 적이 있는 경우</li>
+                                <li>실명이 아니거나 타인의 명의를 이용한 경우</li>
+                                <li>허위의 정보를 기재하거나, 회사가 제시하는 내용을 기재하지 않은 경우</li>
+                                <li>대학생 인증을 완료하지 않은 경우</li>
+                            </ul>
+                            
+                            <div class="highlight-box">
+                                <h4><i class="bi bi-info-circle me-2"></i>대학생 인증</h4>
+                                <p class="mb-0">Unibook은 대학생 전용 서비스로, 회원가입 시 대학교 이메일 인증이 필수입니다. 인증된 회원만이 서비스를 이용할 수 있습니다.</p>
+                            </div>
+                            
+                            <h3>제5조 (회원정보의 변경)</h3>
+                            <p>회원은 개인정보관리화면을 통하여 언제든지 본인의 개인정보를 열람하고 수정할 수 있습니다. 단, 서비스 관리를 위해 필요한 실명, 학교 정보 등은 수정이 제한될 수 있습니다.</p>
+                        </section>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <!-- Section 3 -->
+                        <section id="section3">
+                            <h2>제3장 서비스 이용</h2>
+                            
+                            <h3>제6조 (서비스의 제공)</h3>
+                            <p>회사는 다음과 같은 서비스를 제공합니다:</p>
+                            <ul>
+                                <li>교재 거래 중개 서비스</li>
+                                <li>교재 검색 및 추천 서비스</li>
+                                <li>회원 간 채팅 서비스</li>
+                                <li>위시리스트 및 알림 서비스</li>
+                                <li>기타 회사가 정하는 서비스</li>
+                            </ul>
+                            
+                            <h3>제7조 (서비스 이용 제한)</h3>
+                            <p>회사는 회원이 다음 각 호에 해당하는 행위를 하는 경우 사전 통지 없이 서비스 이용을 제한할 수 있습니다:</p>
+                            <ul>
+                                <li>타인의 정보를 도용하는 행위</li>
+                                <li>서비스 운영을 고의로 방해하는 행위</li>
+                                <li>허위 매물을 등록하는 행위</li>
+                                <li>기타 관련 법령이나 회사가 정한 이용조건에 위배되는 행위</li>
+                            </ul>
+                        </section>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <!-- Section 4 -->
+                        <section id="section4">
+                            <h2>제4장 거래 및 결제</h2>
+                            
+                            <h3>제8조 (거래의 성립)</h3>
+                            <p>① 회사는 회원 간의 거래를 중개하는 플랫폼을 제공할 뿐, 거래의 당사자가 아닙니다.</p>
+                            <p>② 교재의 매매계약은 판매자와 구매자 간에 직접 체결되며, 회사는 거래의 이행에 대한 책임을 지지 않습니다.</p>
+                            
+                            <h3>제9조 (거래 시 주의사항)</h3>
+                            <p>회원은 거래 시 다음 사항을 준수해야 합니다:</p>
+                            <ul>
+                                <li>정확한 상품 정보 제공</li>
+                                <li>약속된 거래 조건 이행</li>
+                                <li>상호 존중과 예의 준수</li>
+                                <li>안전한 거래 장소 선택</li>
+                            </ul>
+                            
+                            <div class="highlight-box">
+                                <h4><i class="bi bi-shield-check me-2"></i>안전거래 팁</h4>
+                                <p class="mb-0">거래는 가급적 학교 내 공개된 장소에서 진행하시고, 현금거래 시 위조지폐 여부를 확인하세요. 온라인 송금 시에는 반드시 실물을 확인한 후 진행하시기 바랍니다.</p>
+                            </div>
+                        </section>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <!-- Section 5 -->
+                        <section id="section5">
+                            <h2>제5장 책임과 의무</h2>
+                            
+                            <h3>제10조 (회사의 의무)</h3>
+                            <p>① 회사는 관련 법령과 이 약관이 금지하거나 미풍양속에 반하는 행위를 하지 않으며, 계속적이고 안정적으로 서비스를 제공하기 위하여 최선을 다합니다.</p>
+                            <p>② 회사는 회원이 안전하게 서비스를 이용할 수 있도록 개인정보보호를 위한 보안시스템을 구축합니다.</p>
+                            
+                            <h3>제11조 (회원의 의무)</h3>
+                            <p>회원은 다음 행위를 하여서는 안 됩니다:</p>
+                            <ul>
+                                <li>신청 또는 변경 시 허위내용의 등록</li>
+                                <li>타인의 정보 도용</li>
+                                <li>회사가 게시한 정보의 변경</li>
+                                <li>회사가 정한 정보 이외의 정보(컴퓨터 프로그램 등) 등의 송신 또는 게시</li>
+                                <li>회사와 기타 제3자의 저작권 등 지적재산권에 대한 침해</li>
+                                <li>회사 및 기타 제3자의 명예를 손상시키거나 업무를 방해하는 행위</li>
+                            </ul>
+                            
+                            <h3>제12조 (면책조항)</h3>
+                            <p>① 회사는 천재지변 또는 이에 준하는 불가항력으로 인하여 서비스를 제공할 수 없는 경우에는 서비스 제공에 관한 책임이 면제됩니다.</p>
+                            <p>② 회사는 회원의 귀책사유로 인한 서비스 이용의 장애에 대하여는 책임을 지지 않습니다.</p>
+                            <p>③ 회사는 회원이 서비스를 이용하여 기대하는 수익을 상실한 것에 대하여 책임을 지지 않으며, 그 밖의 서비스를 통하여 얻은 자료로 인한 손해에 관하여 책임을 지지 않습니다.</p>
+                        </section>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <!-- Section 6 -->
+                        <section id="section6">
+                            <h2>제6장 개인정보보호</h2>
+                            
+                            <h3>제13조 (개인정보의 보호)</h3>
+                            <p>① 회사는 회원의 개인정보를 보호하기 위하여 개인정보보호정책을 수립하고 이를 준수합니다.</p>
+                            <p>② 회사의 개인정보보호정책은 별도로 정하는 바에 따르며, 서비스 초기화면에 게시합니다.</p>
+                            <p>③ 회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하기 위해 노력합니다.</p>
+                            
+                            <h3>제14조 (개인정보의 수집 및 이용)</h3>
+                            <p>회사는 서비스 제공을 위하여 필요한 최소한의 개인정보를 수집하며, 수집된 정보는 다음의 목적을 위해 사용됩니다:</p>
+                            <ul>
+                                <li>회원 관리 및 본인 확인</li>
+                                <li>서비스 제공 및 개선</li>
+                                <li>불법적 이용 방지 및 비인가 사용 방지</li>
+                                <li>마케팅 및 광고에 활용 (동의한 경우에 한함)</li>
+                            </ul>
+                        </section>
+                        
+                        <div class="section-divider"></div>
+                        
+                        <!-- Section 7 -->
+                        <section id="section7">
+                            <h2>제7장 기타</h2>
+                            
+                            <h3>제15조 (저작권의 귀속)</h3>
+                            <p>① 서비스에 대한 저작권 및 지적재산권은 회사에 귀속됩니다.</p>
+                            <p>② 회원이 서비스 내에 게시한 게시물의 저작권은 해당 게시물의 저작자에게 귀속됩니다.</p>
+                            <p>③ 회원은 서비스를 이용함으로써 얻은 정보를 회사의 사전 승낙 없이 복제, 송신, 출판, 배포, 방송 기타 방법에 의하여 영리목적으로 이용하거나 제3자에게 이용하게 하여서는 안 됩니다.</p>
+                            
+                            <h3>제16조 (분쟁의 해결)</h3>
+                            <p>① 회사와 회원은 서비스와 관련하여 발생한 분쟁을 원만하게 해결하기 위하여 필요한 모든 노력을 하여야 합니다.</p>
+                            <p>② 제1항의 노력에도 불구하고 분쟁이 해결되지 않은 경우, 양 당사자는 민사소송법상의 관할법원에 소를 제기할 수 있습니다.</p>
+                            
+                            <h3>제17조 (약관 외 준칙)</h3>
+                            <p>이 약관에서 정하지 아니한 사항과 이 약관의 해석에 관하여는 전자상거래 등에서의 소비자보호에 관한 법률, 약관의 규제에 관한 법률, 정보통신망 이용촉진 및 정보보호 등에 관한 법률 등 관련 법령 또는 상관례에 따릅니다.</p>
+                        </section>
+                        
+                        <div class="mt-5 p-4 bg-light rounded">
+                            <h5 class="mb-3">부칙</h5>
+                            <p class="mb-1">이 약관은 2025년 1월 1일부터 시행됩니다.</p>
+                            <p class="mb-0 text-muted">최종 수정일: 2025년 1월 6일</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer th:replace="~{fragments/header :: footer}"></footer>
+    
+    <div th:replace="~{fragments/header :: scripts}"></div>
+    
+    <script>
+        // Smooth scrolling for navigation
+        document.querySelectorAll('.terms-nav a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetSection = document.querySelector(targetId);
+                
+                if (targetSection) {
+                    targetSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    
+                    // Update active state
+                    document.querySelectorAll('.terms-nav a').forEach(a => a.classList.remove('active'));
+                    this.classList.add('active');
+                }
+            });
+        });
+        
+        // Update active section on scroll
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section[id]');
+            const scrollPos = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+            
+            sections.forEach(section => {
+                const top = section.offsetTop - 150;
+                const bottom = top + section.offsetHeight;
+                const id = section.getAttribute('id');
+                
+                if (scrollPos >= top && scrollPos <= bottom) {
+                    document.querySelectorAll('.terms-nav a').forEach(a => a.classList.remove('active'));
+                    document.querySelector(`.terms-nav a[href="#${id}"]`)?.classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
