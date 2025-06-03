@@ -53,6 +53,7 @@ public class PostService {
     private final FileUploadUtil fileUploadUtil;
     private final SubjectBookService subjectBookService;
     private final NotificationService notificationService;
+    private final KeywordAlertService keywordAlertService;
     private final EntityManager entityManager;
     
     // 조회수 중복 방지를 위한 캐시 (userId/sessionId -> postId -> lastViewTime)
@@ -292,6 +293,9 @@ public class PostService {
             if (images != null && !images.isEmpty()) {
                 processImages(savedPost, images);
             }
+            
+            // 7. 키워드 매칭 및 알림 발송 (비동기)
+            keywordAlertService.checkKeywordMatching(savedPost);
             
             log.info("게시글 생성 완료: postId={}", savedPost.getPostId());
             return savedPost;

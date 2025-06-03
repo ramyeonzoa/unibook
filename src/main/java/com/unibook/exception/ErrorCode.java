@@ -24,6 +24,7 @@ public enum ErrorCode {
     DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "D001", "이미 존재하는 리소스입니다"),
     DUPLICATE_PROFESSOR(HttpStatus.CONFLICT, "D002", "이미 존재하는 교수입니다"),
     DUPLICATE_SUBJECT(HttpStatus.CONFLICT, "D003", "이미 존재하는 과목입니다"),
+    DUPLICATE_KEYWORD_ALERT(HttpStatus.CONFLICT, "D004", "이미 등록된 키워드입니다"),
     
     // ===== 인증/권한 오류 (401/403) =====
     AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "A001", "인증에 실패했습니다"),

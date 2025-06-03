@@ -82,29 +82,10 @@
             color: #856404;
         }
         
-        .status-badge {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-        }
-        
-        .status-badge.pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .status-badge.processing {
-            background: #cce7ff;
-            color: #0066cc;
-        }
-        
-        .status-badge.completed {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.rejected {
-            background: #f8d7da;
-            color: #721c24;
+        /* Admin specific status badge override */
+        .admin-table .status-badge {
+            font-size: 0.75rem !important;
+            padding: 4px 8px !important;
         }
         
         /* 다크모드 */
@@ -160,9 +141,10 @@
             
             <!-- 메인 컨텐츠 -->
             <div class="col-md-9 col-lg-10">
-                <div class="py-4">
+                <div class="p-4">
+                    <!-- 페이지 헤더 -->
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2 class="fw-bold">신고 관리</h2>
+                        <h2 class="mb-0">신고 관리</h2>
                         <div class="d-flex gap-2">
                             <button class="btn btn-outline-secondary" onclick="location.reload()">
                                 <i class="bi bi-arrow-clockwise"></i> 새로고침
@@ -208,7 +190,7 @@
                         
                         <div th:if="${!reports.content.isEmpty()}">
                             <div class="table-responsive">
-                                <table class="table table-hover mb-0">
+                                <table class="table table-hover mb-0 admin-table">
                                     <thead class="table-light">
                                         <tr>
                                             <th>ID</th>
@@ -240,9 +222,23 @@
                                                 <small class="text-muted" th:text="${report.targetUser.email}">이메일</small>
                                             </td>
                                             <td>
-                                                <span class="badge status-badge"
-                                                      th:classappend="${report.status.toString().toLowerCase()}"
-                                                      th:text="${report.status.description}">상태</span>
+                                                <div th:if="${report.status != null}" th:switch="${report.status.toString()}">
+                                                    <span th:case="'PENDING'" class="badge status-badge inline pending">
+                                                        대기중
+                                                    </span>
+                                                    <span th:case="'PROCESSING'" class="badge status-badge inline processing">
+                                                        처리중
+                                                    </span>
+                                                    <span th:case="'COMPLETED'" class="badge status-badge inline completed">
+                                                        처리완료
+                                                    </span>
+                                                    <span th:case="'REJECTED'" class="badge status-badge inline rejected">
+                                                        기각
+                                                    </span>
+                                                    <span th:case="*" class="badge bg-secondary">
+                                                        <span th:text="${report.status}"></span>
+                                                    </span>
+                                                </div>
                                             </td>
                                             <td>
                                                 <div th:text="${#temporals.format(report.createdAt, 'MM-dd')}">01-01</div>

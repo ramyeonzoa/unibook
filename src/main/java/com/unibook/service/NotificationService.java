@@ -296,4 +296,32 @@ public class NotificationService {
             log.error("신고 처리 결과 알림 생성 실패: reporterId={}, reportId={}", reporterId, reportId, e);
         }
     }
+    
+    /**
+     * 키워드 매칭 알림 (비동기)
+     */
+    @Async
+    @Transactional
+    public void createKeywordMatchNotificationAsync(Long userId, Long postId, String postTitle, String keyword) {
+        try {
+            String title = "등록한 키워드와 일치하는 게시글이 올라왔어요! 🔔";
+            String content = String.format("'%s' 키워드와 일치하는 '%s' 게시글이 등록되었습니다.", keyword, postTitle);
+            String url = "/posts/" + postId;
+            
+            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                    .recipientUserId(userId)
+                    .actorUserId(null)  // 시스템 알림이므로 actor 없음
+                    .type(Notification.NotificationType.KEYWORD_MATCH)
+                    .relatedPostId(postId)
+                    .title(title)
+                    .content(content)
+                    .url(url)
+                    .build();
+            
+            createNotification(request);
+            log.info("키워드 매칭 알림 생성: userId={}, postId={}, keyword={}", userId, postId, keyword);
+        } catch (Exception e) {
+            log.error("키워드 매칭 알림 생성 실패: userId={}, postId={}, keyword={}", userId, postId, keyword, e);
+        }
+    }
 }

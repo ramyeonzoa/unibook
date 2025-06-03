@@ -173,15 +173,11 @@
                 <div class="p-4">
                     <!-- 페이지 헤더 -->
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h2 class="mb-1">통계</h2>
-                            <nav aria-label="breadcrumb">
-                                <ol class="breadcrumb mb-0">
-                                    <li class="breadcrumb-item"><a href="/" class="text-decoration-none">홈</a></li>
-                                    <li class="breadcrumb-item"><a href="/admin" class="text-decoration-none">관리자</a></li>
-                                    <li class="breadcrumb-item active">통계</li>
-                                </ol>
-                            </nav>
+                        <h2 class="mb-0">통계</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise"></i> 새로고침
+                            </button>
                         </div>
                     </div>
                     
@@ -372,6 +368,9 @@
     <script th:src="@{/js/dark-mode.js}"></script>
     
     <script th:inline="javascript">
+        // 다크모드 여부 확인
+        const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        
         // 게시글 상태 데이터
         const postStatusData = {
             labels: ['판매중', '예약중', '거래완료', '삭제됨', '차단됨'],
@@ -385,20 +384,19 @@
                 ],
                 backgroundColor: [
                     '#28a745',
-                    '#ffc107',
+                    '#ffc107', 
                     '#6c757d',
                     '#dc3545',
-                    '#343a40'
-                ]
+                    isDarkMode ? '#6c757d' : '#343a40'  // 다크모드에서는 더 밝은 색상
+                ],
+                borderColor: isDarkMode ? '#212529' : '#fff',  // 다크모드에서는 배경색과 동일
+                borderWidth: 2
             }]
         };
         
-        // 다크모드 여부 확인
-        const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-        
         // 차트 생성
         const ctx = document.getElementById('postStatusChart').getContext('2d');
-        new Chart(ctx, {
+        const myChart = new Chart(ctx, {
             type: 'doughnut',
             data: postStatusData,
             options: {
@@ -408,12 +406,53 @@
                     legend: {
                         position: 'bottom',
                         labels: {
-                            color: isDarkMode ? '#fff' : '#333',
-                            padding: 15
+                            color: isDarkMode ? '#dee2e6' : '#495057',  // 다크모드에서 더 밝은 텍스트
+                            padding: 15,
+                            font: {
+                                size: 14
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle'
                         }
+                    },
+                    tooltip: {
+                        backgroundColor: isDarkMode ? 'rgba(33, 37, 41, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+                        titleColor: isDarkMode ? '#f8f9fa' : '#212529',
+                        bodyColor: isDarkMode ? '#f8f9fa' : '#212529',
+                        borderColor: isDarkMode ? '#495057' : '#dee2e6',
+                        borderWidth: 1
                     }
                 }
             }
+        });
+        
+        // 다크모드 변경 감지 및 차트 업데이트
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'data-bs-theme') {
+                    const newIsDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+                    
+                    // 차트 색상 업데이트
+                    myChart.data.datasets[0].backgroundColor[4] = newIsDarkMode ? '#6c757d' : '#343a40';
+                    myChart.data.datasets[0].borderColor = newIsDarkMode ? '#212529' : '#fff';
+                    
+                    // 레전드 색상 업데이트
+                    myChart.options.plugins.legend.labels.color = newIsDarkMode ? '#dee2e6' : '#495057';
+                    
+                    // 툴팁 색상 업데이트
+                    myChart.options.plugins.tooltip.backgroundColor = newIsDarkMode ? 'rgba(33, 37, 41, 0.9)' : 'rgba(255, 255, 255, 0.9)';
+                    myChart.options.plugins.tooltip.titleColor = newIsDarkMode ? '#f8f9fa' : '#212529';
+                    myChart.options.plugins.tooltip.bodyColor = newIsDarkMode ? '#f8f9fa' : '#212529';
+                    myChart.options.plugins.tooltip.borderColor = newIsDarkMode ? '#495057' : '#dee2e6';
+                    
+                    myChart.update();
+                }
+            });
+        });
+        
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-bs-theme']
         });
     </script>
 </body>

@@ -817,11 +817,43 @@
             </div>
             <!-- 일반 목록 -->
             <div th:case="*">
-                <h3>등록된 게시글이 없습니다</h3>
-                <p>첫 번째 게시글을 작성해보세요!</p>
-                <a href="/posts/new" class="btn btn-primary btn-lg" sec:authorize="isAuthenticated()">
-                    <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
-                </a>
+                <!-- 검색 결과가 없는 경우 -->
+                <div th:if="${search != null and !search.isEmpty()}">
+                    <h3 th:text="|'${search}' 검색 결과가 없습니다|">'검색어' 검색 결과가 없습니다</h3>
+                    <p>다른 키워드로 검색해보거나, 키워드 알림을 등록해보세요!</p>
+                    
+                    <!-- 키워드 알림 등록 버튼 (로그인한 사용자만) -->
+                    <div sec:authorize="isAuthenticated()" class="mb-3">
+                        <div th:if="${#authentication.principal.verified}">
+                            <button type="button" class="btn btn-outline-primary btn-lg me-2" 
+                                    onclick="registerKeywordAlert()" 
+                                    id="keywordAlertBtn"
+                                    th:data-keyword="${search}">
+                                <i class="bi bi-bell me-2"></i>키워드 알림 등록
+                            </button>
+                            <small class="text-muted d-block mt-2">
+                                <i class="bi bi-info-circle"></i> 
+                                '<span th:text="${search}"></span>' 키워드와 일치하는 게시글이 올라오면 알려드려요!
+                            </small>
+                        </div>
+                        <div th:unless="${#authentication.principal.verified}">
+                            <p class="text-muted">키워드 알림을 받으려면 <a href="/verification-required">이메일 인증</a>이 필요합니다.</p>
+                        </div>
+                    </div>
+                    
+                    <a href="/posts/new" class="btn btn-primary btn-lg" sec:authorize="isAuthenticated()">
+                        <i class="bi bi-plus-circle me-2"></i>직접 게시글 작성하기
+                    </a>
+                </div>
+                
+                <!-- 검색어 없이 게시글이 없는 경우 -->
+                <div th:unless="${search != null and !search.isEmpty()}">
+                    <h3>등록된 게시글이 없습니다</h3>
+                    <p>첫 번째 게시글을 작성해보세요!</p>
+                    <a href="/posts/new" class="btn btn-primary btn-lg" sec:authorize="isAuthenticated()">
+                        <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -1239,6 +1271,65 @@
             filterChevron.classList.remove('rotate-180');
         });
     });
+    
+    // 키워드 알림 등록 함수 (검색 결과 없을 때 사용)
+    function registerKeywordAlert() {
+        const btn = document.getElementById('keywordAlertBtn');
+        const keyword = btn.getAttribute('data-keyword');
+        
+        if (!keyword || keyword.trim().length < 2) {
+            showToast('유효한 키워드가 아닙니다.');
+            return;
+        }
+        
+        // 버튼 비활성화
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>등록 중...';
+        
+        $.ajax({
+            url: '/api/keyword-alerts',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ keyword: keyword }),
+            beforeSend: function(xhr) {
+                var csrfHeader = $('meta[name="_csrf_header"]').attr('content');
+                var csrfToken = $('meta[name="_csrf"]').attr('content');
+                if (csrfHeader && csrfToken) {
+                    xhr.setRequestHeader(csrfHeader, csrfToken);
+                }
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast('키워드 알림이 등록되었습니다! 🔔');
+                    // 버튼을 등록완료 상태로 변경
+                    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>등록 완료';
+                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.add('btn-success');
+                    
+                    // 3초 후 원래 상태로 복구
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="bi bi-bell me-2"></i>키워드 알림 등록';
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-outline-primary');
+                        btn.disabled = false;
+                    }, 3000);
+                } else {
+                    showToast(response.message || '키워드 등록에 실패했습니다.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-bell me-2"></i>키워드 알림 등록';
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 400 && xhr.responseJSON) {
+                    showToast(xhr.responseJSON.message || '키워드 등록에 실패했습니다.');
+                } else {
+                    showToast('키워드 등록 중 오류가 발생했습니다.');
+                }
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-bell me-2"></i>키워드 알림 등록';
+            }
+        });
+    }
 </script>
 
 <style>

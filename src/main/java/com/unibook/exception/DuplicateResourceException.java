@@ -55,4 +55,14 @@ public class DuplicateResourceException extends BusinessException {
             String.format("이미 존재하는 %s입니다: %s", resourceType, identifier)
         );
     }
+    
+    /**
+     * 키워드 알림 중복 예외 생성
+     */
+    public static DuplicateResourceException keywordAlert(String keyword) {
+        return new DuplicateResourceException(
+            ErrorCode.DUPLICATE_KEYWORD_ALERT,
+            String.format("이미 등록된 키워드입니다: %s", keyword)
+        );
+    }
 }

@@ -421,15 +421,16 @@
 }
 
 .dropdown-item {
-    padding: 12px 20px;
+    padding: 10px 16px;
     transition: all 0.3s ease;
     border-radius: 8px;
-    margin: 2px 8px;
+    margin: 2px 0;
+    width: 100%;
 }
 
 .dropdown-item:hover {
     background: rgba(102, 126, 234, 0.1) !important;
-    transform: translateX(4px);
+    color: #667eea;
 }
 
 .dropdown-header {

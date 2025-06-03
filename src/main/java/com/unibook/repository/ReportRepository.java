@@ -29,11 +29,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     // 상태별 신고 목록 조회 (관리자용)
     Page<Report> findByStatusOrderByCreatedAtDesc(ReportStatus status, Pageable pageable);
     
-    // 모든 신고 목록 조회 (관리자용)
+    // 모든 신고 목록 조회 (관리자용) - 상태별 우선순위 정렬
     @Query("SELECT r FROM Report r " +
            "LEFT JOIN FETCH r.reporter " +
            "LEFT JOIN FETCH r.targetUser " +
-           "ORDER BY r.createdAt DESC")
+           "ORDER BY " +
+           "CASE r.status " +
+           "  WHEN 'PROCESSING' THEN 1 " +
+           "  WHEN 'PENDING' THEN 2 " +
+           "  WHEN 'COMPLETED' THEN 3 " +
+           "  WHEN 'REJECTED' THEN 4 " +
+           "END, " +
+           "r.createdAt DESC")
     Page<Report> findAllWithUsers(Pageable pageable);
     
     // 특정 기간 내 신고 통계
