@@ -31,6 +31,7 @@ public class ReportService {
     private final ChatRoomRepository chatRoomRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AdminActionService adminActionService;
     
     private static final int DAILY_REPORT_LIMIT = 10; // 일일 신고 제한
     private static final int AUTO_BLIND_THRESHOLD = 3; // 자동 블라인드 기준
@@ -200,12 +201,14 @@ public class ReportService {
             throw new ValidationException("게시글 신고가 아닙니다.");
         }
         
-        // 게시글 차단 처리
+        // 게시글 차단 처리 (AdminAction과 통합)
         Post post = postRepository.findById(report.getTargetId())
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
-        post.setStatus(Post.PostStatus.BLOCKED);
-        postRepository.save(post);
+        // AdminActionService를 통해 게시글 차단 (Post 상태 변경 + AdminAction 기록)
+        String blockReason = "신고 처리: " + report.getCategory().getDescription() + 
+                           (adminNote != null && !adminNote.trim().isEmpty() ? " - " + adminNote : "");
+        adminActionService.blockPost(post.getPostId(), blockReason, adminId, reportId);
         
         // 신고 처리 완료
         Report processedReport = processReport(reportId, adminId, ReportStatus.COMPLETED, 

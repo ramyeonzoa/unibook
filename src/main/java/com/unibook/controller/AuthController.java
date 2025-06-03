@@ -98,9 +98,12 @@ public class AuthController {
     @GetMapping("/login")
     public String loginForm(@RequestParam(value = "error", required = false) String error,
                                @RequestParam(value = "logout", required = false) String logout,
+                               @RequestParam(value = "message", required = false) String message,
                                Model model) {
         
-        if (error != null) {
+        // CustomAuthenticationFailureHandler에서 전달한 메시지를 사용
+        // URL 파라미터로 메시지가 전달되지 않은 경우에만 기본 메시지 사용
+        if (error != null && message == null) {
             model.addAttribute("errorMessage", Messages.LOGIN_ERROR);
         }
         

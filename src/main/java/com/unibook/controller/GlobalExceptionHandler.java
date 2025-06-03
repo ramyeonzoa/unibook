@@ -8,16 +8,20 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.context.request.WebRequest;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@RestControllerAdvice
+@ControllerAdvice
 public class GlobalExceptionHandler {
     
     /**
@@ -181,16 +185,32 @@ public class GlobalExceptionHandler {
      * 일반 예외 처리 (예상치 못한 에러)
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneralException(Exception e) {
+    public Object handleGeneralException(Exception e, HttpServletRequest request) {
         log.error("Unexpected error occurred", e);
         
-        Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("timestamp", LocalDateTime.now());
-        errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        errorResponse.put("error", "Internal Server Error");
-        errorResponse.put("message", "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
-        errorResponse.put("errorCode", "INTERNAL_SERVER_ERROR");
+        // API 요청인지 확인
+        String requestURI = request.getRequestURI();
+        String acceptHeader = request.getHeader("Accept");
         
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        boolean isApiRequest = requestURI.startsWith("/api/") || 
+                              (acceptHeader != null && acceptHeader.contains("application/json"));
+        
+        if (isApiRequest) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("timestamp", LocalDateTime.now());
+            errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.put("error", "Internal Server Error");
+            errorResponse.put("message", "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            errorResponse.put("errorCode", "INTERNAL_SERVER_ERROR");
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        } else {
+            // HTML 요청인 경우 에러 페이지로 이동
+            ModelAndView mav = new ModelAndView();
+            mav.setViewName("error/500");
+            mav.addObject("message", "서버 오류가 발생했습니다.");
+            mav.addObject("error", e.getMessage());
+            return mav;
+        }
     }
 }

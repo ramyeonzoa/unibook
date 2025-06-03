@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.util.TimeZone;
 
@@ -12,6 +13,7 @@ import java.util.TimeZone;
 @EnableCaching
 @EnableAsync
 @EnableRetry
+@EnableScheduling
 public class UnibookApplication {
 
     public static void main(String[] args) {

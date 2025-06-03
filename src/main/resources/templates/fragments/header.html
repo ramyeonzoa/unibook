@@ -89,13 +89,19 @@
                 <!-- 프로필 아이콘 (모바일용) -->
                 <div class="dropdown">
                     <a class="nav-link" href="#" id="mobileProfileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="프로필">
-                        <i class="bi bi-person-circle fs-5"></i>
+                        <div class="user-avatar" 
+                             th:class="|user-avatar ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(#authentication.principal.name, #authentication.principal.email)}|">
+                            <span class="avatar-text" th:text="${T(com.unibook.util.AvatarUtil).getAvatarInitials(#authentication.principal.name)}">U</span>
+                        </div>
                     </a>
                     
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="mobileProfileDropdown">
                         <li>
                             <h6 class="dropdown-header">
-                                <i class="bi bi-person-circle"></i>
+                                <div class="user-avatar me-2"
+                                     th:class="|user-avatar ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(#authentication.principal.name, #authentication.principal.email)}|">
+                                    <span class="avatar-text" th:text="${T(com.unibook.util.AvatarUtil).getAvatarInitials(#authentication.principal.name)}">U</span>
+                                </div>
                                 <span sec:authentication="principal.name">사용자명</span>
                             </h6>
                         </li>
@@ -236,14 +242,20 @@
                         <div class="dropdown">
                             <button class="btn btn-link nav-link dropdown-toggle" type="button" id="navbarDropdown" 
                                     data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle me-1"></i>
+                                <div class="user-avatar me-1"
+                                     th:class="|user-avatar me-1 ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(#authentication.principal.name, #authentication.principal.email)}|">
+                                    <span class="avatar-text" th:text="${T(com.unibook.util.AvatarUtil).getAvatarInitials(#authentication.principal.name)}">U</span>
+                                </div>
                                 <span class="d-none d-xl-inline" sec:authentication="principal.name">사용자</span>
                             </button>
                             
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                 <li>
                                     <h6 class="dropdown-header">
-                                        <i class="bi bi-person-circle"></i>
+                                        <div class="user-avatar me-2"
+                                             th:class="|user-avatar me-2 ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(#authentication.principal.name, #authentication.principal.email)}|">
+                                            <span class="avatar-text" th:text="${T(com.unibook.util.AvatarUtil).getAvatarInitials(#authentication.principal.name)}">U</span>
+                                        </div>
                                         <span sec:authentication="principal.name">사용자명</span>
                                     </h6>
                                 </li>

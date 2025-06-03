@@ -45,7 +45,7 @@ public final class AppConstants {
     public static final int HOME_POPULAR_BOOKS_LIMIT = 8;
     
     /** 홈페이지 최신 게시글 표시 개수 */
-    public static final int HOME_RECENT_POSTS_LIMIT = 5;
+    public static final int HOME_RECENT_POSTS_LIMIT = 8;
     
     // ===== 기타 =====
     /** 이메일 구분자 */

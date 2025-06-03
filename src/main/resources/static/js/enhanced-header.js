@@ -62,25 +62,36 @@
     }
 
     function initializeUserAvatars() {
-        // Get user info from meta tags
-        const userNameMeta = document.querySelector('meta[name="user-name"]');
-        const userEmailMeta = document.querySelector('meta[name="user-email"]');
+        // 서버사이드에서 이미 아바타 색상과 이니셜을 처리하므로
+        // JavaScript 초기화는 더 이상 필요하지 않습니다.
         
-        if (!userNameMeta) return;
+        // 하위 호환성을 위해 data-name 속성이 있는 아바타가 
+        // 색상 클래스를 가지지 않은 경우에만 처리
+        const avatarElements = document.querySelectorAll('.user-avatar[data-name]');
         
-        const userName = userNameMeta.content;
-        const userEmail = userEmailMeta ? userEmailMeta.content : '';
-        
-        // Generate avatar data
-        const avatarData = generateUserAvatar(userName, userEmail);
-        if (!avatarData) return;
-        
-        // Replace all person-circle icons with avatars
-        const profileIcons = document.querySelectorAll('.bi-person-circle');
-        profileIcons.forEach(icon => {
-            const avatar = createAvatarElement(avatarData);
-            if (avatar) {
-                icon.parentNode.replaceChild(avatar, icon);
+        avatarElements.forEach(avatarElement => {
+            // 이미 색상 클래스가 있으면 건너뛰기
+            const hasColorClass = avatarColors.some(colorClass => 
+                avatarElement.classList.contains(colorClass)
+            );
+            
+            if (hasColorClass) return;
+            
+            // 색상 클래스가 없는 경우에만 JavaScript로 추가 (레거시 지원)
+            const userName = avatarElement.getAttribute('data-name');
+            if (!userName) return;
+            
+            const userEmailMeta = document.querySelector('meta[name="user-email"]');
+            const userEmail = userEmailMeta ? userEmailMeta.content : '';
+            
+            const avatarData = generateUserAvatar(userName, userEmail);
+            if (!avatarData) return;
+            
+            avatarElement.classList.add(avatarData.colorClass);
+            
+            const avatarText = avatarElement.querySelector('.avatar-text');
+            if (avatarText) {
+                avatarText.textContent = avatarData.initials;
             }
         });
     }

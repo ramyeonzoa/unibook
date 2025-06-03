@@ -8,10 +8,18 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    
+    <!-- Status Badge CSS -->
+    <link rel="stylesheet" th:href="@{/css/status-badge.css}">
     <!-- 공통 스타일 -->
     <div th:replace="~{fragments/header :: styles}"></div>
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
     
     <style>
         .admin-sidebar {
@@ -193,7 +201,10 @@
                                         <tr th:each="user : ${users.content}">
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="user-avatar me-3" th:text="${#strings.substring(user.name, 0, 1)}">A</div>
+                                                    <div class="user-avatar me-3"
+                                                         th:class="|user-avatar me-3 ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(user.name, user.email)}|">
+                                                        <span class="avatar-text" th:text="${T(com.unibook.util.AvatarUtil).getAvatarInitials(user.name)}">A</span>
+                                                    </div>
                                                     <div>
                                                         <div class="fw-medium" th:text="${user.name}">사용자명</div>
                                                         <small class="text-muted">ID: <span th:text="${user.userId}">1</span></small>
@@ -209,9 +220,18 @@
                                                 <span th:if="${user.department == null}" class="text-muted">정보 없음</span>
                                             </td>
                                             <td>
-                                                <span class="badge verification-badge"
-                                                      th:classappend="${user.verified ? 'verified' : 'unverified'}"
-                                                      th:text="${user.verified ? '인증됨' : '미인증'}">상태</span>
+                                                <div class="d-flex flex-column gap-1">
+                                                    <span class="badge verification-badge"
+                                                          th:classappend="${user.verified ? 'verified' : 'unverified'}"
+                                                          th:text="${user.verified ? '인증됨' : '미인증'}">인증 상태</span>
+                                                    
+                                                    <span th:if="${user.status.toString() == 'SUSPENDED'}" 
+                                                          class="badge bg-danger">정지됨</span>
+                                                    <span th:if="${user.status.toString() == 'ACTIVE'}" 
+                                                          class="badge bg-success">활성</span>
+                                                    <span th:if="${user.status.toString() == 'WITHDRAWN'}" 
+                                                          class="badge bg-secondary">탈퇴</span>
+                                                </div>
                                             </td>
                                             <td>
                                                 <div th:text="${#temporals.format(user.createdAt, 'yyyy-MM-dd')}">2024-01-01</div>
@@ -224,19 +244,33 @@
                                                         <i class="bi bi-three-dots"></i>
                                                     </button>
                                                     <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="#" 
-                                                               th:onclick="|viewUserPosts(${user.userId})|">
+                                                        <li><a class="dropdown-item user-action-btn" href="#" 
+                                                               data-action="viewPosts" th:data-user-id="${user.userId}">
                                                             <i class="bi bi-list-ul me-2"></i>게시글 보기
                                                         </a></li>
-                                                        <li><a class="dropdown-item" href="#" 
-                                                               th:onclick="|viewUserReports(${user.userId})|">
+                                                        <li><a class="dropdown-item user-action-btn" href="#" 
+                                                               data-action="viewActions" th:data-user-id="${user.userId}">
+                                                            <i class="bi bi-clock-history me-2"></i>조치 이력
+                                                        </a></li>
+                                                        <li><a class="dropdown-item user-action-btn" href="#" 
+                                                               data-action="viewReports" th:data-user-id="${user.userId}">
                                                             <i class="bi bi-exclamation-triangle me-2"></i>신고 내역
                                                         </a></li>
                                                         <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-warning" href="#" 
-                                                               th:onclick="|suspendUser(${user.userId})|">
-                                                            <i class="bi bi-person-x me-2"></i>계정 정지
-                                                        </a></li>
+                                                        
+                                                        <li th:if="${user.status.toString() == 'ACTIVE'}">
+                                                            <a class="dropdown-item text-warning user-action-btn" href="#" 
+                                                               data-action="suspend" th:data-user-id="${user.userId}" th:data-user-name="${user.name}">
+                                                                <i class="bi bi-person-x me-2"></i>계정 정지
+                                                            </a>
+                                                        </li>
+                                                        
+                                                        <li th:if="${user.status.toString() == 'SUSPENDED'}">
+                                                            <a class="dropdown-item text-success user-action-btn" href="#" 
+                                                               data-action="unsuspend" th:data-user-id="${user.userId}" th:data-user-name="${user.name}">
+                                                                <i class="bi bi-person-check me-2"></i>정지 해제
+                                                            </a>
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             </td>
@@ -287,6 +321,38 @@
     <div th:replace="~{fragments/header :: scripts}"></div>
     
     <script>
+        // 문서 로드 완료 후 이벤트 리스너 등록
+        document.addEventListener('DOMContentLoaded', function() {
+            // 이벤트 위임을 사용한 사용자 액션 처리
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.user-action-btn')) {
+                    e.preventDefault();
+                    const btn = e.target.closest('.user-action-btn');
+                    const action = btn.dataset.action;
+                    const userId = btn.dataset.userId;
+                    const userName = btn.dataset.userName;
+                    
+                    switch(action) {
+                        case 'viewPosts':
+                            viewUserPosts(userId);
+                            break;
+                        case 'viewActions':
+                            viewUserActions(userId);
+                            break;
+                        case 'viewReports':
+                            viewUserReports(userId);
+                            break;
+                        case 'suspend':
+                            showSuspendModal(userId, userName);
+                            break;
+                        case 'unsuspend':
+                            showUnsuspendModal(userId, userName);
+                            break;
+                    }
+                }
+            });
+        });
+        
         // 사용자 게시글 보기
         function viewUserPosts(userId) {
             window.open(`/posts?userId=${userId}`, '_blank');
@@ -298,11 +364,253 @@
             alert('사용자별 신고 내역 기능은 준비 중입니다.');
         }
         
-        // 계정 정지
-        function suspendUser(userId) {
-            // TODO: 계정 정지 기능 구현
-            alert('계정 정지 기능은 준비 중입니다.');
+        // 사용자 조치 이력 보기
+        function viewUserActions(userId) {
+            // TODO: 조치 이력 모달 또는 새 페이지로 구현
+            window.open(`/admin/users/${userId}/actions`, '_blank');
+        }
+        
+        // 정지 모달 표시
+        function showSuspendModal(userId, userName) {
+            document.getElementById('suspendUserId').value = userId;
+            document.getElementById('suspendUserName').textContent = userName;
+            document.getElementById('suspendReason').value = '';
+            document.getElementById('suspendDuration').value = '7';
+            
+            new bootstrap.Modal(document.getElementById('suspendModal')).show();
+        }
+        
+        // 정지 해제 모달 표시
+        function showUnsuspendModal(userId, userName) {
+            document.getElementById('unsuspendUserId').value = userId;
+            document.getElementById('unsuspendUserName').textContent = userName;
+            document.getElementById('unsuspendReason').value = '';
+            
+            new bootstrap.Modal(document.getElementById('unsuspendModal')).show();
+        }
+        
+        // 정지 처리
+        async function processSuspension() {
+            const userId = document.getElementById('suspendUserId').value;
+            const reason = document.getElementById('suspendReason').value;
+            const duration = document.getElementById('suspendDuration').value;
+            
+            if (!reason.trim()) {
+                alert('정지 사유를 입력해주세요.');
+                return;
+            }
+            
+            if (reason.trim().length < 10) {
+                alert('정지 사유는 10자 이상 입력해주세요.');
+                return;
+            }
+            
+            let requestData = {
+                reason: reason.trim()
+            };
+            
+            if (duration !== 'permanent') {
+                requestData.durationDays = parseInt(duration);
+            }
+            
+            try {
+                const response = await fetch(`/admin/api/users/${userId}/suspend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('suspendModal')).hide();
+                    showSuccessMessage('사용자가 정지되었습니다.');
+                    location.reload();
+                } else {
+                    alert('오류: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 정지 해제 처리
+        async function processUnsuspension() {
+            const userId = document.getElementById('unsuspendUserId').value;
+            const reason = document.getElementById('unsuspendReason').value;
+            
+            if (!reason.trim()) {
+                alert('해제 사유를 입력해주세요.');
+                return;
+            }
+            
+            if (reason.trim().length < 5) {
+                alert('해제 사유는 5자 이상 입력해주세요.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/admin/api/users/${userId}/unsuspend`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').content
+                    },
+                    body: JSON.stringify({
+                        reason: reason.trim()
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('unsuspendModal')).hide();
+                    showSuccessMessage('정지가 해제되었습니다.');
+                    location.reload();
+                } else {
+                    alert('오류: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('처리 중 오류가 발생했습니다.');
+            }
+        }
+        
+        // 성공 메시지 표시
+        function showSuccessMessage(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alert.innerHTML = `
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <strong>${message}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 5000);
         }
     </script>
+    
+    <!-- 정지 모달 -->
+    <div class="modal fade" id="suspendModal" tabindex="-1" aria-labelledby="suspendModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="suspendModalLabel">
+                        <i class="bi bi-person-x me-2 text-warning"></i>사용자 정지
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="suspendForm">
+                        <input type="hidden" id="suspendUserId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">대상 사용자</label>
+                            <div class="alert alert-light border">
+                                <i class="bi bi-person me-2"></i>
+                                <strong id="suspendUserName"></strong>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="suspendReason" class="form-label">
+                                정지 사유 <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="suspendReason" rows="4" 
+                                      placeholder="정지 사유를 상세히 입력해주세요. (최소 10자)" 
+                                      required maxlength="500"></textarea>
+                            <div class="form-text">최소 10자 이상 입력해주세요.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="suspendDuration" class="form-label">정지 기간</label>
+                            <select class="form-select" id="suspendDuration">
+                                <option value="1">1일</option>
+                                <option value="3">3일</option>
+                                <option value="7" selected>7일</option>
+                                <option value="14">14일</option>
+                                <option value="30">30일</option>
+                                <option value="permanent">영구정지</option>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>주의:</strong> 정지된 사용자는 즉시 로그아웃되며 모든 기능 이용이 제한됩니다.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x me-1"></i>취소
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="processSuspension()">
+                        <i class="bi bi-person-x me-1"></i>정지 처리
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 정지 해제 모달 -->
+    <div class="modal fade" id="unsuspendModal" tabindex="-1" aria-labelledby="unsuspendModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="unsuspendModalLabel">
+                        <i class="bi bi-person-check me-2 text-success"></i>정지 해제
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="unsuspendForm">
+                        <input type="hidden" id="unsuspendUserId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">대상 사용자</label>
+                            <div class="alert alert-light border">
+                                <i class="bi bi-person me-2"></i>
+                                <strong id="unsuspendUserName"></strong>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="unsuspendReason" class="form-label">
+                                해제 사유 <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control" id="unsuspendReason" rows="3" 
+                                      placeholder="정지 해제 사유를 입력해주세요. (최소 5자)" 
+                                      required maxlength="500"></textarea>
+                            <div class="form-text">최소 5자 이상 입력해주세요.</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>안내:</strong> 정지가 해제되면 사용자는 즉시 모든 기능을 이용할 수 있습니다.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x me-1"></i>취소
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="processUnsuspension()">
+                        <i class="bi bi-person-check me-1"></i>정지 해제
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

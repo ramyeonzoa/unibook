@@ -105,6 +105,18 @@
             <span th:text="${errorMessage}"></span>
         </div>
         
+        <!-- 로그인 에러 메시지 -->
+        <div th:if="${param.error != null}" class="alert" role="alert" 
+             th:classappend="${param.message != null and #strings.contains(param.message, '정지')} ? 'alert-warning' : 'alert-danger'">
+            <div th:if="${param.message != null and #strings.contains(param.message, '정지')}" class="alert-heading">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>계정 정지
+            </div>
+            <div style="white-space: pre-line;" th:text="${param.message ?: '이메일 또는 비밀번호가 올바르지 않습니다.'}"></div>
+            <div th:if="${param.message != null and #strings.contains(param.message, '정지')}" class="mt-2 small text-muted">
+                <i class="bi bi-envelope me-2"></i>정지 처리에 이의가 있으시면 관리자에게 문의해주세요: unibooknotify@gmail.com
+            </div>
+        </div>
+        
         <!-- 로그인 폼 -->
         <form th:action="@{/login}" method="post">
             <!-- returnUrl 파라미터 처리 -->

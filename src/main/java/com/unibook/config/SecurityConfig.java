@@ -1,13 +1,17 @@
 package com.unibook.config;
 
 import com.unibook.common.AppConstants;
+import com.unibook.domain.entity.User;
+import com.unibook.security.CustomAuthenticationFailureHandler;
 import com.unibook.security.CustomUserDetailsService;
+import com.unibook.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,6 +19,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -24,6 +29,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class SecurityConfig {
     
     private final CustomUserDetailsService customUserDetailsService;
+    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -72,7 +78,7 @@ public class SecurityConfig {
                 .usernameParameter("username")  // HTML에서 username 필드 사용
                 .passwordParameter("password")
                 .successHandler(authenticationSuccessHandler())
-                .failureUrl("/login?error=true")
+                .failureHandler(customAuthenticationFailureHandler)
                 .permitAll()
             )
             .logout(logout -> logout
@@ -111,6 +117,9 @@ public class SecurityConfig {
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return (request, response, authentication) -> {
+            // 정지 체크는 이제 CustomUserDetailsService에서 처리되므로 제거
+            
+            // 정상 로그인 처리
             String returnUrl = request.getParameter("returnUrl");
             if (returnUrl != null && !returnUrl.isEmpty() && returnUrl.startsWith("/")) {
                 // 보안을 위해 내부 URL만 허용 (/ 로 시작)
