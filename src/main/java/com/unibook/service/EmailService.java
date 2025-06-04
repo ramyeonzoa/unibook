@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import jakarta.annotation.PostConstruct;
 
 import java.time.LocalDateTime;
 
@@ -43,6 +44,17 @@ public class EmailService {
     
     @Value("${app.email.verification.base-url}")
     private String baseUrl;
+    
+    @PostConstruct
+    public void init() {
+        // Trim fromEmail to ensure no whitespace issues
+        if (fromEmail != null) {
+            fromEmail = fromEmail.trim();
+            log.info("Email service initialized with from email: '{}'", fromEmail);
+        } else {
+            log.warn("Email service initialized without from email configuration");
+        }
+    }
     
     /**
      * 이메일 인증 메일 발송 (비동기 처리)
@@ -135,17 +147,25 @@ public class EmailService {
     private void sendHtmlEmail(String to, String subject, String htmlContent) throws MessagingException {
         log.info("Attempting to send email to: {}", to);
         
+        // Trim email addresses to remove any whitespace
+        String cleanFromEmail = fromEmail != null ? fromEmail.trim() : "";
+        String cleanToEmail = to != null ? to.trim() : "";
+        
+        if (cleanFromEmail.isEmpty()) {
+            throw new MessagingException("From email address is not configured");
+        }
+        
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         
-        helper.setFrom(fromEmail);
-        helper.setTo(to);
+        helper.setFrom(cleanFromEmail);
+        helper.setTo(cleanToEmail);
         helper.setSubject(subject);
         helper.setText(htmlContent, true);
         
         mailSender.send(message);
         
-        log.info("Email sent successfully to: {}", to);
+        log.info("Email sent successfully to: {}", cleanToEmail);
     }
     
     /**

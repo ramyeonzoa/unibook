@@ -35,10 +35,19 @@
             top: 100px;
         }
         
+        [data-bs-theme="dark"] .terms-nav {
+            background: var(--bs-gray-900);
+            border: 1px solid var(--bs-gray-700);
+        }
+        
         .terms-nav h5 {
             color: #667eea;
             font-weight: 600;
             margin-bottom: 20px;
+        }
+        
+        [data-bs-theme="dark"] .terms-nav h5 {
+            color: #4c84ff;
         }
         
         .terms-nav .nav-link {
@@ -49,10 +58,19 @@
             margin-bottom: 5px;
         }
         
+        [data-bs-theme="dark"] .terms-nav .nav-link {
+            color: var(--bs-gray-300);
+        }
+        
         .terms-nav .nav-link:hover {
             background: #f8f9fa;
             color: #667eea;
             transform: translateX(5px);
+        }
+        
+        [data-bs-theme="dark"] .terms-nav .nav-link:hover {
+            background: var(--bs-gray-700);
+            color: #4c84ff;
         }
         
         .terms-nav .nav-link.active {
@@ -67,12 +85,22 @@
             padding: 40px;
         }
         
+        [data-bs-theme="dark"] .terms-content {
+            background: var(--bs-gray-900);
+            border: 1px solid var(--bs-gray-700);
+        }
+        
         .terms-content h2 {
             color: #333;
             font-weight: 700;
             margin-bottom: 30px;
             padding-bottom: 15px;
             border-bottom: 2px solid #f0f0f0;
+        }
+        
+        [data-bs-theme="dark"] .terms-content h2 {
+            color: var(--bs-gray-100);
+            border-bottom-color: var(--bs-gray-700);
         }
         
         .terms-content h3 {
@@ -82,11 +110,19 @@
             margin-bottom: 20px;
         }
         
+        [data-bs-theme="dark"] .terms-content h3 {
+            color: #4c84ff;
+        }
+        
         .terms-content h4 {
             color: #495057;
             font-weight: 600;
             margin-top: 25px;
             margin-bottom: 15px;
+        }
+        
+        [data-bs-theme="dark"] .terms-content h4 {
+            color: var(--bs-gray-200);
         }
         
         .terms-content p {
@@ -95,10 +131,18 @@
             margin-bottom: 15px;
         }
         
+        [data-bs-theme="dark"] .terms-content p {
+            color: var(--bs-gray-300);
+        }
+        
         .terms-content ul {
             color: #6c757d;
             line-height: 1.8;
             padding-left: 30px;
+        }
+        
+        [data-bs-theme="dark"] .terms-content ul {
+            color: var(--bs-gray-300);
         }
         
         .terms-content ul li {
@@ -120,12 +164,23 @@
             margin-bottom: 30px;
         }
         
+        [data-bs-theme="dark"] .effective-date {
+            background: var(--bs-gray-800);
+            border-left-color: #4c84ff;
+            color: var(--bs-gray-200);
+        }
+        
         .highlight-box {
             background: #f0f4ff;
             border: 1px solid #d4e0ff;
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
+        }
+        
+        [data-bs-theme="dark"] .highlight-box {
+            background: rgba(76, 132, 255, 0.1);
+            border-color: #4c84ff;
         }
         
         @media (max-width: 991px) {

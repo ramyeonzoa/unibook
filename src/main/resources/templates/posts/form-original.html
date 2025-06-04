@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <title th:text="${isEdit} ? '게시글 수정' : '게시글 작성'">게시글 작성</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- 공통 스타일 (알림 등) -->
+    <div th:replace="~{fragments/header :: styles}"></div>
+    <style>
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .preview-item {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .preview-item .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .preview-item .order-badge {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .drag-area {
+            border: 2px dashed #6c757d;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .drag-area:hover {
+            border-color: #0d6efd;
+            background-color: #f8f9fa;
+        }
+        
+        .drag-area.drag-over {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        
+        .price-input-group {
+            position: relative;
+        }
+        
+        .price-input-group .form-control {
+            padding-right: 30px;
+        }
+        
+        .price-input-group .unit {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        /* 드래그 앤 드롭 스타일 */
+        .sortable-item {
+            position: relative;
+            cursor: move;
+            transition: transform 0.2s ease;
+        }
+        
+        .sortable-item:hover {
+            transform: scale(1.02);
+        }
+        
+        .sortable-item.ui-sortable-helper {
+            transform: rotate(5deg);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        .sortable-item.ui-sortable-placeholder {
+            border: 2px dashed #0d6efd;
+            background: rgba(13, 110, 253, 0.1);
+            visibility: visible !important;
+        }
+        
+        .drag-handle {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 4px;
+            padding: 4px;
+            cursor: move;
+            font-size: 14px;
+            display: none; /* 드래그 핸들 숨김 */
+        }
+        
+        .existing-delete-btn {
+            background: rgba(220, 53, 69, 0.9);
+            color: black;
+            border: none;
+        }
+        
+        .existing-delete-btn:hover {
+            background: rgba(220, 53, 69, 1);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<!-- 공통 헤더 포함 -->
+<nav th:replace="~{fragments/header :: header}"></nav>
+
+<!-- 공통 메시지 포함 -->
+<div th:replace="~{fragments/header :: messages}"></div>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0" th:text="${isEdit} ? '게시글 수정' : '게시글 작성'">게시글 작성</h4>
+                </div>
+                <div class="card-body">
+                    <form th:action="${isEdit} ? '/posts/' + ${post.postId} + '/edit' : '/posts/new'" 
+                          method="post" enctype="multipart/form-data" th:object="${postDto}">
+                        
+                        <!-- 전역 에러 메시지 -->
+                        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
+                            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+                        </div>
+                        
+                        <!-- 상품 유형 -->
+                        <div class="mb-3">
+                            <label for="productType" class="form-label">상품 유형 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="productType" th:field="*{productType}" required>
+                                <option value="">선택하세요</option>
+                                <option th:each="type : ${productTypes}" 
+                                        th:value="${type}" 
+                                        th:text="${type.name() == 'TEXTBOOK' ? '전공교재' : 
+                                                 type.name() == 'CERTBOOK' ? '자격증 교재' :
+                                                 type.name() == 'NOTE' ? '필기노트' :
+                                                 type.name() == 'PASTEXAM' ? '족보/기출' :
+                                                 '기타'}"></option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('productType')}" th:errors="*{productType}"></div>
+                        </div>
+                        
+                        <!-- 책 선택 (교재인 경우) -->
+                        <div class="mb-3" id="bookSelectDiv" style="display: none;">
+                            <label class="form-label">교재 정보</label>
+                            <input type="hidden" th:field="*{bookId}" id="bookId">
+                            
+                            <!-- 선택된 책 정보 표시 -->
+                            <div id="selectedBookInfo" class="alert alert-info" style="display: none;">
+                                <div class="d-flex align-items-start gap-3">
+                                    <!-- 책 표지 썸네일 -->
+                                    <div id="selectedBookImageContainer" style="width: 60px; height: 80px; flex-shrink: 0; position: relative;">
+                                        <img id="selectedBookImage" 
+                                             src="" 
+                                             alt="Book cover" 
+                                             class="w-100 h-100 rounded border"
+                                             style="object-fit: cover; display: none; position: absolute; top: 0; left: 0;"
+                                             onerror="this.style.display='none'; document.getElementById('selectedBookPlaceholder').style.display='flex';">
+                                        <div id="selectedBookPlaceholder" class="w-100 h-100 bg-light border rounded d-flex align-items-center justify-content-center" style="display: flex; position: absolute; top: 0; left: 0;">
+                                            <i class="bi bi-book text-muted" style="font-size: 1.5rem;"></i>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 책 정보 -->
+                                    <div class="flex-grow-1">
+                                        <h6 id="selectedBookTitle" class="mb-1"></h6>
+                                        <small class="text-muted">
+                                            <span id="selectedBookAuthor"></span> | 
+                                            <span id="selectedBookPublisher"></span>
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- 삭제 버튼 -->
+                                    <div class="flex-shrink-0">
+                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeBookBtn">
+                                            <i class="bi bi-x"></i> 선택 취소
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="removeBook" name="removeBook" value="false">
+                            
+                            <!-- 책 검색 버튼 -->
+                            <div id="bookSearchBtnDiv">
+                                <button type="button" class="btn btn-outline-primary" id="bookSearchBtn">
+                                    <i class="bi bi-search"></i> 책 검색하기
+                                </button>
+                                <small class="form-text text-muted d-block mt-1">
+                                    네이버 책 검색을 통해 교재 정보를 입력할 수 있습니다.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- 과목 선택 (모든 상품 타입에서 가능) -->
+                        <div class="mb-3" id="subjectSelectDiv">
+                            <label class="form-label">과목 정보 <small class="text-muted">(선택사항)</small></label>
+                            <input type="hidden" th:field="*{subjectId}" id="subjectId">
+                            <input type="hidden" th:field="*{takenYear}" id="takenYear">
+                            <input type="hidden" th:field="*{takenSemester}" id="takenSemester">
+                            <input type="hidden" id="removeSubject" name="removeSubject" value="false">
+                            
+                            <!-- 선택된 과목 정보 표시 -->
+                            <div id="selectedSubjectDisplay">
+                                <!-- 과목 선택 시 여기에 표시됨 -->
+                            </div>
+                            
+                            <!-- 과목 검색 버튼 -->
+                            <div id="subjectSearchBtnDiv">
+                                <button type="button" class="btn btn-outline-secondary" id="subjectSearchBtn">
+                                    <i class="bi bi-person-workspace"></i> 과목 선택하기
+                                </button>
+                                <small class="form-text text-muted d-block mt-1">
+                                    교수님과 과목을 선택하면 다른 학생들이 찾기 쉬워집니다.
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- 제목 -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">제목 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" th:field="*{title}" 
+                                   placeholder="예: 경영학원론 교재 판매합니다" required maxlength="255">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                        </div>
+                        
+                        <!-- 가격 -->
+                        <div class="mb-3">
+                            <label for="price" class="form-label">가격 <span class="text-danger">*</span></label>
+                            <div class="price-input-group">
+                                <input type="number" class="form-control" id="price" th:field="*{price}" 
+                                       placeholder="0" required min="0" step="100">
+                                <span class="unit">원</span>
+                            </div>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+                        </div>
+                        
+                        <!-- 거래 방법 -->
+                        <div class="mb-3">
+                            <label class="form-label">거래 방법 <span class="text-danger">*</span></label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="transactionMethod" 
+                                           id="direct" value="DIRECT" th:field="*{transactionMethod}" required>
+                                    <label class="form-check-label" for="direct">직거래</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="transactionMethod" 
+                                           id="parcel" value="PARCEL" th:field="*{transactionMethod}" required>
+                                    <label class="form-check-label" for="parcel">택배</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="transactionMethod" 
+                                           id="both" value="BOTH" th:field="*{transactionMethod}" required>
+                                    <label class="form-check-label" for="both">모두 가능</label>
+                                </div>
+                            </div>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('transactionMethod')}" th:errors="*{transactionMethod}"></div>
+                        </div>
+                        
+                        <!-- 거래 장소 -->
+                        <div class="mb-3" id="campusLocationDiv">
+                            <label for="campusLocation" class="form-label">거래 장소</label>
+                            <input type="text" class="form-control" id="campusLocation" th:field="*{campusLocation}" 
+                                   placeholder="예: 중앙도서관 앞" maxlength="100">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('campusLocation')}" 
+                                 th:errors="*{campusLocation}"></div>
+                        </div>
+                        
+                        <!-- 설명 -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">상세 설명</label>
+                            <textarea class="form-control" id="description" th:field="*{description}" 
+                                      rows="5" maxlength="2000" 
+                                      placeholder="상품의 상태, 사용 기간, 거래 희망 사항 등을 자세히 적어주세요."></textarea>
+                            <div class="form-text">
+                                <span id="descriptionCount">0</span>/2000
+                            </div>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" 
+                                 th:errors="*{description}"></div>
+                        </div>
+                        
+                        <!-- 상태 (수정 시에만) -->
+                        <div class="mb-3" th:if="${isEdit}">
+                            <label for="status" class="form-label">거래 상태</label>
+                            <select class="form-select" id="status" th:field="*{status}" required>
+                                <option th:each="status : ${statuses}" 
+                                        th:if="${status.name() != 'BLOCKED' or #authorization.expression('hasRole(''ADMIN'')')}"
+                                        th:value="${status}" 
+                                        th:selected="${status == postDto.status}"
+                                        th:text="${status.name() == 'AVAILABLE' ? '판매중' : 
+                                                 status.name() == 'RESERVED' ? '예약중' : 
+                                                 status.name() == 'BLOCKED' ? '차단됨' : '거래완료'}"></option>
+                            </select>
+                        </div>
+                        
+                        <!-- 이미지 업로드 (간단 버전) -->
+                        <div class="mb-3">
+                            <label for="images" class="form-label">이미지 (최대 5개)</label>
+                            <input type="file" class="form-control" id="images" name="images" 
+                                   multiple accept="image/*">
+                            <div class="form-text">JPG, PNG, GIF, WEBP 파일만 업로드 가능 (최대 10MB)</div>
+                            
+                            <!-- 통합 이미지 미리보기 -->
+                            <div class="mt-3">
+                                <h6 th:if="${isEdit}">이미지 관리 
+                                    <small class="text-muted">(드래그해서 순서 변경 가능)</small>
+                                </h6>
+                                <div class="preview-container" id="imagePreview">
+                                    <!-- 수정 시 기존 이미지 표시 -->
+                                    <div th:if="${isEdit and post != null and post.postImages != null and !post.postImages.isEmpty()}" 
+                                         th:each="image : ${post.postImages}" 
+                                         class="preview-item sortable-item existing-image" 
+                                         th:data-image-id="${image.postImageId}"
+                                         th:data-image-order="${image.imageOrder}">
+                                        <img th:src="${image.imageUrl}" th:alt="${'이미지 ' + image.imageOrder}">
+                                        <span class="order-badge" 
+                                              th:text="${image.imageOrder == 0 ? '대표' : image.imageOrder}"></span>
+                                        <button type="button" class="delete-btn existing-delete-btn" 
+                                                th:data-image-id="${image.postImageId}">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- 숨겨진 입력 필드들 -->
+                                <div id="hiddenImageFields"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 버튼 -->
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <span th:text="${isEdit} ? '수정하기' : '등록하기'">등록하기</span>
+                            </button>
+                            <a href="/posts" class="btn btn-secondary">취소</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script th:inline="javascript">
+    $(document).ready(function() {
+        // 상품 유형에 따른 책 선택 표시/숨김 (과목 선택은 항상 가능)
+        $('#productType').on('change', function() {
+            var type = $(this).val();
+            if (type === 'TEXTBOOK' || type === 'CERTBOOK') {
+                $('#bookSelectDiv').show();
+            } else {
+                $('#bookSelectDiv').hide();
+                $('#bookId').val('');
+                // 책 정보 초기화
+                $('#selectedBookInfo').hide();
+                $('#bookSearchBtnDiv').show();
+            }
+            // 과목 선택은 항상 표시 (모든 상품 타입에서 가능)
+        });
+        
+        // 거래 방법에 따른 거래 장소 표시/숨김
+        $('input[name="transactionMethod"]').on('change', function() {
+            var method = $(this).val();
+            if (method === 'DIRECT' || method === 'BOTH') {
+                $('#campusLocationDiv').show();
+            } else {
+                $('#campusLocationDiv').hide();
+                $('#campusLocation').val('');
+            }
+        });
+        
+        // 설명 글자수 카운트
+        $('#description').on('input', function() {
+            var length = $(this).val().length;
+            $('#descriptionCount').text(length);
+        });
+        
+        // 초기화
+        $('#productType').trigger('change');
+        $('input[name="transactionMethod"]:checked').trigger('change');
+        $('#description').trigger('input');
+        
+        // 수정 모드일 때 기존 책 정보 표시
+        try {
+            var selectedBookStr = /*[[${selectedBookJson}]]*/ 'null';
+            var selectedBook = null;
+            
+            if (selectedBookStr && selectedBookStr !== 'null') {
+                selectedBook = typeof selectedBookStr === 'string' ? JSON.parse(selectedBookStr) : selectedBookStr;
+            }
+            
+            if (selectedBook && typeof selectedBook === 'object') {
+                $('#selectedBookTitle').text(selectedBook.title || '');
+                $('#selectedBookAuthor').text(selectedBook.author || '');
+                $('#selectedBookPublisher').text(selectedBook.publisher || '');
+                $('#bookId').val(selectedBook.bookId || '');
+                
+                // 책 표지 이미지 처리
+                if (selectedBook.imageUrl && selectedBook.imageUrl.trim() !== '') {
+                    $('#selectedBookImage')
+                        .attr('src', selectedBook.imageUrl)
+                        .css({'display': 'block', 'z-index': '2'});
+                    $('#selectedBookPlaceholder').css({'display': 'none', 'z-index': '1'});
+                } else {
+                    $('#selectedBookImage').css({'display': 'none', 'z-index': '1'});
+                    $('#selectedBookPlaceholder').css({'display': 'flex', 'z-index': '2'});
+                }
+                
+                $('#selectedBookInfo').show();
+                $('#bookSearchBtnDiv').hide();
+                $('#removeBook').val('false');
+            }
+        } catch (e) {
+            console.error('책 정보 처리 중 오류:', e);
+        }
+        
+        // 수정 모드일 때 기존 과목 정보 표시
+        try {
+            var selectedSubjectStr = /*[[${selectedSubjectJson}]]*/ 'null';
+            var selectedSubject = null;
+            
+            if (selectedSubjectStr && selectedSubjectStr !== 'null') {
+                selectedSubject = typeof selectedSubjectStr === 'string' ? JSON.parse(selectedSubjectStr) : selectedSubjectStr;
+            }
+            
+            if (selectedSubject && typeof selectedSubject === 'object') {
+                // 과목 정보를 hidden 필드에 설정
+                $('#subjectId').val(selectedSubject.subjectId || '');
+                $('#takenYear').val(selectedSubject.year || '');
+                $('#takenSemester').val(selectedSubject.semester || '');
+                $('#removeSubject').val('false');
+                
+                // 학기 표시 텍스트 변환
+                var semesterText = '';
+                switch(selectedSubject.semester) {
+                    case 'SPRING': semesterText = '1학기'; break;
+                    case 'FALL': semesterText = '2학기'; break;
+                    case 'SUMMER': semesterText = '여름학기'; break;
+                    case 'WINTER': semesterText = '겨울학기'; break;
+                    default: semesterText = selectedSubject.semester;
+                }
+                
+                // 과목 정보 표시
+                $('#selectedSubjectDisplay').html(`
+                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-book"></i> <strong>${selectedSubject.subjectName}</strong>
+                            <span class="text-muted ms-2">${selectedSubject.professorName} 교수</span>
+                            <span class="text-muted ms-2">${selectedSubject.year || ''}년 ${semesterText}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeSubjectBtn">
+                            <i class="bi bi-x-circle"></i> 선택 취소
+                        </button>
+                    </div>
+                `);
+                
+                $('#subjectSearchBtnDiv').hide(); // 과목 선택 버튼 숨기기
+                
+                // 제거 버튼 이벤트 추가
+                $('#removeSubjectBtn').on('click', function() {
+                    if (confirm('선택한 과목 정보를 취소하시겠습니까?')) {
+                        $('#subjectId').val('');
+                        $('#takenYear').val('');
+                        $('#takenSemester').val('');
+                        $('#removeSubject').val('true');
+                        $('#selectedSubjectDisplay').empty();
+                        $('#subjectSearchBtnDiv').show();
+                    }
+                });
+            }
+        } catch (e) {
+            console.error('과목 정보 처리 중 오류:', e);
+        }
+        
+        // 책 선택 취소 버튼 핸들러
+        $('#removeBookBtn').on('click', function() {
+            if (confirm('선택한 책 정보를 취소하시겠습니까?')) {
+                $('#removeBook').val('true');
+                $('#bookId').val(''); // bookId 초기화
+                $('#selectedBookInfo').hide();
+                $('#bookSearchBtnDiv').show();
+            }
+        });
+        
+        // 이미지 업로드 관리
+        var selectedFiles = [];
+        var maxImages = 5;
+        
+        $('#images').on('change', function(e) {
+            var files = e.target.files;
+            var currentCount = selectedFiles.length;
+            var existingCount = $('#imagePreview .existing-image').length;
+            
+            // 전체 이미지 개수 체크 (기존 + 새 이미지)
+            if (existingCount + currentCount + files.length > maxImages) {
+                alert('이미지는 최대 ' + maxImages + '개까지 업로드 가능합니다.');
+                return;
+            }
+            
+            // 파일 추가
+            for (var i = 0; i < files.length; i++) {
+                if (currentCount + i >= maxImages) break;
+                
+                var file = files[i];
+                
+                // 파일 크기 체크 (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert(file.name + ' 파일이 10MB를 초과합니다.');
+                    continue;
+                }
+                
+                // 이미지 파일인지 체크
+                if (!file.type.startsWith('image/')) {
+                    alert(file.name + '은(는) 이미지 파일이 아닙니다.');
+                    continue;
+                }
+                
+                selectedFiles.push(file);
+            }
+            
+            // 미리보기 업데이트
+            updatePreview();
+            
+            // DataTransfer를 사용하여 파일 입력 업데이트
+            updateFileInput();
+        });
+        
+        function updatePreview() {
+            var previewContainer = $('#imagePreview');
+            // 기존 이미지는 유지하고 새 이미지만 제거
+            previewContainer.find('.new-image').remove();
+            
+            // 순차적으로 처리하여 순서 보장
+            function processFileAtIndex(index) {
+                if (index >= selectedFiles.length) {
+                    // 모든 파일 처리 완료 후 정렬 기능 재초기화
+                    initImageSorting();
+                    updateImageOrders();
+                    return;
+                }
+                
+                var file = selectedFiles[index];
+                var reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    var previewItem = $('<div class="preview-item sortable-item new-image"></div>');
+                    var img = $('<img>').attr('src', e.target.result);
+                    var deleteBtn = $('<button type="button" class="delete-btn"><i class="bi bi-x"></i></button>');
+                    var existingCount = $('#imagePreview .existing-image').length;
+                    var totalIndex = existingCount + index;
+                    var orderBadge = $('<span class="order-badge"></span>')
+                        .text(totalIndex === 0 ? '대표' : totalIndex);
+                    
+                    // 파일 객체와 원본 인덱스 저장 (중요!)
+                    previewItem.data('file', file);
+                    previewItem.data('originalIndex', index);
+                    
+                    // 파일 객체로 삭제 처리
+                    deleteBtn.on('click', function() {
+                        removeImageByFile(file);
+                    });
+                    
+                    previewItem.append(img, deleteBtn, orderBadge);
+                    previewContainer.append(previewItem);
+                    
+                    // 다음 파일 처리
+                    processFileAtIndex(index + 1);
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // 첫 번째 파일부터 시작
+            processFileAtIndex(0);
+        }
+    
+        function removeImage(index) {
+            selectedFiles.splice(index, 1);
+            updatePreview();
+            updateFileInput();
+        }
+        
+        function removeImageByFile(fileToRemove) {
+            var index = selectedFiles.indexOf(fileToRemove);
+            if (index > -1) {
+                selectedFiles.splice(index, 1);
+                updatePreview();
+                updateFileInput();
+            }
+        }
+        
+        // 이미지 정렬 기능 초기화
+        initImageSorting();
+        
+        // 수정 모드일 때 초기 순서 설정
+        if ($('.existing-image').length > 0) {
+            updateImageOrders();
+        }
+        
+        // 기존 이미지 삭제 기능
+        $('.existing-delete-btn').on('click', function() {
+            var imageId = $(this).data('image-id');
+            var item = $(this).closest('.sortable-item');
+            
+            if (confirm('이 이미지를 삭제하시겠습니까?')) {
+                // 삭제할 이미지 ID를 hidden field에 추가
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'deleteImageIds',
+                    value: imageId
+                }).appendTo('#hiddenImageFields');
+                
+                // 화면에서 제거
+                item.remove();
+                
+                // 순서 업데이트
+                updateImageOrders();
+            }
+        });
+    });
+    
+    function initImageSorting() {
+        $('#imagePreview').sortable({
+            items: '.sortable-item',
+            placeholder: 'sortable-item ui-sortable-placeholder',
+            helper: 'clone',
+            tolerance: 'pointer',
+            cancel: '.delete-btn', // 삭제 버튼 클릭 시에는 드래그 안 됨
+            start: function(event, ui) {
+                ui.placeholder.height(ui.item.height());
+                ui.placeholder.width(ui.item.width());
+            },
+            update: function(event, ui) {
+                updateImageOrders();
+            }
+        });
+    }
+    
+    
+    function updateImageOrders() {
+        // 기존 순서 입력 필드 제거
+        $('input[name="imageOrders"]').remove();
+        $('input[name="newImageOrders"]').remove();
+        
+        var newFiles = [];
+        var newFileOrders = [];
+        
+        // 모든 이미지의 순서 업데이트
+        $('#imagePreview .sortable-item').each(function(index) {
+            var imageId = $(this).data('image-id');
+            var newOrder = index; // 0부터 시작 (첫 번째가 대표 이미지)
+            
+            // 순서 배지 업데이트
+            $(this).find('.order-badge').text(newOrder === 0 ? '대표' : newOrder);
+            
+            if (imageId) {
+                // 기존 이미지: hidden field 추가
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'imageOrders',
+                    value: imageId + ':' + newOrder
+                }).appendTo('#hiddenImageFields');
+            } else {
+                // 새 이미지: 파일 수집 및 순서 저장
+                var file = $(this).data('file');
+                if (file) {
+                    newFiles.push(file);
+                    newFileOrders.push(newOrder);
+                    
+                    // 새 이미지의 순서도 hidden field로 전달
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: 'newImageOrders',
+                        value: newFileOrders.length - 1 + ':' + newOrder // 파일 인덱스:원하는순서
+                    }).appendTo('#hiddenImageFields');
+                }
+            }
+        });
+        
+        // selectedFiles 업데이트 (새 이미지만, DOM 순서대로)
+        selectedFiles = newFiles;
+        updateFileInput();
+    }
+    
+    function updateFileInput() {
+        // DataTransfer 객체를 사용하여 파일 입력 업데이트
+        var dataTransfer = new DataTransfer();
+        
+        // selectedFiles 배열의 순서대로 파일 추가
+        selectedFiles.forEach(function(file) {
+            dataTransfer.items.add(file);
+        });
+        
+        // 파일 입력 요소 업데이트
+        $('#images')[0].files = dataTransfer.files;
+    }
+</script>
+
+<!-- 책 검색 모달 -->
+<div class="modal fade" id="bookSearchModal" tabindex="-1" aria-labelledby="bookSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookSearchModalLabel">
+                    <i class="bi bi-book"></i> 책 검색
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 검색 입력 -->
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="bookSearchInput" 
+                               placeholder="도서명, ISBN, 저자명으로 검색">
+                        <button class="btn btn-primary" type="button" id="bookSearchSubmit">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                    </div>
+                    <small class="text-muted">네이버 책 검색 API를 통해 도서 정보를 가져옵니다.</small>
+                </div>
+                
+                <!-- 로딩 표시 -->
+                <div id="bookSearchLoading" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">검색 중...</span>
+                    </div>
+                    <p class="mt-2 text-muted">검색 중입니다...</p>
+                </div>
+                
+                <!-- 검색 결과 -->
+                <div id="bookSearchResults" style="display: none;">
+                    <div class="row g-3" id="bookResultsContainer">
+                        <!-- 검색 결과가 여기에 동적으로 추가됨 -->
+                    </div>
+                    
+                    <!-- 페이지네이션 -->
+                    <nav aria-label="Book search pagination" class="mt-4">
+                        <ul class="pagination justify-content-center" id="bookPagination">
+                        </ul>
+                    </nav>
+                </div>
+                
+                <!-- 검색 결과 없음 -->
+                <div id="noBookResults" class="text-center py-4" style="display: none;">
+                    <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-2 text-muted">검색 결과가 없습니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 과목 선택 모달 (과목명 우선 검색) -->
+<div class="modal fade" id="subjectSearchModal" tabindex="-1" aria-labelledby="subjectSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="subjectSearchModalLabel">
+                    <i class="bi bi-book"></i> 과목 선택
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- 과목 검색 섹션 -->
+                <div class="mb-4">
+                    <h6 class="mb-3">
+                        <i class="bi bi-search"></i> 과목명으로 검색
+                        <small class="text-muted ms-2">우리 학교 과목만 검색됩니다</small>
+                    </h6>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="subjectSearchInput" 
+                               placeholder="과목명을 입력하세요 (예: 경영학원론, 데이터구조)">
+                        <button class="btn btn-primary" type="button" id="subjectSearchSubmit">
+                            <i class="bi bi-search"></i> 검색
+                        </button>
+                    </div>
+                    <small class="text-muted">2글자 이상 입력하세요. 검색 결과가 없으면 새 과목을 생성할 수 있습니다.</small>
+                </div>
+                
+                <!-- 검색 결과 또는 새 과목 생성 -->
+                <div id="subjectResults"></div>
+                
+                <!-- 새 과목 생성 섹션 (처음엔 숨김) -->
+                <div class="card d-none" id="createNewSubjectSection">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-plus-circle"></i> 새 과목 생성
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="newSubjectName" class="form-label">과목명 *</label>
+                                    <input type="text" class="form-control" id="newSubjectName" 
+                                           placeholder="예: 경영학원론">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="newProfessorName" class="form-label">교수명 *</label>
+                                    <input type="text" class="form-control" id="newProfessorName" 
+                                           placeholder="예: 김철수">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="newSubjectType" class="form-label">과목 타입 *</label>
+                                    <select class="form-select" id="newSubjectType">
+                                        <option value="">과목 타입을 선택하세요</option>
+                                        <option value="MAJOR">전공과목</option>
+                                        <option value="GENERAL">교양과목</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="departmentSelectGroup">
+                                <div class="mb-3">
+                                    <label for="newDepartmentId" class="form-label">학과 선택</label>
+                                    <select class="form-select" id="newDepartmentId">
+                                        <option value="">학과를 선택하세요</option>
+                                        <!-- 학과 옵션들이 JavaScript로 동적 로드됨 -->
+                                    </select>
+                                    <small class="text-muted">전공과목은 학과 선택이 필요합니다</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <button type="button" class="btn btn-success" id="createNewSubjectBtn">
+                                <i class="bi bi-plus-circle"></i> 과목 생성
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 선택된 과목 정보 -->
+                <div id="selectedInfo" class="d-none mt-4">
+                    <div id="selectedSubjectInfo"></div>
+                </div>
+                
+                <!-- 수강 시기 입력 섹션 (과목 선택 후 표시) -->
+                <div id="subjectTakenYearSection" class="d-none mt-4">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-calendar-check"></i> 언제 수강하신 과목인가요?
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="subjectTakenYear" class="form-label">수강 연도 *</label>
+                                        <select class="form-select" id="subjectTakenYear">
+                                            <option value="">연도를 선택하세요</option>
+                                            <!-- 연도 옵션들이 JavaScript로 동적 생성됨 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="subjectTakenSemester" class="form-label">수강 학기 *</label>
+                                        <select class="form-select" id="subjectTakenSemester">
+                                            <option value="">학기를 선택하세요</option>
+                                            <option value="SPRING">1학기</option>
+                                            <option value="FALL">2학기</option>
+                                            <option value="SUMMER">여름학기</option>
+                                            <option value="WINTER">겨울학기</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i> 
+                                기본값으로 현재 학기가 선택되어 있습니다. 필요시 수정해주세요.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="confirmSubjectSelection" disabled>
+                    <i class="bi bi-check-circle"></i> 선택 완료
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- jQuery UI for Sortable (드래그 앤 드롭) -->
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/ui-lightness/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
+<!-- 다크모드 토글 스크립트만 별도 추가 -->
+<script>
+    // 페이지 로드 전 즉시 테마 적용 (깜빡임 방지)
+    (function() {
+        const savedTheme = localStorage.getItem('theme');
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const theme = savedTheme || systemTheme;
+        document.documentElement.setAttribute('data-bs-theme', theme);
+    })();
+    
+    // 다크모드 기능 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme');
+        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        const theme = savedTheme || systemTheme;
+        
+        // 아이콘 업데이트 함수
+        function updateThemeIcons(theme) {
+            const icons = ['themeIcon', 'themeIconMobile', 'themeIconGuest'];
+            icons.forEach(iconId => {
+                const icon = document.getElementById(iconId);
+                if (icon) {
+                    icon.className = theme === 'dark' ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+                }
+            });
+        }
+        
+        // 초기 아이콘 설정
+        updateThemeIcons(theme);
+        
+        // 토글 함수 (애니메이션 활성화)
+        function toggleTheme() {
+            // 토글 시에만 애니메이션 활성화
+            document.body.classList.add('theme-transitioning');
+            
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcons(newTheme);
+            
+            // 애니메이션 완료 후 클래스 제거
+            setTimeout(() => {
+                document.body.classList.remove('theme-transitioning');
+            }, 300);
+        }
+        
+        // 모든 토글 버튼에 이벤트 추가
+        const themeToggle = document.getElementById('themeToggle');
+        const themeToggleMobile = document.getElementById('themeToggleMobile');
+        const themeToggleGuest = document.getElementById('themeToggleGuest');
+        
+        if (themeToggle) {
+            themeToggle.addEventListener('click', toggleTheme);
+        }
+        if (themeToggleMobile) {
+            themeToggleMobile.addEventListener('click', toggleTheme);
+        }
+        if (themeToggleGuest) {
+            themeToggleGuest.addEventListener('click', toggleTheme);
+        }
+    });
+</script>
+
+<!-- 책 검색 JavaScript -->
+<script src="/js/book-search.js"></script>
+
+<!-- 과목 선택 JavaScript (과목명 우선 검색) -->
+<script src="/js/subject-search-v2.js"></script>
+
+<!-- 공통 Footer 포함 -->
+<footer th:replace="~{fragments/header :: footer}"></footer>
+</body>
+</html>

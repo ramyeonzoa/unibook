@@ -28,6 +28,27 @@
             max-width: 500px;
             margin: 0 auto;
         }
+        
+        /* Dark mode styles */
+        [data-bs-theme="dark"] .faq-category {
+            background: rgba(76, 132, 255, 0.1);
+            border: 1px solid #4c84ff;
+        }
+        
+        [data-bs-theme="dark"] .accordion-item {
+            background: var(--bs-gray-900);
+            border-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .accordion-button {
+            background: var(--bs-gray-800);
+            color: var(--bs-gray-200);
+        }
+        
+        [data-bs-theme="dark"] .accordion-button:not(.collapsed) {
+            background: var(--bs-gray-700);
+            color: #4c84ff;
+        }
     </style>
 </head>
 <body>

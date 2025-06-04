@@ -61,6 +61,35 @@
             color: #6c757d;
             margin: 20px 0;
         }
+        
+        /* Dark mode styles */
+        [data-bs-theme="dark"] .feature-highlight {
+            background: rgba(76, 132, 255, 0.1);
+            border: 1px solid #4c84ff;
+        }
+        
+        [data-bs-theme="dark"] .screenshot-placeholder {
+            background: var(--bs-gray-800);
+            border-color: var(--bs-gray-600);
+            color: var(--bs-gray-400);
+        }
+        
+        [data-bs-theme="dark"] .nav-tabs .nav-link {
+            background: var(--bs-gray-800);
+            color: var(--bs-gray-300);
+            border-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .nav-tabs .nav-link.active {
+            background: var(--bs-gray-900);
+            color: #4c84ff;
+            border-color: var(--bs-gray-700) var(--bs-gray-700) var(--bs-gray-900);
+        }
+        
+        [data-bs-theme="dark"] .step-card {
+            background: var(--bs-gray-900);
+            border: 1px solid var(--bs-gray-700);
+        }
     </style>
 </head>
 <body>

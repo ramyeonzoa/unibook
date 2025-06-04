@@ -17,419 +17,966 @@
     <div th:replace="~{fragments/header :: styles}"></div>
     
     <style>
-        .signup-container {
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 30px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            border-radius: 10px;
-            background-color: white;
+        /* CSS Variables for consistency with login page */
+        :root {
+            --auth-primary: #667eea;
+            --auth-secondary: #764ba2;
+            --auth-success: #28a745;
+            --auth-danger: #dc3545;
+            --auth-warning: #ffc107;
+            --auth-card-shadow: 0 20px 60px rgba(102, 126, 234, 0.15);
+            --auth-card-hover-shadow: 0 30px 80px rgba(102, 126, 234, 0.25);
+            --auth-border-radius: 20px;
+            --auth-input-radius: 12px;
         }
-        .form-label {
-            font-weight: 600;
-            color: #333;
+        
+        /* Background - Same as login */
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
         }
-        .form-control:focus {
-            border-color: #4CAF50;
-            box-shadow: 0 0 0 0.2rem rgba(76, 175, 80, 0.25);
+        
+        [data-bs-theme="dark"] body {
+            background: linear-gradient(135deg, #1a1d20 0%, #2d3238 100%);
         }
-        .btn-primary {
-            background-color: #4CAF50;
-            border-color: #4CAF50;
-            padding: 10px 30px;
+        
+        /* Background Pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23667eea' fill-opacity='0.03'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            pointer-events: none;
+            z-index: 0;
         }
-        .btn-primary:hover {
-            background-color: #45a049;
-            border-color: #45a049;
+        
+        /* Main Container */
+        .auth-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
         }
-        .error-message {
-            color: #dc3545;
+        
+        /* Auth Card - Wider for signup */
+        .auth-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--auth-border-radius);
+            box-shadow: var(--auth-card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 520px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: cardSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        [data-bs-theme="dark"] .auth-card {
+            background: rgba(26, 29, 32, 0.95);
+            border-color: rgba(118, 75, 162, 0.2);
+        }
+        
+        @keyframes cardSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        
+        /* Header Section */
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-logo {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--auth-primary) 0%, var(--auth-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .auth-subtitle {
+            color: #6c757d;
+            font-size: 1rem;
+            margin: 0;
+        }
+        
+        [data-bs-theme="dark"] .auth-subtitle {
+            color: var(--bs-gray-400);
+        }
+        
+        /* Form Styling */
+        .form-floating {
+            /* margin-bottom removed - handled by parent mb-3 */
+        }
+        
+        .form-floating > .form-control,
+        .form-floating > .form-select {
+            border-radius: var(--auth-input-radius);
+            border: 2px solid #e9ecef;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        [data-bs-theme="dark"] .form-floating > .form-control,
+        [data-bs-theme="dark"] .form-floating > .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--bs-gray-700);
+            color: var(--bs-gray-200);
+        }
+        
+        .form-floating > .form-control:focus,
+        .form-floating > .form-select:focus {
+            border-color: var(--auth-primary);
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.15);
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        [data-bs-theme="dark"] .form-floating > .form-control:focus,
+        [data-bs-theme="dark"] .form-floating > .form-select:focus {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-floating > label {
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        [data-bs-theme="dark"] .form-floating > label {
+            color: var(--bs-gray-400);
+        }
+        
+        /* Email Check Button */
+        #emailCheckBtn {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.4rem;
+            border-radius: 6px;
+            min-width: 70px;
+        }
+        
+        [data-bs-theme="dark"] #emailCheckBtn.btn-outline-primary {
+            border-color: var(--auth-primary);
+            color: var(--auth-primary);
+        }
+        
+        [data-bs-theme="dark"] #emailCheckBtn.btn-outline-primary:hover:not(:disabled) {
+            background: var(--auth-primary);
+            color: white;
+        }
+        
+        /* Validation Messages - 자연스럽게 필드 아래 배치 */
+        .validation-message {
+            margin-top: 6px;
+            margin-bottom: 10px;
             font-size: 0.875rem;
-            margin-top: 0.25rem;
+            line-height: 1.3;
         }
+        
+        .form-floating + .error-message {
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 0.875rem;
+        }
+        
+        
+        /* Password Requirements */
+        .password-requirements {
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: -10px;
+            margin-bottom: 20px;
+            font-size: 0.875rem;
+        }
+        
+        [data-bs-theme="dark"] .password-requirements {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .password-requirements small {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        [data-bs-theme="dark"] .password-requirements small {
+            color: var(--bs-gray-400);
+        }
+        
+        .password-requirements small.valid {
+            color: var(--auth-success);
+            font-weight: 500;
+        }
+        
+        .requirement-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #e9ecef;
+            font-size: 0.75rem;
+        }
+        
+        [data-bs-theme="dark"] .requirement-icon {
+            background: var(--bs-gray-700);
+        }
+        
+        .password-requirements small.valid .requirement-icon {
+            background: var(--auth-success);
+            color: white;
+        }
+        
+        /* Department Selection */
+        .selected-department {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        [data-bs-theme="dark"] .selected-department {
+            background: rgba(102, 126, 234, 0.15);
+            border-color: rgba(102, 126, 234, 0.4);
+        }
+        
+        .selected-department.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Error Messages */
+        .error-message {
+            color: var(--auth-danger);
+            font-size: 0.875rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .error-message::before {
+            content: '\F623';
+            font-family: 'Bootstrap Icons';
+            font-size: 1rem;
+        }
+        
+        /* Submit Button */
+        .btn-auth-primary {
+            background: linear-gradient(135deg, var(--auth-primary) 0%, var(--auth-secondary) 100%);
+            border: none;
+            border-radius: var(--auth-input-radius);
+            padding: 14px 30px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            width: 100%;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 10px;
+        }
+        
+        .btn-auth-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        
+        .btn-auth-primary:disabled {
+            opacity: 0.6;
+            transform: none;
+            cursor: not-allowed;
+        }
+        
+        /* Auth Main Container */
+        .auth-main {
+            padding-top: 1rem;
+            min-height: calc(100vh - 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Links */
+        .auth-link {
+            color: var(--auth-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .auth-link:hover {
+            color: var(--auth-secondary);
+        }
+        
+        /* jQuery UI Autocomplete Customization */
         .ui-autocomplete {
+            background: white;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             max-height: 300px;
             overflow-y: auto;
             overflow-x: hidden;
+            padding: 5px 0;
+            z-index: 9999;
         }
-        .password-requirements {
-            font-size: 0.875rem;
-            margin-top: 0.5rem;
+        
+        [data-bs-theme="dark"] .ui-autocomplete {
+            background: var(--bs-gray-900);
+            border-color: var(--bs-gray-700);
         }
-        .password-requirements small {
-            color: #6c757d;
-            transition: color 0.3s;
+        
+        .ui-menu-item {
+            padding: 0;
         }
-        .password-requirements small.valid {
-            color: #28a745;
+        
+        .ui-menu-item-wrapper {
+            padding: 10px 15px;
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
-        .requirement-icon {
+        
+        .ui-menu-item-wrapper:hover,
+        .ui-state-active {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            color: var(--auth-primary);
+        }
+        
+        [data-bs-theme="dark"] .ui-menu-item-wrapper {
+            color: var(--bs-gray-200);
+        }
+        
+        /* Loading State */
+        .loading-spinner {
             display: inline-block;
-            width: 1em;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Success Animation */
+        .success-checkmark {
+            display: inline-block;
+            animation: checkmark 0.5s ease;
+        }
+        
+        @keyframes checkmark {
+            0% {
+                transform: scale(0) rotate(45deg);
+            }
+            50% {
+                transform: scale(1.2) rotate(45deg);
+            }
+            100% {
+                transform: scale(1) rotate(45deg);
+            }
+        }
+        
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            background: none;
+            border: 2px solid #e9ecef;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: var(--bs-body-color);
+        }
+        
+        .theme-toggle:hover {
+            border-color: var(--auth-primary);
+            color: var(--auth-primary);
+        }
+        
+        /* Responsive */
+        @media (max-width: 576px) {
+            .auth-card {
+                padding: 30px 25px;
+                margin: 20px 10px;
+            }
+            
+            .auth-logo {
+                font-size: 2rem;
+            }
+            
+            .progress-steps {
+                display: none;
+            }
+        }
+        
+        /* Validation States */
+        .form-control.is-valid,
+        .form-select.is-valid {
+            border-color: var(--auth-success);
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right calc(0.375em + 0.1875rem) center;
+            background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+        }
+        
+        .form-control.is-invalid,
+        .form-select.is-invalid {
+            border-color: var(--auth-danger);
+        }
+        
+        /* Animation for theme transition */
+        * {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
+    <!-- Skip to Content Link -->
+    <a href="#main-content" class="visually-hidden-focusable btn btn-primary position-absolute top-0 start-0 z-3">메인 콘텐츠로 건너뛰기</a>
+    
+    <!-- Enhanced Header -->
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <!-- Main Content -->
+    <main id="main-content" class="auth-main">
 
-<div class="container">
-    <div class="signup-container">
-        <h2 class="text-center mb-4">회원가입</h2>
-        
-        <form th:action="@{/signup}" method="post" th:object="${signupForm}" id="signupForm">
+        <!-- Auth Container -->
+        <div class="auth-container">
+        <div class="auth-card">
             
-            <!-- 이메일 입력 -->
-            <div class="mb-3">
-                <label for="email" class="form-label">이메일 (대학교 이메일)</label>
-                <div class="input-group">
-                    <input type="email" 
-                           class="form-control" 
-                           id="email" 
-                           th:field="*{email}" 
-                           placeholder="student@university.ac.kr"
-                           required>
-                    <button type="button" 
-                            class="btn btn-outline-secondary" 
-                            id="emailCheckBtn"
-                            disabled>중복확인</button>
-                </div>
-                <div th:if="${#fields.hasErrors('email')}" 
-                     th:errors="*{email}" 
-                     class="error-message"></div>
-                <div id="emailCheckMessage"></div>
+            <!-- Header -->
+            <div class="auth-header">
+                <h1 class="auth-logo">Unibook</h1>
+                <p class="auth-subtitle">회원가입을 통해 Unibook을 시작하세요</p>
             </div>
             
-            <!-- 비밀번호 입력 -->
-            <div class="mb-3">
-                <label for="password" class="form-label">비밀번호</label>
-                <input type="password" 
-                       class="form-control" 
-                       id="password" 
-                       th:field="*{password}" 
-                       required>
+            <!-- Signup Form -->
+            <form th:action="@{/signup}" method="post" th:object="${signupForm}" id="signupForm" novalidate>
+                
+                <!-- Email Input with Check Button -->
+                <div class="mb-3">
+                    <div class="form-floating position-relative">
+                        <input type="email" 
+                               class="form-control" 
+                               id="email" 
+                               th:field="*{email}" 
+                               placeholder=" "
+                               style="padding-right: 80px;"
+                               required>
+                        <label for="email">
+                            <i class="bi bi-envelope me-2"></i>대학교 이메일
+                        </label>
+                        <button type="button" 
+                                class="btn btn-outline-primary btn-sm position-absolute top-50 translate-middle-y" 
+                                id="emailCheckBtn"
+                                style="right: 12px; z-index: 10;"
+                                disabled>
+                            중복확인
+                        </button>
+                    </div>
+                    <div id="emailCheckMessage" class="validation-message"></div>
+                    <div th:if="${#fields.hasErrors('email')}" 
+                         th:errors="*{email}" 
+                         class="validation-message error-message"></div>
+                </div>
+                
+                <!-- Password Input -->
+                <div class="mb-3">
+                    <div class="form-floating">
+                        <input type="password" 
+                               class="form-control" 
+                               id="password" 
+                               th:field="*{password}" 
+                               required>
+                        <label for="password">
+                            <i class="bi bi-lock me-2"></i>비밀번호
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Password Requirements -->
                 <div class="password-requirements" id="passwordRequirements">
                     <small class="d-block" id="lengthCheck">
-                        <span class="requirement-icon">❌</span> 8자 이상
+                        <span class="requirement-icon"><i class="bi bi-x"></i></span>
+                        8자 이상
                     </small>
                     <small class="d-block" id="letterCheck">
-                        <span class="requirement-icon">❌</span> 영문 포함
+                        <span class="requirement-icon"><i class="bi bi-x"></i></span>
+                        영문 포함
                     </small>
                     <small class="d-block" id="numberCheck">
-                        <span class="requirement-icon">❌</span> 숫자 포함
+                        <span class="requirement-icon"><i class="bi bi-x"></i></span>
+                        숫자 포함
                     </small>
                     <small class="d-block" id="specialCheck">
-                        <span class="requirement-icon">❌</span> 특수문자 포함
+                        <span class="requirement-icon"><i class="bi bi-x"></i></span>
+                        특수문자 포함 (@$!%*#?&_)
                     </small>
                 </div>
+                
                 <div th:if="${#fields.hasErrors('password')}" 
                      th:errors="*{password}" 
-                     class="error-message"></div>
-            </div>
-            
-            <!-- 비밀번호 확인 -->
-            <div class="mb-3">
-                <label for="passwordConfirm" class="form-label">비밀번호 확인</label>
-                <input type="password" 
-                       class="form-control" 
-                       id="passwordConfirm" 
-                       th:field="*{passwordConfirm}" 
-                       required>
-                <div th:if="${#fields.hasErrors('passwordConfirm')}" 
-                     th:errors="*{passwordConfirm}" 
-                     class="error-message"></div>
-            </div>
-            
-            <!-- 이름 입력 -->
-            <div class="mb-3">
-                <label for="name" class="form-label">이름</label>
-                <input type="text" 
-                       class="form-control" 
-                       id="name" 
-                       th:field="*{name}" 
-                       placeholder="홍길동"
-                       required>
-                <div th:if="${#fields.hasErrors('name')}" 
-                     th:errors="*{name}" 
-                     class="error-message"></div>
-            </div>
-            
-            <!-- 전화번호 입력 -->
-            <div class="mb-3">
-                <label for="phoneNumber" class="form-label">전화번호</label>
-                <input type="tel" 
-                       class="form-control" 
-                       id="phoneNumber" 
-                       th:field="*{phoneNumber}" 
-                       placeholder="010-1234-5678"
-                       required>
-                <div th:if="${#fields.hasErrors('phoneNumber')}" 
-                     th:errors="*{phoneNumber}" 
-                     class="error-message"></div>
-            </div>
-            
-            <!-- 학교-학과 선택 -->
-            <div class="mb-4">
-                <label for="departmentSearch" class="form-label">학교 및 학과</label>
-                <input type="text" 
-                       class="form-control" 
-                       id="departmentSearch" 
-                       placeholder="학교명을 입력하세요"
-                       th:attr="data-selected-text=${signupForm.departmentId != null ? selectedDepartmentText : ''}"
-                       required>
-                <input type="hidden" 
-                       id="departmentId" 
-                       th:field="*{departmentId}">
-                <div th:if="${#fields.hasErrors('departmentId')}" 
-                     th:errors="*{departmentId}" 
-                     class="error-message"></div>
-                <div id="selectedDepartment" class="mt-2">
-                    <div th:if="${selectedDepartmentText != null}" class="alert alert-info py-2">
+                     class="validation-message error-message"></div>
+                
+                <!-- Password Confirm -->
+                <div class="mb-3">
+                    <div class="form-floating">
+                        <input type="password" 
+                               class="form-control" 
+                               id="passwordConfirm" 
+                               th:field="*{passwordConfirm}" 
+                               required>
+                        <label for="passwordConfirm">
+                            <i class="bi bi-lock-fill me-2"></i>비밀번호 확인
+                        </label>
+                    </div>
+                    <div th:if="${#fields.hasErrors('passwordConfirm')}" 
+                         th:errors="*{passwordConfirm}" 
+                         class="validation-message error-message"></div>
+                </div>
+                
+                <!-- Name Input -->
+                <div class="mb-3">
+                    <div class="form-floating">
+                        <input type="text" 
+                               class="form-control" 
+                               id="name" 
+                               th:field="*{name}" 
+                               required>
+                        <label for="name">
+                            <i class="bi bi-person me-2"></i>이름
+                        </label>
+                    </div>
+                    <div th:if="${#fields.hasErrors('name')}" 
+                         th:errors="*{name}" 
+                         class="validation-message error-message"></div>
+                </div>
+                
+                <!-- Phone Number Input -->
+                <div class="mb-3">
+                    <div class="form-floating">
+                        <input type="tel" 
+                               class="form-control" 
+                               id="phoneNumber" 
+                               th:field="*{phoneNumber}" 
+                               required>
+                        <label for="phoneNumber">
+                            <i class="bi bi-telephone me-2"></i>전화번호
+                        </label>
+                    </div>
+                    <div th:if="${#fields.hasErrors('phoneNumber')}" 
+                         th:errors="*{phoneNumber}" 
+                         class="validation-message error-message"></div>
+                </div>
+                
+                <!-- Department Selection -->
+                <div class="mb-3">
+                    <div class="form-floating">
+                        <input type="text" 
+                               class="form-control" 
+                               id="departmentSearch" 
+                               th:attr="data-selected-text=${signupForm.departmentId != null ? selectedDepartmentText : ''}"
+                               required>
+                        <label for="departmentSearch">
+                            <i class="bi bi-building me-2"></i>학교 및 학과
+                        </label>
+                        <input type="hidden" 
+                               id="departmentId" 
+                               th:field="*{departmentId}">
+                    </div>
+                    <div th:if="${#fields.hasErrors('departmentId')}" 
+                         th:errors="*{departmentId}" 
+                         class="validation-message error-message"></div>
+                </div>
+                
+                <!-- Selected Department Display -->
+                <div id="selectedDepartment" class="selected-department">
+                    <div th:if="${selectedDepartmentText != null}">
+                        <i class="bi bi-check-circle-fill text-success me-2"></i>
                         <strong>선택됨:</strong> <span th:text="${selectedDepartmentText}"></span>
                     </div>
                 </div>
-            </div>
-            
-            <!-- 제출 버튼 -->
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">회원가입</button>
-            </div>
-            
-            <!-- 로그인 링크 -->
-            <div class="text-center mt-3">
-                이미 계정이 있으신가요? 
-                <a th:href="@{/login}" class="text-decoration-none">로그인</a>
-            </div>
-        </form>
-    </div>
-</div>
+                
+                <!-- Submit Button -->
+                <button type="submit" class="btn btn-auth-primary" id="submitBtn">
+                    <i class="bi bi-person-plus me-2"></i>회원가입
+                </button>
+                
+                <!-- Login Link -->
+                <div class="text-center mt-4">
+                    <p class="mb-0">이미 계정이 있으신가요?</p>
+                    <a th:href="@{/login}" class="auth-link">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>로그인하기
+                    </a>
+                </div>
+            </form>
+        </div>
+        <!-- End of Auth Container -->
+    </main>
 
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- jQuery UI -->
-<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Loading JS -->
-<script src="/js/loading.js"></script>
-
-<script>
-$(document).ready(function() {
-    // 페이지 로드 시 선택된 학과 정보 복원
-    var selectedText = $("#departmentSearch").data("selected-text");
-    if (selectedText && $("#departmentId").val()) {
-        $("#departmentSearch").val(selectedText);
-    }
-    // 학교-학과 자동완성
-    $("#departmentSearch").autocomplete({
-        source: function(request, response) {
-            $.ajax({
-                url: "/api/departments/search",
-                data: { query: request.term },
-                success: function(data) {
-                    response($.map(data, function(item) {
-                        return {
-                            label: item.text,
-                            value: item.text,
-                            id: item.id,
-                            schoolName: item.schoolName,
-                            departmentName: item.departmentName
-                        };
-                    }));
-                }
-            });
-        },
-        minLength: 2,
-        select: function(event, ui) {
-            $("#departmentId").val(ui.item.id);
-            $("#selectedDepartment").html(
-                '<div class="alert alert-info py-2">' +
-                '<strong>선택됨:</strong> ' + ui.item.schoolName + ' - ' + ui.item.departmentName +
-                '</div>'
-            );
-        },
-        change: function(event, ui) {
-            if (!ui.item) {
-                $("#departmentId").val("");
-                $("#selectedDepartment").empty();
-            }
+    <!-- Scripts -->
+    <!-- 공통 스크립트 포함 (다크모드 포함) -->
+    <div th:replace="~{fragments/header :: scripts}"></div>
+    <!-- jQuery UI (반드시 공통 스크립트 이후에) -->
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <!-- Loading JS -->
+    <script src="/js/loading.js"></script>
+    
+    <script>
+    $(document).ready(function() {
+        console.log("✅ signup.html JavaScript 로드됨");
+        
+        // 페이지 로드 시 모든 버튼 상태 강제 초기화
+        const submitBtn = $("#submitBtn");
+        if (submitBtn.length) {
+            // 강제로 원래 상태로 복구
+            submitBtn.html('<i class="bi bi-person-plus me-2"></i>회원가입')
+                     .prop('disabled', false)
+                     .removeClass('btn-loading');
+            console.log("✅ 회원가입 버튼 강제 초기화됨");
         }
-    });
-    
-    // 이메일 중복 체크 상태 관리
-    let emailCheckState = {
-        checked: false,
-        checkedEmail: '',
-        available: false
-    };
-    
-    // 이메일 체크 상태 초기화
-    function resetEmailCheck() {
-        emailCheckState = {
+        
+        // Department autocomplete
+        const selectedText = $("#departmentSearch").data("selected-text");
+        if (selectedText && $("#departmentId").val()) {
+            $("#departmentSearch").val(selectedText);
+            $("#selectedDepartment").addClass("show").html(
+                '<i class="bi bi-check-circle-fill text-success me-2"></i>' +
+                '<strong>선택됨:</strong> ' + selectedText
+            );
+        }
+        
+        console.log("✅ 학과 autocomplete 초기화 시작");
+        console.log("jQuery UI autocomplete 사용 가능:", typeof $.fn.autocomplete);
+        
+        if (typeof $.fn.autocomplete === 'undefined') {
+            console.error("❌ jQuery UI autocomplete가 로드되지 않았습니다!");
+            return;
+        }
+        
+        $("#departmentSearch").autocomplete({
+            source: function(request, response) {
+                $.ajax({
+                    url: "/api/departments/search",
+                    data: { query: request.term },
+                    success: function(data) {
+                        response($.map(data, function(item) {
+                            return {
+                                label: item.text,
+                                value: item.text,
+                                id: item.id,
+                                schoolName: item.schoolName,
+                                departmentName: item.departmentName
+                            };
+                        }));
+                    }
+                });
+            },
+            minLength: 2,
+            select: function(event, ui) {
+                $("#departmentId").val(ui.item.id);
+                $("#selectedDepartment").addClass("show").html(
+                    '<i class="bi bi-check-circle-fill text-success me-2"></i>' +
+                    '<strong>선택됨:</strong> ' + ui.item.schoolName + ' - ' + ui.item.departmentName
+                );
+                $(this).addClass('is-valid');
+                },
+            change: function(event, ui) {
+                if (!ui.item) {
+                    $("#departmentId").val("");
+                    $("#selectedDepartment").removeClass("show").empty();
+                    $(this).removeClass('is-valid');
+                        }
+            }
+        });
+        
+        // Email check state management
+        let emailCheckState = {
             checked: false,
             checkedEmail: '',
             available: false
         };
-        $("#emailCheckBtn").removeClass('btn-success btn-warning btn-danger').addClass('btn-outline-secondary');
-        $("#emailCheckBtn").html('중복확인');
-        $("#emailCheckMessage").empty();
-    }
-    
-    // 이메일 입력 감지
-    $("#email").on("input", function() {
-        const email = $(this).val();
-        const btn = $("#emailCheckBtn");
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         
-        if (email && emailRegex.test(email)) {
-            btn.prop('disabled', false);
+        function resetEmailCheck() {
+            emailCheckState = {
+                checked: false,
+                checkedEmail: '',
+                available: false
+            };
+            $("#emailCheckBtn").removeClass('btn-success btn-warning btn-danger').addClass('btn-outline-primary').html('중복확인');
+            $("#emailCheckMessage").empty();
+        }
+        
+        // Email input validation
+        console.log("✅ 이메일 입력 검증 이벤트 바인딩됨");
+        $("#email").on("input", function() {
+            console.log("🔥 이메일 입력 이벤트 발생!", $(this).val());
             
-            // 이미 확인한 이메일과 다르면
-            if (emailCheckState.checked && email !== emailCheckState.checkedEmail) {
-                btn.removeClass('btn-success btn-danger').addClass('btn-warning');
-                btn.html('<i class="bi bi-exclamation-circle"></i> 다시 확인');
-                emailCheckState.checked = false;
-                $("#emailCheckMessage").html('<div class="text-warning small"><i class="bi bi-exclamation-triangle"></i> 이메일이 변경되었습니다. 다시 확인해주세요.</div>');
-            } else if (!emailCheckState.checked) {
-                btn.removeClass('btn-success btn-warning btn-danger').addClass('btn-outline-secondary');
-                btn.html('중복확인');
-            }
-        } else {
-            btn.prop('disabled', true);
-            if (email && !emailRegex.test(email)) {
-                $("#emailCheckMessage").html('<div class="text-muted small">올바른 이메일 형식을 입력해주세요.</div>');
+            const email = $(this).val();
+            const btn = $("#emailCheckBtn");
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (email && emailRegex.test(email)) {
+                btn.prop('disabled', false);
+                
+                if (emailCheckState.checked && email !== emailCheckState.checkedEmail) {
+                    btn.removeClass('btn-success btn-danger btn-outline-primary').addClass('btn-warning');
+                    btn.html('<i class="bi bi-exclamation-circle"></i> 다시 확인');
+                    emailCheckState.checked = false;
+                    $("#emailCheckMessage").html('<div class="text-warning"><i class="bi bi-exclamation-triangle"></i> 이메일이 변경되었습니다. 다시 확인해주세요.</div>');
+                    $(this).removeClass('is-valid');
+                } else if (!emailCheckState.checked) {
+                    btn.removeClass('btn-success btn-warning btn-danger').addClass('btn-outline-primary').html('중복확인');
+                }
             } else {
-                resetEmailCheck();
+                btn.prop('disabled', true);
+                if (email && !emailRegex.test(email)) {
+                    $("#emailCheckMessage").html('<div class="text-muted">올바른 이메일 형식을 입력해주세요.</div>');
+                } else {
+                    resetEmailCheck();
+                }
+            }
+        });
+        
+        // Email duplicate check
+        console.log("✅ 중복확인 버튼 이벤트 바인딩됨");
+        $("#emailCheckBtn").click(function() {
+            console.log("🔥 중복확인 버튼 클릭됨!");
+            const email = $("#email").val();
+            const btn = $(this);
+            const originalHtml = btn.html();
+            
+            btn.prop('disabled', true);
+            btn.html('<span class="loading-spinner"></span> 확인 중...');
+            
+            $.ajax({
+                url: "/api/auth/check-email",
+                data: { email: email },
+                success: function(available) {
+                    emailCheckState = {
+                        checked: true,
+                        checkedEmail: email,
+                        available: available
+                    };
+                    
+                    if (available) {
+                        btn.removeClass('btn-warning btn-danger btn-outline-primary').addClass('btn-success');
+                        btn.html('<i class="bi bi-check-circle"></i> 확인완료');
+                        $("#emailCheckMessage").html('<div class="text-success"><i class="bi bi-check-circle"></i> 사용 가능한 이메일입니다.</div>');
+                        btn.prop('disabled', true);
+                        $("#email").addClass('is-valid');
+                                } else {
+                        btn.removeClass('btn-warning btn-outline-primary').addClass('btn-danger');
+                        btn.html('<i class="bi bi-x-circle"></i> 사용불가');
+                        $("#emailCheckMessage").html('<div class="text-danger"><i class="bi bi-x-circle"></i> 이미 사용중인 이메일입니다.</div>');
+                        btn.prop('disabled', false);
+                        $("#email").addClass('is-invalid');
+                    }
+                },
+                error: function() {
+                    btn.html(originalHtml);
+                    btn.prop('disabled', false);
+                    $("#emailCheckMessage").html('<div class="text-danger"><i class="bi bi-exclamation-triangle"></i> 이메일 확인 중 오류가 발생했습니다.</div>');
+                }
+            });
+        });
+        
+        // Password validation
+        console.log("✅ 비밀번호 검증 이벤트 바인딩됨");
+        $("#password").on("input", function() {
+            console.log("🔥 비밀번호 입력 이벤트 발생!");
+            const password = $(this).val();
+            let allValid = true;
+            
+            // Length check
+            if (password.length >= 8) {
+                $("#lengthCheck").addClass("valid").find(".requirement-icon").html('<i class="bi bi-check"></i>');
+            } else {
+                $("#lengthCheck").removeClass("valid").find(".requirement-icon").html('<i class="bi bi-x"></i>');
+                allValid = false;
+            }
+            
+            // Letter check
+            if (/[A-Za-z]/.test(password)) {
+                $("#letterCheck").addClass("valid").find(".requirement-icon").html('<i class="bi bi-check"></i>');
+            } else {
+                $("#letterCheck").removeClass("valid").find(".requirement-icon").html('<i class="bi bi-x"></i>');
+                allValid = false;
+            }
+            
+            // Number check
+            if (/\d/.test(password)) {
+                $("#numberCheck").addClass("valid").find(".requirement-icon").html('<i class="bi bi-check"></i>');
+            } else {
+                $("#numberCheck").removeClass("valid").find(".requirement-icon").html('<i class="bi bi-x"></i>');
+                allValid = false;
+            }
+            
+            // Special character check
+            if (/[@$!%*#?&_]/.test(password)) {
+                $("#specialCheck").addClass("valid").find(".requirement-icon").html('<i class="bi bi-check"></i>');
+            } else {
+                $("#specialCheck").removeClass("valid").find(".requirement-icon").html('<i class="bi bi-x"></i>');
+                allValid = false;
+            }
+            
+            if (allValid) {
+                $(this).removeClass('is-invalid').addClass('is-valid');
+            } else {
+                $(this).removeClass('is-valid');
+            }
+            
+            // Check password confirmation match
+            if ($("#passwordConfirm").val()) {
+                checkPasswordMatch();
+            }
+            
+        });
+        
+        // Password confirmation
+        function checkPasswordMatch() {
+            const password = $("#password").val();
+            const passwordConfirm = $("#passwordConfirm").val();
+            
+            if (passwordConfirm && password !== passwordConfirm) {
+                $("#passwordConfirm").addClass("is-invalid").removeClass("is-valid");
+                const container = $("#passwordConfirm").closest('.mb-3');
+                if (!container.find(".dynamic-error-message").length) {
+                    container.append('<div class="validation-message dynamic-error-message text-danger">비밀번호가 일치하지 않습니다.</div>');
+                }
+            } else if (passwordConfirm && password === passwordConfirm) {
+                $("#passwordConfirm").removeClass("is-invalid").addClass("is-valid");
+                $("#passwordConfirm").closest('.mb-3').find(".dynamic-error-message").remove();
             }
         }
-    });
-    
-    // 중복확인 버튼 클릭
-    $("#emailCheckBtn").click(function() {
-        const email = $("#email").val();
-        const btn = $(this);
-        const originalHtml = btn.html();
         
-        // 로딩 상태
-        btn.prop('disabled', true);
-        btn.html('<span class="spinner-border spinner-border-sm me-1"></span>확인 중...');
+        $("#passwordConfirm").on("input", checkPasswordMatch);
         
-        $.ajax({
-            url: "/api/auth/check-email",
-            data: { email: email },
-            success: function(available) {
-                emailCheckState = {
-                    checked: true,
-                    checkedEmail: email,
-                    available: available
-                };
-                
-                if (available) {
-                    btn.removeClass('btn-outline-secondary btn-warning btn-danger').addClass('btn-success');
-                    btn.html('<i class="bi bi-check-circle"></i> 확인완료');
-                    $("#emailCheckMessage").html('<div class="text-success small"><i class="bi bi-check-circle"></i> 사용 가능한 이메일입니다.</div>');
-                    btn.prop('disabled', true); // 확인 완료 후 비활성화
-                } else {
-                    btn.removeClass('btn-outline-secondary btn-warning').addClass('btn-danger');
-                    btn.html('<i class="bi bi-x-circle"></i> 사용불가');
-                    $("#emailCheckMessage").html('<div class="text-danger small"><i class="bi bi-x-circle"></i> 이미 사용중인 이메일입니다.</div>');
-                    btn.prop('disabled', false); // 다시 시도 가능
+        // Phone number formatting
+        $("#phoneNumber").on("input", function() {
+            let value = $(this).val().replace(/[^0-9]/g, '');
+            if (value.length >= 11) {
+                value = value.substring(0, 11);
+                value = value.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+                $(this).addClass('is-valid');
+            } else if (value.length >= 7) {
+                value = value.replace(/(\d{3})(\d{3,4})/, '$1-$2');
+            }
+            $(this).val(value);
+        });
+        
+        // Name validation
+        $("#name").on("input", function() {
+            if ($(this).val().trim().length >= 2) {
+                $(this).addClass('is-valid');
+            } else {
+                $(this).removeClass('is-valid');
+            }
+        });
+        
+        // Form submission
+        $("#signupForm").on("submit", function(e) {
+            console.log("🔥 폼 제출 시도됨");
+            
+            // Email check validation
+            if (!emailCheckState.checked || !emailCheckState.available) {
+                e.preventDefault();
+                alert('이메일 중복확인을 해주세요.');
+                $("#email").focus();
+                console.log("❌ 이메일 검증 실패");
+                return false;
+            }
+            
+            // Email change check
+            if ($("#email").val() !== emailCheckState.checkedEmail) {
+                e.preventDefault();
+                alert('이메일이 변경되었습니다. 다시 중복확인을 해주세요.');
+                $("#email").focus();
+                console.log("❌ 이메일 변경됨");
+                return false;
+            }
+            
+            // Password match check
+            const password = $("#password").val();
+            const passwordConfirm = $("#passwordConfirm").val();
+            if (password !== passwordConfirm) {
+                e.preventDefault();
+                alert('비밀번호가 일치하지 않습니다. 다시 확인해주세요.');
+                $("#passwordConfirm").focus();
+                console.log("❌ 비밀번호 불일치");
+                return false;
+            }
+            
+            // 모든 validation 통과 후에만 스피너 시작
+            console.log("✅ 모든 검증 통과, 스피너 시작");
+            const submitBtn = $("#submitBtn");
+            submitBtn.html('<span class="loading-spinner"></span> 회원가입 중...')
+                     .prop('disabled', true)
+                     .addClass('btn-loading');
+            
+            // 2초 후 복구 체크 (서버 validation 실패 시)
+            setTimeout(function() {
+                // 페이지가 여전히 보이면 서버 validation 실패로 간주
+                if (document.visibilityState === 'visible' && submitBtn.hasClass('btn-loading')) {
+                    console.log("⚠️ 서버 validation 실패 추정, 버튼 복구");
+                    submitBtn.html('<i class="bi bi-person-plus me-2"></i>회원가입')
+                             .prop('disabled', false)
+                             .removeClass('btn-loading');
                 }
-            },
-            error: function() {
-                btn.html(originalHtml);
-                btn.prop('disabled', false);
-                $("#emailCheckMessage").html('<div class="text-danger small"><i class="bi bi-exclamation-triangle"></i> 이메일 확인 중 오류가 발생했습니다.</div>');
+            }, 2000);
+        });
+        
+        // 추가 안전장치: 페이지 포커스 시에도 버튼 상태 체크
+        $(window).on('focus pageshow', function() {
+            const submitBtn = $("#submitBtn");
+            if (submitBtn.length && (submitBtn.prop('disabled') || submitBtn.hasClass('btn-loading'))) {
+                console.log("🔄 페이지 포커스 시 버튼 복구");
+                submitBtn.html('<i class="bi bi-person-plus me-2"></i>회원가입')
+                         .prop('disabled', false)
+                         .removeClass('btn-loading');
             }
         });
     });
-    
-    // 비밀번호 규칙 실시간 검증
-    $("#password").on("input", function() {
-        const password = $(this).val();
-        
-        // 길이 체크 (8자 이상)
-        if (password.length >= 8) {
-            $("#lengthCheck").addClass("valid").find(".requirement-icon").text("✅");
-        } else {
-            $("#lengthCheck").removeClass("valid").find(".requirement-icon").text("❌");
-        }
-        
-        // 영문 체크
-        if (/[A-Za-z]/.test(password)) {
-            $("#letterCheck").addClass("valid").find(".requirement-icon").text("✅");
-        } else {
-            $("#letterCheck").removeClass("valid").find(".requirement-icon").text("❌");
-        }
-        
-        // 숫자 체크
-        if (/\d/.test(password)) {
-            $("#numberCheck").addClass("valid").find(".requirement-icon").text("✅");
-        } else {
-            $("#numberCheck").removeClass("valid").find(".requirement-icon").text("❌");
-        }
-        
-        // 특수문자 체크 (@ $ ! % * # ? & _)
-        if (/[@$!%*#?&_]/.test(password)) {
-            $("#specialCheck").addClass("valid").find(".requirement-icon").text("✅");
-        } else {
-            $("#specialCheck").removeClass("valid").find(".requirement-icon").text("❌");
-        }
-        
-        // 비밀번호 확인 필드가 있으면 재검증
-        if ($("#passwordConfirm").val()) {
-            checkPasswordMatch();
-        }
-    });
-    
-    // 비밀번호 확인 체크
-    function checkPasswordMatch() {
-        const password = $("#password").val();
-        const passwordConfirm = $("#passwordConfirm").val();
-        
-        if (passwordConfirm && password !== passwordConfirm) {
-            $("#passwordConfirm").addClass("is-invalid");
-            if (!$("#passwordConfirm").next(".error-message").length) {
-                $("#passwordConfirm").after('<div class="error-message">비밀번호가 일치하지 않습니다.</div>');
-            }
-        } else {
-            $("#passwordConfirm").removeClass("is-invalid");
-            $("#passwordConfirm").next(".error-message").remove();
-        }
-    }
-    
-    $("#passwordConfirm").on("input", checkPasswordMatch);
-    
-    // 전화번호 자동 포맷팅
-    $("#phoneNumber").on("input", function() {
-        let value = $(this).val().replace(/[^0-9]/g, '');
-        if (value.length >= 11) {
-            value = value.substring(0, 11);
-            value = value.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
-        } else if (value.length >= 7) {
-            value = value.replace(/(\d{3})(\d{3,4})/, '$1-$2');
-        }
-        $(this).val(value);
-    });
-    
-    // 폼 제출 시 검증
-    $("#signupForm").on("submit", function(e) {
-        // 이메일 중복확인 검증
-        if (!emailCheckState.checked || !emailCheckState.available) {
-            e.preventDefault();
-            alert('이메일 중복확인을 해주세요.');
-            $("#email").focus();
-            return false;
-        }
-        
-        // 혹시 모를 이메일 변경 체크
-        if ($("#email").val() !== emailCheckState.checkedEmail) {
-            e.preventDefault();
-            alert('이메일이 변경되었습니다. 다시 중복확인을 해주세요.');
-            $("#email").focus();
-            return false;
-        }
-    });
-});
-</script>
-
+    </script>
 </body>
 </html>

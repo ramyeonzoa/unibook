@@ -12,20 +12,236 @@
     <!-- 공통 스타일 (알림 등) -->
     <div th:replace="~{fragments/header :: styles}"></div>
     <style>
+        /* Hero Section - Matching posts list style */
+        .form-hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0 120px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23fff' fill-opacity='0.05'%3E%3Ccircle cx='50' cy='50' r='40'/%3E%3C/g%3E%3C/svg%3E");
+            background-size: 200px 200px;
+        }
+        
+        .form-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        /* Form Container - Matching search card style */
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-top: -80px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Dark mode form container */
+        [data-bs-theme="dark"] .form-container {
+            background: #1a1d20;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: #e9ecef;
+            z-index: -1;
+        }
+        
+        .progress-step {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .progress-step-icon {
+            width: 40px;
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-step.active .progress-step-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .progress-step-label {
+            display: block;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        /* Form Sections */
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        [data-bs-theme="dark"] .form-section {
+            background: #2d3238;
+            border-color: #3a3f45;
+        }
+        
+        .form-section:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        [data-bs-theme="dark"] .form-section-title {
+            color: #e9ecef;
+        }
+        
+        .form-section-title i {
+            font-size: 24px;
+            color: #667eea;
+        }
+        
+        /* Enhanced Form Controls */
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+        
+        [data-bs-theme="dark"] .form-control,
+        [data-bs-theme="dark"] .form-select {
+            background-color: #1a1d20;
+            border-color: #3a3f45;
+            color: #e9ecef;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+        }
+        
+        /* Enhanced Labels */
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+        
+        [data-bs-theme="dark"] .form-label {
+            color: #e9ecef;
+        }
+        
+        .form-label .text-danger {
+            color: #f06595 !important;
+        }
+        
+        /* Image Upload Section */
+        .image-upload-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        [data-bs-theme="dark"] .image-upload-section {
+            background: linear-gradient(135deg, #2d3238 0%, #1a1d20 100%);
+        }
+        
+        .drag-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.05);
+            position: relative;
+        }
+        
+        .drag-area:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .drag-area.drag-over {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #764ba2;
+        }
+        
+        .drag-area i {
+            font-size: 48px;
+            color: #667eea;
+            display: block;
+            margin-bottom: 15px;
+        }
+        
+        /* Preview Items */
         .preview-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
         }
         
         .preview-item {
             position: relative;
-            width: 150px;
-            height: 150px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            width: 160px;
+            height: 160px;
+            border-radius: 15px;
             overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .preview-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
         }
         
         .preview-item img {
@@ -36,107 +252,284 @@
         
         .preview-item .delete-btn {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(255, 255, 255, 0.9);
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.95);
             border: none;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .preview-item .delete-btn:hover {
+            background: #dc3545;
+            color: white;
+            transform: scale(1.1);
         }
         
         .preview-item .order-badge {
             position: absolute;
-            bottom: 5px;
-            left: 5px;
-            background: rgba(0, 0, 0, 0.7);
+            bottom: 10px;
+            left: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
+            padding: 5px 12px;
+            border-radius: 20px;
             font-size: 12px;
+            font-weight: 600;
         }
         
-        .drag-area {
-            border: 2px dashed #6c757d;
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .drag-area:hover {
-            border-color: #0d6efd;
-            background-color: #f8f9fa;
-        }
-        
-        .drag-area.drag-over {
-            border-color: #0d6efd;
-            background-color: #e7f1ff;
-        }
-        
+        /* Price Input */
         .price-input-group {
             position: relative;
         }
         
         .price-input-group .form-control {
-            padding-right: 30px;
+            padding-right: 40px;
+            font-size: 18px;
+            font-weight: 600;
         }
         
         .price-input-group .unit {
             position: absolute;
-            right: 10px;
+            right: 15px;
             top: 50%;
             transform: translateY(-50%);
             color: #6c757d;
+            font-weight: 600;
         }
         
-        /* 드래그 앤 드롭 스타일 */
+        /* Enhanced Radio Buttons */
+        .transaction-method-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .transaction-method-item {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .transaction-method-item input[type="radio"] {
+            display: none;
+        }
+        
+        .transaction-method-item label {
+            display: block;
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        [data-bs-theme="dark"] .transaction-method-item label {
+            border-color: #3a3f45;
+        }
+        
+        .transaction-method-item input[type="radio"]:checked + label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .transaction-method-item label:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        /* Selected Book/Subject Info */
+        .selected-info-card {
+            background: #e7f1ff;
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+        
+        [data-bs-theme="dark"] .selected-info-card {
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e9ecef;
+        }
+        
+        [data-bs-theme="dark"] .action-buttons {
+            border-top-color: #3a3f45;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            padding: 12px 30px;
+            font-weight: 600;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            background: white;
+            color: #6c757d;
+        }
+        
+        [data-bs-theme="dark"] .btn-secondary {
+            background: #1a1d20;
+            border-color: #3a3f45;
+            color: #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            border-color: #667eea;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        /* Character Counter */
+        .character-counter {
+            text-align: right;
+            margin-top: 5px;
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .character-counter.warning {
+            color: #ffc107;
+        }
+        
+        .character-counter.danger {
+            color: #dc3545;
+        }
+        
+        /* Enhanced Modal Styles */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border: none;
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .modal-footer {
+            border-top: 2px solid #e9ecef;
+            padding: 20px 30px;
+        }
+        
+        [data-bs-theme="dark"] .modal-footer {
+            border-top-color: #3a3f45;
+        }
+        
+        /* Sortable Animations */
         .sortable-item {
-            position: relative;
             cursor: move;
             transition: transform 0.2s ease;
         }
         
-        .sortable-item:hover {
-            transform: scale(1.02);
+        .sortable-item.dragging {
+            transform: scale(1.05);
+            opacity: 0.9;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
         }
         
         .sortable-item.ui-sortable-helper {
-            transform: rotate(5deg);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: rotate(5deg) scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             z-index: 1000;
         }
         
         .sortable-item.ui-sortable-placeholder {
-            border: 2px dashed #0d6efd;
-            background: rgba(13, 110, 253, 0.1);
+            border: 3px dashed #667eea;
+            background: rgba(102, 126, 234, 0.1);
             visibility: visible !important;
+            border-radius: 15px;
         }
         
-        .drag-handle {
-            position: absolute;
-            top: 5px;
-            left: 5px;
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(255, 255, 255, 0.9);
-            border-radius: 4px;
-            padding: 4px;
-            cursor: move;
-            font-size: 14px;
-            display: none; /* 드래그 핸들 숨김 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
         }
         
-        .existing-delete-btn {
-            background: rgba(220, 53, 69, 0.9);
-            color: black;
-            border: none;
+        [data-bs-theme="dark"] .loading-overlay {
+            background: rgba(0, 0, 0, 0.9);
         }
         
-        .existing-delete-btn:hover {
-            background: rgba(220, 53, 69, 1);
-            color: white;
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 20px;
+            }
+            
+            .progress-steps {
+                display: none;
+            }
+            
+            .transaction-method-group {
+                flex-direction: column;
+            }
+            
+            .action-buttons {
+                flex-direction: column-reverse;
+            }
+            
+            .preview-item {
+                width: 120px;
+                height: 120px;
+            }
         }
     </style>
 </head>
@@ -147,236 +540,315 @@
 <!-- 공통 메시지 포함 -->
 <div th:replace="~{fragments/header :: messages}"></div>
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0" th:text="${isEdit} ? '게시글 수정' : '게시글 작성'">게시글 작성</h4>
-                </div>
-                <div class="card-body">
+<!-- Hero Section -->
+<section class="form-hero">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1 th:text="${isEdit} ? '게시글 수정' : '게시글 작성'">게시글 작성</h1>
+                <p class="lead mb-0" th:text="${isEdit} ? '판매 정보를 수정해주세요' : '판매하실 교재 정보를 입력해주세요'">
+                    판매하실 교재 정보를 입력해주세요
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<main id="main-content">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="form-container">
+                    
                     <form th:action="${isEdit} ? '/posts/' + ${post.postId} + '/edit' : '/posts/new'" 
                           method="post" enctype="multipart/form-data" th:object="${postDto}">
                         
                         <!-- 전역 에러 메시지 -->
-                        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
-                            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+                        <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}" class="mb-0"></p>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                         
-                        <!-- 상품 유형 -->
-                        <div class="mb-3">
-                            <label for="productType" class="form-label">상품 유형 <span class="text-danger">*</span></label>
-                            <select class="form-select" id="productType" th:field="*{productType}" required>
-                                <option value="">선택하세요</option>
-                                <option th:each="type : ${productTypes}" 
-                                        th:value="${type}" 
-                                        th:text="${type.name() == 'TEXTBOOK' ? '전공교재' : 
-                                                 type.name() == 'CERTBOOK' ? '자격증 교재' :
-                                                 type.name() == 'NOTE' ? '필기노트' :
-                                                 type.name() == 'PASTEXAM' ? '족보/기출' :
-                                                 '기타'}"></option>
-                            </select>
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('productType')}" th:errors="*{productType}"></div>
-                        </div>
-                        
-                        <!-- 책 선택 (교재인 경우) -->
-                        <div class="mb-3" id="bookSelectDiv" style="display: none;">
-                            <label class="form-label">교재 정보</label>
-                            <input type="hidden" th:field="*{bookId}" id="bookId">
+                        <!-- Section 1: 기본 정보 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="bi bi-info-circle-fill"></i>
+                                기본 정보
+                            </h5>
                             
-                            <!-- 선택된 책 정보 표시 -->
-                            <div id="selectedBookInfo" class="alert alert-info" style="display: none;">
-                                <div class="d-flex align-items-start gap-3">
-                                    <!-- 책 표지 썸네일 -->
-                                    <div id="selectedBookImageContainer" style="width: 60px; height: 80px; flex-shrink: 0; position: relative;">
-                                        <img id="selectedBookImage" 
-                                             src="" 
-                                             alt="Book cover" 
-                                             class="w-100 h-100 rounded border"
-                                             style="object-fit: cover; display: none; position: absolute; top: 0; left: 0;"
-                                             onerror="this.style.display='none'; document.getElementById('selectedBookPlaceholder').style.display='flex';">
-                                        <div id="selectedBookPlaceholder" class="w-100 h-100 bg-light border rounded d-flex align-items-center justify-content-center" style="display: flex; position: absolute; top: 0; left: 0;">
-                                            <i class="bi bi-book text-muted" style="font-size: 1.5rem;"></i>
+                            <!-- 상품 유형 -->
+                            <div class="mb-4">
+                                <label for="productType" class="form-label">
+                                    상품 유형 <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="productType" th:field="*{productType}" required>
+                                    <option value="">어떤 상품을 판매하시나요?</option>
+                                    <option th:each="type : ${productTypes}" 
+                                            th:value="${type}" 
+                                            th:text="${type.name() == 'TEXTBOOK' ? '📚 전공교재' : 
+                                                     type.name() == 'CERTBOOK' ? '📖 자격증 교재' :
+                                                     type.name() == 'NOTE' ? '📝 필기노트' :
+                                                     type.name() == 'PASTEXAM' ? '📋 족보/기출' :
+                                                     '📦 기타'}"></option>
+                                </select>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('productType')}" th:errors="*{productType}"></div>
+                            </div>
+                            
+                            <!-- 제목 -->
+                            <div class="mb-4">
+                                <label for="title" class="form-label">
+                                    제목 <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="title" th:field="*{title}" 
+                                       placeholder="예: 경영학원론 교재 판매합니다" required maxlength="255">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                            </div>
+                            
+                        </div>
+                        
+                        <!-- Section 2: 교재/과목 정보 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="bi bi-book-half"></i>
+                                교재 및 과목 정보
+                            </h5>
+                            
+                            <!-- 책 선택 (교재인 경우) -->
+                            <div class="mb-4" id="bookSelectDiv" style="display: none;">
+                                <label class="form-label">
+                                    교재 정보 <small class="text-muted">(선택)</small>
+                                </label>
+                                <input type="hidden" th:field="*{bookId}" id="bookId">
+                                
+                                <!-- 선택된 책 정보 표시 -->
+                                <div id="selectedBookInfo" class="selected-info-card" style="display: none;">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <!-- 책 표지 썸네일 -->
+                                        <div id="selectedBookImageContainer" style="width: 80px; height: 100px; flex-shrink: 0; position: relative;">
+                                            <img id="selectedBookImage" 
+                                                 src="" 
+                                                 alt="Book cover" 
+                                                 class="w-100 h-100 rounded shadow-sm"
+                                                 style="object-fit: cover; display: none; position: absolute; top: 0; left: 0;"
+                                                 onerror="this.style.display='none'; document.getElementById('selectedBookPlaceholder').style.display='flex';">
+                                            <div id="selectedBookPlaceholder" class="w-100 h-100 bg-light border rounded d-flex align-items-center justify-content-center shadow-sm" style="display: flex; position: absolute; top: 0; left: 0;">
+                                                <i class="bi bi-book text-muted" style="font-size: 2rem;"></i>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 책 정보 -->
+                                        <div class="flex-grow-1">
+                                            <h6 id="selectedBookTitle" class="mb-2 fw-bold"></h6>
+                                            <small class="text-muted">
+                                                <i class="bi bi-person me-1"></i><span id="selectedBookAuthor"></span> | 
+                                                <i class="bi bi-building me-1"></i><span id="selectedBookPublisher"></span>
+                                            </small>
+                                        </div>
+                                        
+                                        <!-- 삭제 버튼 -->
+                                        <div class="flex-shrink-0">
+                                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" id="removeBookBtn">
+                                                <i class="bi bi-x-lg me-1"></i> 선택 취소
+                                            </button>
                                         </div>
                                     </div>
-                                    
-                                    <!-- 책 정보 -->
-                                    <div class="flex-grow-1">
-                                        <h6 id="selectedBookTitle" class="mb-1"></h6>
-                                        <small class="text-muted">
-                                            <span id="selectedBookAuthor"></span> | 
-                                            <span id="selectedBookPublisher"></span>
-                                        </small>
+                                </div>
+                                <input type="hidden" id="removeBook" name="removeBook" value="false">
+                                
+                                <!-- 책 검색 버튼 -->
+                                <div id="bookSearchBtnDiv">
+                                    <button type="button" class="btn btn-outline-primary rounded-pill" id="bookSearchBtn">
+                                        <i class="bi bi-search me-2"></i> 책 검색하기
+                                    </button>
+                                    <small class="form-text text-muted d-block mt-2">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        네이버 책 검색을 통해 교재 정보를 입력할 수 있습니다.
+                                    </small>
+                                </div>
+                            </div>
+                            
+                            <!-- 과목 선택 (모든 상품 타입에서 가능) -->
+                            <div class="mb-4" id="subjectSelectDiv">
+                                <label class="form-label">
+                                    과목 정보 <small class="text-muted">(선택)</small>
+                                </label>
+                                <input type="hidden" th:field="*{subjectId}" id="subjectId">
+                                <input type="hidden" th:field="*{takenYear}" id="takenYear">
+                                <input type="hidden" th:field="*{takenSemester}" id="takenSemester">
+                                <input type="hidden" id="removeSubject" name="removeSubject" value="false">
+                                
+                                <!-- 선택된 과목 정보 표시 -->
+                                <div id="selectedSubjectDisplay">
+                                    <!-- 과목 선택 시 여기에 표시됨 -->
+                                </div>
+                                
+                                <!-- 과목 검색 버튼 -->
+                                <div id="subjectSearchBtnDiv">
+                                    <button type="button" class="btn btn-outline-secondary rounded-pill" id="subjectSearchBtn">
+                                        <i class="bi bi-person-workspace me-2"></i> 과목 선택하기
+                                    </button>
+                                    <small class="form-text text-muted d-block mt-2">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        교수님과 과목을 선택하면 다른 학생들이 찾기 쉬워집니다.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Section 3: 거래 정보 -->
+                        <div class="form-section">
+                            <h5 class="form-section-title">
+                                <i class="bi bi-cash-coin"></i>
+                                거래 정보
+                            </h5>
+                            
+                            <!-- 가격 -->
+                            <div class="mb-4">
+                                <label for="price" class="form-label">
+                                    가격 <span class="text-danger">*</span>
+                                </label>
+                                <div class="price-input-group">
+                                    <input type="number" class="form-control" id="price" th:field="*{price}" 
+                                           placeholder="0" required min="0" step="1">
+                                    <span class="unit">원</span>
+                                </div>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
+                            </div>
+                            
+                            <!-- 거래 방법 -->
+                            <div class="mb-4">
+                                <label class="form-label">거래 방법 <span class="text-danger">*</span></label>
+                                <div class="transaction-method-group">
+                                    <div class="transaction-method-item">
+                                        <input type="radio" name="transactionMethod" id="direct" value="DIRECT" th:field="*{transactionMethod}" required>
+                                        <label for="direct">
+                                            <i class="bi bi-people me-2"></i>직거래
+                                        </label>
                                     </div>
-                                    
-                                    <!-- 삭제 버튼 -->
-                                    <div class="flex-shrink-0">
-                                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeBookBtn">
-                                            <i class="bi bi-x"></i> 선택 취소
-                                        </button>
+                                    <div class="transaction-method-item">
+                                        <input type="radio" name="transactionMethod" id="parcel" value="PARCEL" th:field="*{transactionMethod}" required>
+                                        <label for="parcel">
+                                            <i class="bi bi-box-seam me-2"></i>택배
+                                        </label>
+                                    </div>
+                                    <div class="transaction-method-item">
+                                        <input type="radio" name="transactionMethod" id="both" value="BOTH" th:field="*{transactionMethod}" required>
+                                        <label for="both">
+                                            <i class="bi bi-check-all me-2"></i>모두 가능
+                                        </label>
                                     </div>
                                 </div>
-                            </div>
-                            <input type="hidden" id="removeBook" name="removeBook" value="false">
-                            
-                            <!-- 책 검색 버튼 -->
-                            <div id="bookSearchBtnDiv">
-                                <button type="button" class="btn btn-outline-primary" id="bookSearchBtn">
-                                    <i class="bi bi-search"></i> 책 검색하기
-                                </button>
-                                <small class="form-text text-muted d-block mt-1">
-                                    네이버 책 검색을 통해 교재 정보를 입력할 수 있습니다.
-                                </small>
-                            </div>
-                        </div>
-                        
-                        <!-- 과목 선택 (모든 상품 타입에서 가능) -->
-                        <div class="mb-3" id="subjectSelectDiv">
-                            <label class="form-label">과목 정보 <small class="text-muted">(선택사항)</small></label>
-                            <input type="hidden" th:field="*{subjectId}" id="subjectId">
-                            <input type="hidden" th:field="*{takenYear}" id="takenYear">
-                            <input type="hidden" th:field="*{takenSemester}" id="takenSemester">
-                            <input type="hidden" id="removeSubject" name="removeSubject" value="false">
-                            
-                            <!-- 선택된 과목 정보 표시 -->
-                            <div id="selectedSubjectDisplay">
-                                <!-- 과목 선택 시 여기에 표시됨 -->
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('transactionMethod')}" th:errors="*{transactionMethod}"></div>
                             </div>
                             
-                            <!-- 과목 검색 버튼 -->
-                            <div id="subjectSearchBtnDiv">
-                                <button type="button" class="btn btn-outline-secondary" id="subjectSearchBtn">
-                                    <i class="bi bi-person-workspace"></i> 과목 선택하기
-                                </button>
-                                <small class="form-text text-muted d-block mt-1">
-                                    교수님과 과목을 선택하면 다른 학생들이 찾기 쉬워집니다.
-                                </small>
+                            <!-- 거래 장소 -->
+                            <div class="mb-4" id="campusLocationDiv">
+                                <label for="campusLocation" class="form-label">
+                                    <i class="bi bi-geo-alt me-1"></i> 거래 장소
+                                </label>
+                                <input type="text" class="form-control" id="campusLocation" th:field="*{campusLocation}" 
+                                       placeholder="예: 중앙도서관 앞" maxlength="100">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('campusLocation')}" 
+                                     th:errors="*{campusLocation}"></div>
                             </div>
-                        </div>
-                        
-                        <!-- 제목 -->
-                        <div class="mb-3">
-                            <label for="title" class="form-label">제목 <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="title" th:field="*{title}" 
-                                   placeholder="예: 경영학원론 교재 판매합니다" required maxlength="255">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
-                        </div>
-                        
-                        <!-- 가격 -->
-                        <div class="mb-3">
-                            <label for="price" class="form-label">가격 <span class="text-danger">*</span></label>
-                            <div class="price-input-group">
-                                <input type="number" class="form-control" id="price" th:field="*{price}" 
-                                       placeholder="0" required min="0" step="100">
-                                <span class="unit">원</span>
-                            </div>
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('price')}" th:errors="*{price}"></div>
-                        </div>
-                        
-                        <!-- 거래 방법 -->
-                        <div class="mb-3">
-                            <label class="form-label">거래 방법 <span class="text-danger">*</span></label>
-                            <div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="transactionMethod" 
-                                           id="direct" value="DIRECT" th:field="*{transactionMethod}" required>
-                                    <label class="form-check-label" for="direct">직거래</label>
+                            
+                            <!-- 설명 -->
+                            <div class="mb-4">
+                                <label for="description" class="form-label">
+                                    <i class="bi bi-card-text me-1"></i> 상세 설명
+                                </label>
+                                <textarea class="form-control" id="description" th:field="*{description}" 
+                                          rows="5" maxlength="2000" 
+                                          placeholder="상품의 상태, 사용 기간, 거래 희망 사항 등을 자세히 적어주세요."></textarea>
+                                <div class="character-counter">
+                                    <span id="descriptionCount">0</span>/2000
                                 </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="transactionMethod" 
-                                           id="parcel" value="PARCEL" th:field="*{transactionMethod}" required>
-                                    <label class="form-check-label" for="parcel">택배</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="transactionMethod" 
-                                           id="both" value="BOTH" th:field="*{transactionMethod}" required>
-                                    <label class="form-check-label" for="both">모두 가능</label>
-                                </div>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" 
+                                     th:errors="*{description}"></div>
                             </div>
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('transactionMethod')}" th:errors="*{transactionMethod}"></div>
-                        </div>
-                        
-                        <!-- 거래 장소 -->
-                        <div class="mb-3" id="campusLocationDiv">
-                            <label for="campusLocation" class="form-label">거래 장소</label>
-                            <input type="text" class="form-control" id="campusLocation" th:field="*{campusLocation}" 
-                                   placeholder="예: 중앙도서관 앞" maxlength="100">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('campusLocation')}" 
-                                 th:errors="*{campusLocation}"></div>
-                        </div>
-                        
-                        <!-- 설명 -->
-                        <div class="mb-3">
-                            <label for="description" class="form-label">상세 설명</label>
-                            <textarea class="form-control" id="description" th:field="*{description}" 
-                                      rows="5" maxlength="2000" 
-                                      placeholder="상품의 상태, 사용 기간, 거래 희망 사항 등을 자세히 적어주세요."></textarea>
-                            <div class="form-text">
-                                <span id="descriptionCount">0</span>/2000
+                            
+                            <!-- 상태 (수정 시에만) -->
+                            <div class="mb-4" th:if="${isEdit}">
+                                <label for="status" class="form-label">
+                                    <i class="bi bi-flag me-1"></i> 거래 상태
+                                </label>
+                                <select class="form-select" id="status" th:field="*{status}" required>
+                                    <option th:each="status : ${statuses}" 
+                                            th:if="${status.name() != 'BLOCKED' or #authorization.expression('hasRole(''ADMIN'')')}"
+                                            th:value="${status}" 
+                                            th:selected="${status == postDto.status}"
+                                            th:text="${status.name() == 'AVAILABLE' ? '🟢 판매중' : 
+                                                     status.name() == 'RESERVED' ? '🟡 예약중' : 
+                                                     status.name() == 'BLOCKED' ? '🔴 차단됨' : '✅ 거래완료'}"></option>
+                                </select>
                             </div>
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('description')}" 
-                                 th:errors="*{description}"></div>
                         </div>
                         
-                        <!-- 상태 (수정 시에만) -->
-                        <div class="mb-3" th:if="${isEdit}">
-                            <label for="status" class="form-label">거래 상태</label>
-                            <select class="form-select" id="status" th:field="*{status}" required>
-                                <option th:each="status : ${statuses}" 
-                                        th:if="${status.name() != 'BLOCKED' or #authorization.expression('hasRole(''ADMIN'')')}"
-                                        th:value="${status}" 
-                                        th:selected="${status == postDto.status}"
-                                        th:text="${status.name() == 'AVAILABLE' ? '판매중' : 
-                                                 status.name() == 'RESERVED' ? '예약중' : 
-                                                 status.name() == 'BLOCKED' ? '차단됨' : '거래완료'}"></option>
-                            </select>
-                        </div>
-                        
-                        <!-- 이미지 업로드 (간단 버전) -->
-                        <div class="mb-3">
-                            <label for="images" class="form-label">이미지 (최대 5개)</label>
-                            <input type="file" class="form-control" id="images" name="images" 
-                                   multiple accept="image/*">
-                            <div class="form-text">JPG, PNG, GIF, WEBP 파일만 업로드 가능 (최대 10MB)</div>
+                        <!-- Section 4: 이미지 업로드 -->
+                        <div class="image-upload-section">
+                            <h5 class="form-section-title justify-content-center">
+                                <i class="bi bi-image"></i>
+                                이미지 등록
+                            </h5>
+                            
+                            <div class="drag-area" id="dragArea">
+                                <i class="bi bi-cloud-upload"></i>
+                                <h6 class="mb-2">이미지를 드래그하거나 클릭하여 업로드</h6>
+                                <p class="text-muted mb-0">JPG, PNG, GIF, WEBP (최대 5개, 각 10MB 이하)</p>
+                                <input type="file" class="form-control" id="images" name="images" 
+                                       multiple accept="image/*"
+                                       style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; top: 0; left: 0; z-index: 1;">
+                            </div>
                             
                             <!-- 통합 이미지 미리보기 -->
-                            <div class="mt-3">
-                                <h6 th:if="${isEdit}">이미지 관리 
-                                    <small class="text-muted">(드래그해서 순서 변경 가능)</small>
-                                </h6>
-                                <div class="preview-container" id="imagePreview">
-                                    <!-- 수정 시 기존 이미지 표시 -->
-                                    <div th:if="${isEdit and post != null and post.postImages != null and !post.postImages.isEmpty()}" 
-                                         th:each="image : ${post.postImages}" 
-                                         class="preview-item sortable-item existing-image" 
-                                         th:data-image-id="${image.postImageId}"
-                                         th:data-image-order="${image.imageOrder}">
-                                        <img th:src="${image.imageUrl}" th:alt="${'이미지 ' + image.imageOrder}">
-                                        <span class="order-badge" 
-                                              th:text="${image.imageOrder == 0 ? '대표' : image.imageOrder}"></span>
-                                        <button type="button" class="delete-btn existing-delete-btn" 
-                                                th:data-image-id="${image.postImageId}">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </div>
+                            <div class="preview-container" id="imagePreview">
+                                <!-- 수정 시 기존 이미지 표시 -->
+                                <div th:if="${isEdit and post != null and post.postImages != null and !post.postImages.isEmpty()}" 
+                                     th:each="image : ${post.postImages}" 
+                                     class="preview-item sortable-item existing-image" 
+                                     th:data-image-id="${image.postImageId}"
+                                     th:data-image-order="${image.imageOrder}">
+                                    <img th:src="${image.imageUrl}" th:alt="${'이미지 ' + image.imageOrder}">
+                                    <span class="order-badge" 
+                                          th:text="${image.imageOrder == 0 ? '대표' : image.imageOrder}"></span>
+                                    <button type="button" class="delete-btn existing-delete-btn" 
+                                            th:data-image-id="${image.postImageId}">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
                                 </div>
-                                <!-- 숨겨진 입력 필드들 -->
-                                <div id="hiddenImageFields"></div>
                             </div>
+                            
+                            <p class="text-muted mt-3 mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <span th:if="${isEdit}">드래그해서 순서를 변경할 수 있습니다. </span>
+                                첫 번째 이미지가 대표 이미지로 설정됩니다.
+                            </p>
+                            
+                            <!-- 숨겨진 입력 필드들 -->
+                            <div id="hiddenImageFields"></div>
                         </div>
                         
-                        <!-- 버튼 -->
-                        <div class="mt-4 text-end">
-                            <button type="submit" class="btn btn-primary me-2">
+                        <!-- Action Buttons -->
+                        <div class="action-buttons">
+                            <a href="/posts" class="btn btn-secondary">
+                                <i class="bi bi-x-lg me-2"></i>취소
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-2"></i>
                                 <span th:text="${isEdit} ? '수정하기' : '등록하기'">등록하기</span>
                             </button>
-                            <a href="/posts" class="btn btn-secondary">취소</a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+</main>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay">
+    <div class="loading-spinner"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -414,6 +886,15 @@
         $('#description').on('input', function() {
             var length = $(this).val().length;
             $('#descriptionCount').text(length);
+            
+            var counterElement = $('.character-counter');
+            if (length > 1800) {
+                counterElement.addClass('danger').removeClass('warning');
+            } else if (length > 1500) {
+                counterElement.addClass('warning').removeClass('danger');
+            } else {
+                counterElement.removeClass('warning danger');
+            }
         });
         
         // 초기화
@@ -483,14 +964,15 @@
                 
                 // 과목 정보 표시
                 $('#selectedSubjectDisplay').html(`
-                    <div class="alert alert-info d-flex justify-content-between align-items-center">
+                    <div class="selected-info-card d-flex justify-content-between align-items-center">
                         <div>
-                            <i class="bi bi-book"></i> <strong>${selectedSubject.subjectName}</strong>
+                            <i class="bi bi-mortarboard-fill me-2"></i>
+                            <strong>${selectedSubject.subjectName}</strong>
                             <span class="text-muted ms-2">${selectedSubject.professorName} 교수</span>
                             <span class="text-muted ms-2">${selectedSubject.year || ''}년 ${semesterText}</span>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger" id="removeSubjectBtn">
-                            <i class="bi bi-x-circle"></i> 선택 취소
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" id="removeSubjectBtn">
+                            <i class="bi bi-x-lg me-1"></i> 선택 취소
                         </button>
                     </div>
                 `);
@@ -522,6 +1004,54 @@
                 $('#bookSearchBtnDiv').show();
             }
         });
+        
+        // 파일 input이 drag-area 전체를 덮고 있으므로 별도의 클릭 핸들러가 필요하지 않음
+        // input의 opacity가 0이지만 클릭은 가능함
+        
+        // 드래그 앤 드롭 기능
+        var dragArea = document.getElementById('dragArea');
+        
+        // 드래그 이벤트만 처리 (클릭 이벤트에 영향을 주지 않도록)
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dragArea.addEventListener(eventName, function(e) {
+                // 드래그 이벤트만 preventDefault
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dragArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dragArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight(e) {
+            dragArea.classList.add('drag-over');
+        }
+        
+        function unhighlight(e) {
+            dragArea.classList.remove('drag-over');
+        }
+        
+        dragArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            unhighlight(e);
+            
+            var dt = e.dataTransfer;
+            var files = dt.files;
+            
+            if (files.length > 0) {
+                $('#images')[0].files = files;
+                $('#images').trigger('change');
+            }
+        }
         
         // 이미지 업로드 관리
         var selectedFiles = [];
@@ -586,7 +1116,7 @@
                 reader.onload = function(e) {
                     var previewItem = $('<div class="preview-item sortable-item new-image"></div>');
                     var img = $('<img>').attr('src', e.target.result);
-                    var deleteBtn = $('<button type="button" class="delete-btn"><i class="bi bi-x"></i></button>');
+                    var deleteBtn = $('<button type="button" class="delete-btn"><i class="bi bi-x-lg"></i></button>');
                     var existingCount = $('#imagePreview .existing-image').length;
                     var totalIndex = existingCount + index;
                     var orderBadge = $('<span class="order-badge"></span>')
@@ -638,6 +1168,7 @@
             updateImageOrders();
         }
         
+        
         // 기존 이미지 삭제 기능
         $('.existing-delete-btn').on('click', function() {
             var imageId = $(this).data('image-id');
@@ -658,18 +1189,30 @@
                 updateImageOrders();
             }
         });
+        
+        // Form submit 시 로딩 표시
+        $('form').on('submit', function() {
+            $('.loading-overlay').show();
+        });
     });
     
     function initImageSorting() {
         $('#imagePreview').sortable({
             items: '.sortable-item',
             placeholder: 'sortable-item ui-sortable-placeholder',
-            helper: 'clone',
+            helper: 'original',
             tolerance: 'pointer',
             cancel: '.delete-btn', // 삭제 버튼 클릭 시에는 드래그 안 됨
+            revert: false,
+            delay: 0,
+            distance: 0,
             start: function(event, ui) {
                 ui.placeholder.height(ui.item.height());
                 ui.placeholder.width(ui.item.width());
+                ui.item.addClass('dragging');
+            },
+            stop: function(event, ui) {
+                ui.item.removeClass('dragging');
             },
             update: function(event, ui) {
                 updateImageOrders();

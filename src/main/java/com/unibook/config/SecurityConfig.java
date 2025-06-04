@@ -89,6 +89,7 @@ public class SecurityConfig {
                 .permitAll()
             )
             .sessionManagement(session -> session
+                .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.ALWAYS)
                 .sessionFixation().newSession()  // 로그인 시 새 세션 ID 발급
                 .maximumSessions(AppConstants.MAX_CONCURRENT_SESSIONS)
                 .maxSessionsPreventsLogin(true)  // 동시 로그인 차단
