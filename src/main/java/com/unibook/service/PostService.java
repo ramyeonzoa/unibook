@@ -66,7 +66,28 @@ public class PostService {
      */
     public Page<Post> getPostsPage(Pageable pageable, String search, 
                                   Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy,
-                                  Integer minPrice, Integer maxPrice) {
+                                  Integer minPrice, Integer maxPrice, Long subjectId, Long professorId, String bookTitle) {
+        
+        // 과목 ID로 검색하는 경우 (우선순위 최고)
+        if (subjectId != null) {
+            log.info("과목 ID로 검색: subjectId={}, productType={}, status={}, schoolId={}", 
+                    subjectId, productType, status, schoolId);
+            return postRepository.findBySubjectIdWithFilters(subjectId, status, productType, schoolId, minPrice, maxPrice, pageable);
+        }
+        
+        // 교수 ID로 검색하는 경우 (우선순위 2순위)
+        if (professorId != null) {
+            log.info("교수 ID로 검색: professorId={}, productType={}, status={}, schoolId={}", 
+                    professorId, productType, status, schoolId);
+            return postRepository.findByProfessorIdWithFilters(professorId, status, productType, schoolId, minPrice, maxPrice, pageable);
+        }
+        
+        // 책 제목으로 검색하는 경우 (우선순위 3순위)
+        if (bookTitle != null && !bookTitle.trim().isEmpty()) {
+            log.info("책 제목으로 검색: bookTitle='{}', productType={}, status={}, schoolId={}", 
+                    bookTitle, productType, status, schoolId);
+            return postRepository.findByBookTitleWithFilters(bookTitle.trim(), status, productType, schoolId, minPrice, maxPrice, pageable);
+        }
         
         // 검색어가 있는 경우
         if (search != null && !search.trim().isEmpty()) {
@@ -230,6 +251,31 @@ public class PostService {
         } else {
             return postRepository.findByUserIdWithDetailsAndPriceFilter(userId, minPrice, maxPrice, pageable);
         }
+    }
+    
+    /**
+     * 과목 정보를 조회해서 페이지 제목용 문자열 반환
+     */
+    public String getSubjectInfoForTitle(Long subjectId) {
+        Optional<Subject> subject = subjectRepository.findById(subjectId);
+        if (subject.isPresent()) {
+            Subject s = subject.get();
+            if (s.getProfessor() != null) {
+                return s.getSubjectName() + " (" + s.getProfessor().getProfessorName() + " 교수님)";
+            } else {
+                return s.getSubjectName();
+            }
+        }
+        return "과목";
+    }
+    
+    /**
+     * 교수 정보를 조회해서 페이지 제목용 문자열 반환
+     */
+    public String getProfessorInfoForTitle(Long professorId) {
+        return postRepository.findProfessorNameById(professorId)
+                .map(name -> name + " 교수님")
+                .orElse("교수님");
     }
     
     /**

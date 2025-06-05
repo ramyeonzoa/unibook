@@ -40,7 +40,9 @@ public class PostResponseDto {
     private List<ImageDto> images;
     
     // 검색 하이라이팅용 Flat 필드
+    private Long subjectId;
     private String subjectName;
+    private Long professorId;
     private String professorName;
     private String bookTitle;
     private String bookAuthor;
@@ -52,6 +54,7 @@ public class PostResponseDto {
         private Long userId;
         private String name;
         private String email;
+        private Long schoolId;
         private String schoolName;
         private String departmentName;
     }
@@ -114,6 +117,7 @@ public class PostResponseDto {
                 userBuilder.departmentName(post.getUser().getDepartment().getDepartmentName());
                 
                 if (post.getUser().getDepartment().getSchool() != null) {
+                    userBuilder.schoolId(post.getUser().getDepartment().getSchool().getSchoolId());
                     userBuilder.schoolName(post.getUser().getDepartment().getSchool().getSchoolName());
                 }
             }
@@ -154,12 +158,14 @@ public class PostResponseDto {
                 }
                 
                 // 검색용 Flat 필드 설정
+                builder.professorId(post.getSubject().getProfessor().getProfessorId());
                 builder.professorName(post.getSubject().getProfessor().getProfessorName());
             }
             
             builder.subject(subjectBuilder.build());
             
             // 검색용 Flat 필드 설정
+            builder.subjectId(post.getSubject().getSubjectId());
             builder.subjectName(post.getSubject().getSubjectName());
         }
         
@@ -193,15 +199,18 @@ public class PostResponseDto {
         
         // 사용자 기본 정보만
         if (post.getUser() != null) {
+            Long schoolId = null;
             String schoolName = null;
             if (post.getUser().getDepartment() != null && 
                 post.getUser().getDepartment().getSchool() != null) {
+                schoolId = post.getUser().getDepartment().getSchool().getSchoolId();
                 schoolName = post.getUser().getDepartment().getSchool().getSchoolName();
             }
             
             builder.user(UserDto.builder()
                     .userId(post.getUser().getUserId())
                     .name(post.getUser().getName())
+                    .schoolId(schoolId)
                     .schoolName(schoolName)
                     .build());
         }
@@ -214,10 +223,12 @@ public class PostResponseDto {
             
             if (post.getSubject().getProfessor() != null) {
                 subjectBuilder.professorName(post.getSubject().getProfessor().getProfessorName());
+                builder.professorId(post.getSubject().getProfessor().getProfessorId());
                 builder.professorName(post.getSubject().getProfessor().getProfessorName());
             }
             
             builder.subject(subjectBuilder.build());
+            builder.subjectId(post.getSubject().getSubjectId());
             builder.subjectName(post.getSubject().getSubjectName());
         }
         

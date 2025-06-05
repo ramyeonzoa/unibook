@@ -66,7 +66,7 @@ logging:
 app:
   home:
     popular-books-limit: 8
-    recent-posts-limit: 5
+    recent-posts-limit: 8
   file:
     upload-dir: uploads/
     max-size: 10485760  # 10MB in bytes

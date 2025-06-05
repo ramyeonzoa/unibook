@@ -93,9 +93,20 @@
         }
         
         .filter-pill.active {
-            background: var(--primary-gradient);
-            color: white;
-            border-color: transparent;
+            background: var(--primary-gradient) !important;
+            color: white !important;
+            border-color: transparent !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25) !important;
+            font-weight: 600 !important;
+            z-index: 10;
+        }
+        
+        .filter-pill.active:hover {
+            background: var(--primary-gradient) !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3) !important;
         }
         
         /* 정렬 옵션 스타일 개선 */
@@ -324,7 +335,7 @@
             padding: 80px 20px;
         }
         
-        .empty-state i {
+        .empty-state > i {
             font-size: 5rem;
             color: #dee2e6;
             margin-bottom: 20px;
@@ -514,6 +525,23 @@
             background: var(--bs-gray-700);
         }
         
+        [data-bs-theme="dark"] .filter-pill.active {
+            background: var(--primary-gradient) !important;
+            color: white !important;
+            border-color: transparent !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4) !important;
+            font-weight: 600 !important;
+            z-index: 10;
+        }
+        
+        [data-bs-theme="dark"] .filter-pill.active:hover {
+            background: var(--primary-gradient) !important;
+            color: white !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5) !important;
+        }
+        
         [data-bs-theme="dark"] .sort-section {
             background: var(--bs-gray-800);
         }
@@ -568,8 +596,26 @@
             color: var(--bs-gray-200);
         }
         
-        [data-bs-theme="dark"] .empty-state i {
+        [data-bs-theme="dark"] .empty-state > i {
             color: var(--bs-gray-600);
+        }
+        
+        /* 버튼 내 아이콘 크기 정규화 */
+        .btn i {
+            font-size: 1rem !important;
+        }
+        
+        .btn-lg i {
+            font-size: 1.125rem !important;
+        }
+        
+        .btn-sm i {
+            font-size: 0.875rem !important;
+        }
+        
+        /* bi-info-circle 아이콘 크기 정규화 */
+        .bi-info-circle {
+            font-size: inherit !important;
         }
         
         [data-bs-theme="dark"] .empty-state h3 {
@@ -578,6 +624,31 @@
         
         [data-bs-theme="dark"] .meta-info {
             color: var(--bs-gray-400);
+        }
+        
+        /* 클릭 가능한 메타 정보 링크 스타일 */
+        .post-subject-name, .post-professor-name, .post-book-title, .post-school-name {
+            color: #667eea;
+            transition: color 0.2s ease;
+        }
+        
+        .post-subject-name:hover, .post-professor-name:hover, .post-book-title:hover, .post-school-name:hover {
+            color: #5a6fd8;
+            text-decoration: underline !important;
+        }
+        
+        [data-bs-theme="dark"] .post-subject-name, 
+        [data-bs-theme="dark"] .post-professor-name,
+        [data-bs-theme="dark"] .post-book-title,
+        [data-bs-theme="dark"] .post-school-name {
+            color: #8b9bff;
+        }
+        
+        [data-bs-theme="dark"] .post-subject-name:hover, 
+        [data-bs-theme="dark"] .post-professor-name:hover,
+        [data-bs-theme="dark"] .post-book-title:hover,
+        [data-bs-theme="dark"] .post-school-name:hover {
+            color: #a3b1ff;
         }
         
         /* Dark mode status badge styles moved to status-badge.css */
@@ -612,31 +683,31 @@
             <div class="quick-filters-scroll">
                 <div class="quick-filters">
                     <a href="/posts?productType=TEXTBOOK" class="filter-pill" 
-                       th:classappend="${productType == 'TEXTBOOK' ? 'active' : ''}">
+                       th:classappend="${productType != null and productType.toString() == 'TEXTBOOK' ? 'active' : ''}">
                         <i class="bi bi-book"></i> 전공교재
                     </a>
                     <a href="/posts?productType=CERTBOOK" class="filter-pill"
-                       th:classappend="${productType == 'CERTBOOK' ? 'active' : ''}">
+                       th:classappend="${productType != null and productType.toString() == 'CERTBOOK' ? 'active' : ''}">
                         <i class="bi bi-award"></i> 자격증 교재
                     </a>
                     <a href="/posts?productType=NOTE" class="filter-pill"
-                       th:classappend="${productType == 'NOTE' ? 'active' : ''}">
+                       th:classappend="${productType != null and productType.toString() == 'NOTE' ? 'active' : ''}">
                         <i class="bi bi-journal-text"></i> 필기노트
                     </a>
                     <a href="/posts?productType=PASTEXAM" class="filter-pill"
-                       th:classappend="${productType == 'PASTEXAM' ? 'active' : ''}">
+                       th:classappend="${productType != null and productType.toString() == 'PASTEXAM' ? 'active' : ''}">
                         <i class="bi bi-file-earmark-text"></i> 족보/기출
                     </a>
                     <a href="/posts?status=AVAILABLE" class="filter-pill"
-                       th:classappend="${status == 'AVAILABLE' ? 'active' : ''}">
+                       th:classappend="${status != null and status.toString() == 'AVAILABLE' ? 'active' : ''}">
                         <i class="bi bi-check-circle"></i> 판매중만 보기
                     </a>
                     <a href="/posts?maxPrice=10000" class="filter-pill"
-                       th:classappend="${maxPrice != null and maxPrice <= 10000 ? 'active' : ''}">
+                       th:classappend="${maxPrice != null and maxPrice == 10000 ? 'active' : ''}">
                         <i class="bi bi-currency-dollar"></i> 1만원 이하
                     </a>
                     <a href="/posts?maxPrice=30000" class="filter-pill"
-                       th:classappend="${maxPrice != null and maxPrice <= 30000 ? 'active' : ''}">
+                       th:classappend="${maxPrice != null and maxPrice == 30000 ? 'active' : ''}">
                         <i class="bi bi-currency-dollar"></i> 3만원 이하
                     </a>
                 </div>
@@ -752,24 +823,38 @@
             <span class="text-muted me-2">정렬:</span>
             <span th:with="baseUrl=${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}">
                 <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
-                                   schoolId=${schoolId}, sortBy='RELEVANCE')}"
+                                   schoolId=${schoolId}, minPrice=${minPrice}, maxPrice=${maxPrice}, 
+                                   subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle}, 
+                                   sortBy='RELEVANCE')}"
                    th:classappend="${sortBy == 'RELEVANCE' ? 'active' : ''}"
                    th:style="${search == null or search.isEmpty() ? 'display: none;' : ''}">
                     <i class="bi bi-star"></i> 관련도순
                 </a>
-                <a th:href="@{${baseUrl}(sortBy='NEWEST')}"
+                <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
+                                   schoolId=${schoolId}, minPrice=${minPrice}, maxPrice=${maxPrice}, 
+                                   subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle}, 
+                                   sortBy='NEWEST')}"
                    th:classappend="${sortBy == 'NEWEST' ? 'active' : ''}">
                     <i class="bi bi-clock"></i> 최신순
                 </a>
-                <a th:href="@{${baseUrl}(sortBy='PRICE_ASC')}"
+                <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
+                                   schoolId=${schoolId}, minPrice=${minPrice}, maxPrice=${maxPrice}, 
+                                   subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle}, 
+                                   sortBy='PRICE_ASC')}"
                    th:classappend="${sortBy == 'PRICE_ASC' ? 'active' : ''}">
                     <i class="bi bi-arrow-down"></i> 가격 낮은순
                 </a>
-                <a th:href="@{${baseUrl}(sortBy='PRICE_DESC')}"
+                <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
+                                   schoolId=${schoolId}, minPrice=${minPrice}, maxPrice=${maxPrice}, 
+                                   subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle}, 
+                                   sortBy='PRICE_DESC')}"
                    th:classappend="${sortBy == 'PRICE_DESC' ? 'active' : ''}">
                     <i class="bi bi-arrow-up"></i> 가격 높은순
                 </a>
-                <a th:href="@{${baseUrl}(sortBy='VIEW_COUNT')}"
+                <a th:href="@{${baseUrl}(search=${search}, productType=${productType}, status=${status}, 
+                                   schoolId=${schoolId}, minPrice=${minPrice}, maxPrice=${maxPrice}, 
+                                   subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle}, 
+                                   sortBy='VIEW_COUNT')}"
                    th:classappend="${sortBy == 'VIEW_COUNT' ? 'active' : ''}">
                     <i class="bi bi-eye"></i> 조회수순
                 </a>
@@ -825,7 +910,7 @@
                     <!-- 키워드 알림 등록 버튼 (로그인한 사용자만) -->
                     <div sec:authorize="isAuthenticated()" class="mb-3">
                         <div th:if="${#authentication.principal.verified}">
-                            <button type="button" class="btn btn-outline-primary btn-lg me-2" 
+                            <button type="button" class="btn btn-primary btn-lg me-2" 
                                     onclick="registerKeywordAlert()" 
                                     id="keywordAlertBtn"
                                     th:data-keyword="${search}">
@@ -841,7 +926,7 @@
                         </div>
                     </div>
                     
-                    <a href="/posts/new" class="btn btn-primary btn-lg" sec:authorize="isAuthenticated()">
+                    <a href="/posts/new" class="btn btn-outline-primary btn-lg" sec:authorize="isAuthenticated()">
                         <i class="bi bi-plus-circle me-2"></i>직접 게시글 작성하기
                     </a>
                 </div>
@@ -913,25 +998,46 @@
                         <!-- 과목/교수 정보 -->
                         <div th:if="${post.subjectName != null}" class="mb-1">
                             <i class="bi bi-book-fill"></i>
-                            <span class="post-subject-name" th:text="${post.subjectName}">과목명</span>
+                            <a th:if="${post.subjectId != null}" 
+                               th:href="@{/posts(subjectId=${post.subjectId})}"
+                               class="post-subject-name text-decoration-none"
+                               th:text="${post.subjectName}"
+                               onclick="event.stopPropagation();"
+                               title="이 과목의 다른 게시글 보기">과목명</a>
+                            <span th:unless="${post.subjectId != null}" 
+                                  class="post-subject-name" 
+                                  th:text="${post.subjectName}">과목명</span>
                             <span th:if="${post.professorName != null}">
-                                · <span class="post-professor-name" th:text="${post.professorName}">교수명</span>
+                                · <a th:if="${post.professorId != null}"
+                                     th:href="@{/posts(professorId=${post.professorId})}"
+                                     class="post-professor-name text-decoration-none"
+                                     th:text="${post.professorName}"
+                                     onclick="event.stopPropagation();"
+                                     title="이 교수님의 다른 게시글 보기">교수명</a>
+                                <span th:unless="${post.professorId != null}"
+                                      class="post-professor-name"
+                                      th:text="${post.professorName}">교수명</span>
                             </span>
                         </div>
                         
                         <!-- 책 정보 -->
                         <div th:if="${post.bookTitle != null}" class="mb-1">
                             <i class="bi bi-journal-bookmark-fill"></i>
-                            <span class="post-book-title" th:text="${post.bookTitle}">책 제목</span>
+                            <a th:href="@{/posts(bookTitle=${post.bookTitle})}"
+                               class="post-book-title text-decoration-none"
+                               th:text="${post.bookTitle}"
+                               onclick="event.stopPropagation();"
+                               title="이 책의 다른 게시글 보기">책 제목</a>
                         </div>
                         
-                        <!-- 작성자 정보 -->
-                        <div class="mb-1">
-                            <i class="bi bi-person-fill"></i>
-                            <span th:text="${post.user.name}">작성자</span>
-                            <span th:if="${post.user.departmentName != null}">
-                                · <span th:text="${post.user.departmentName}">학과</span>
-                            </span>
+                        <!-- 학교 정보 -->
+                        <div th:if="${post.user.schoolName != null}" class="mb-1">
+                            <i class="bi bi-building-fill"></i>
+                            <a th:href="@{/posts(schoolId=${post.user.schoolId})}"
+                               class="post-school-name text-decoration-none"
+                               th:text="${post.user.schoolName}"
+                               onclick="event.stopPropagation();"
+                               title="이 학교의 다른 게시글 보기">학교명</a>
                         </div>
                     </div>
                     
@@ -978,7 +1084,8 @@
             <li class="page-item" th:classappend="${posts.first} ? 'disabled'">
                 <a class="page-link" 
                    th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=0, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy}, 
+                           minPrice=${minPrice}, maxPrice=${maxPrice}, subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle})}">
                     <i class="bi bi-chevron-double-left"></i>
                 </a>
             </li>
@@ -987,7 +1094,8 @@
             <li class="page-item" th:classappend="${!posts.hasPrevious()} ? 'disabled'">
                 <a class="page-link" 
                    th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${posts.number - 1}, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy}, 
+                           minPrice=${minPrice}, maxPrice=${maxPrice}, subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle})}">
                     <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
@@ -999,7 +1107,8 @@
                 th:if="${pageNum >= posts.number - 2 and pageNum <= posts.number + 2}">
                 <a class="page-link" 
                    th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${pageNum}, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}"
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy}, 
+                           minPrice=${minPrice}, maxPrice=${maxPrice}, subjectId=${subjectId}, bookTitle=${bookTitle})}"
                    th:text="${pageNum + 1}">1</a>
             </li>
             
@@ -1007,7 +1116,8 @@
             <li class="page-item" th:classappend="${!posts.hasNext()} ? 'disabled'">
                 <a class="page-link" 
                    th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${posts.number + 1}, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy}, 
+                           minPrice=${minPrice}, maxPrice=${maxPrice}, subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle})}">
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
@@ -1016,7 +1126,8 @@
             <li class="page-item" th:classappend="${posts.last} ? 'disabled'">
                 <a class="page-link" 
                    th:href="@{${pageType == 'my' ? '/posts/my' : (pageType == 'wishlist' ? '/posts/wishlist' : '/posts')}(page=${posts.totalPages - 1}, search=${search}, 
-                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy})}">
+                           productType=${productType}, status=${status}, schoolId=${schoolId}, sortBy=${sortBy}, 
+                           minPrice=${minPrice}, maxPrice=${maxPrice}, subjectId=${subjectId}, professorId=${professorId}, bookTitle=${bookTitle})}">
                     <i class="bi bi-chevron-double-right"></i>
                 </a>
             </li>
@@ -1034,6 +1145,13 @@
     /*<![CDATA[*/
     // 검색 키워드를 JavaScript 변수로 전달
     var searchKeywords = /*[[${searchKeywords}]]*/ null;
+    
+    // 필터 값들을 JavaScript 변수로 전달
+    var currentSearch = /*[[${search}]]*/ null;
+    var currentProductType = /*[[${productType}]]*/ null;
+    var currentStatus = /*[[${status}]]*/ null;
+    var currentMinPrice = /*[[${minPrice}]]*/ null;
+    var currentMaxPrice = /*[[${maxPrice}]]*/ null;
     /*]]>*/
 </script>
 <script>
@@ -1239,11 +1357,12 @@
         
         // 필터가 활성화되어 있으면 자동으로 펼치기
         const hasActiveFilters = [
-            /*[[${productType}]]*/ null,
-            /*[[${status}]]*/ null,
-            /*[[${minPrice}]]*/ null,
-            /*[[${maxPrice}]]*/ null
-        ].some(value => value !== null && value !== undefined && value !== '');
+            currentSearch,
+            currentProductType,
+            currentStatus,
+            currentMinPrice,
+            currentMaxPrice
+        ].some(value => value !== null && value !== undefined && value !== '' && value !== 0);
         
         if (hasActiveFilters) {
             advancedFilters.classList.add('show');
@@ -1303,14 +1422,14 @@
                     showToast('키워드 알림이 등록되었습니다! 🔔');
                     // 버튼을 등록완료 상태로 변경
                     btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>등록 완료';
-                    btn.classList.remove('btn-outline-primary');
+                    btn.classList.remove('btn-primary');
                     btn.classList.add('btn-success');
                     
                     // 3초 후 원래 상태로 복구
                     setTimeout(() => {
                         btn.innerHTML = '<i class="bi bi-bell me-2"></i>키워드 알림 등록';
                         btn.classList.remove('btn-success');
-                        btn.classList.add('btn-outline-primary');
+                        btn.classList.add('btn-primary');
                         btn.disabled = false;
                     }, 3000);
                 } else {

@@ -51,6 +51,8 @@ public class SecurityConfig {
                 .requestMatchers("/posts/*").permitAll()
                 // 게시글 작성/수정/삭제는 인증 필요
                 .requestMatchers("/posts/new", "/posts/*/edit", "/posts/*/delete", "/posts/*/status").authenticated()
+                // 찜 목록과 내 게시글은 인증 필요
+                .requestMatchers("/posts/wishlist", "/posts/my").authenticated()
                 .requestMatchers("/books", "/books/**").permitAll()
                 // 채팅 관련 페이지는 인증 필요
                 .requestMatchers("/chat", "/chat/**").authenticated()
@@ -69,6 +71,8 @@ public class SecurityConfig {
                 .requestMatchers("/signup", "/login", "/error", "/token-error").permitAll()
                 .requestMatchers("/verify-email", "/resend-verification", "/forgot-password", "/reset-password").permitAll()
                 .requestMatchers("/verification-required").permitAll()
+                // 정적 정보 페이지들 허용 (로그인 불필요)
+                .requestMatchers("/about", "/guide", "/faq", "/privacy", "/terms").permitAll()
                 // 나머지는 인증 필요
                 .anyRequest().authenticated()
             )

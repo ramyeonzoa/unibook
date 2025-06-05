@@ -854,6 +854,31 @@
         [data-bs-theme="dark"] .breadcrumb-item.active {
             color: var(--bs-gray-400);
         }
+        
+        /* 클릭 가능한 메타 정보 링크 스타일 */
+        .post-subject-name, .post-professor-name, .post-book-title, .post-school-name {
+            color: #667eea;
+            transition: color 0.2s ease;
+        }
+        
+        .post-subject-name:hover, .post-professor-name:hover, .post-book-title:hover, .post-school-name:hover {
+            color: #5a6fd8;
+            text-decoration: underline !important;
+        }
+        
+        [data-bs-theme="dark"] .post-subject-name, 
+        [data-bs-theme="dark"] .post-professor-name,
+        [data-bs-theme="dark"] .post-book-title,
+        [data-bs-theme="dark"] .post-school-name {
+            color: #8b9bff;
+        }
+        
+        [data-bs-theme="dark"] .post-subject-name:hover, 
+        [data-bs-theme="dark"] .post-professor-name:hover,
+        [data-bs-theme="dark"] .post-book-title:hover,
+        [data-bs-theme="dark"] .post-school-name:hover {
+            color: #a3b1ff;
+        }
     </style>
 </head>
 <body>
@@ -1150,7 +1175,10 @@
                             <div class="flex-grow-1">
                                 <div th:if="${post.book.title}" class="mb-1">
                                     <small class="text-muted d-block">제목</small>
-                                    <span class="fw-medium" th:text="${post.book.title}"></span>
+                                    <a th:href="@{/posts(bookTitle=${post.book.title})}" 
+                                       class="post-book-title text-decoration-none fw-medium"
+                                       th:text="${post.book.title}"
+                                       title="이 책의 다른 게시글 보기"></a>
                                 </div>
                                 <div th:if="${post.book.author}" class="mb-1">
                                     <small class="text-muted d-block">저자</small>
@@ -1170,18 +1198,39 @@
                         <div class="row g-2">
                             <div class="col-12">
                                 <small class="text-muted d-block">과목명</small>
-                                <span class="fw-medium" th:text="${post.subject.subjectName}"></span>
+                                <a th:if="${post.subject != null}" 
+                                   th:href="@{/posts(subjectId=${post.subject.subjectId})}"
+                                   class="post-subject-name text-decoration-none fw-medium"
+                                   th:text="${post.subject.subjectName}"
+                                   title="이 과목의 다른 게시글 보기"></a>
+                                <span th:unless="${post.subject != null}" 
+                                      class="fw-medium" 
+                                      th:text="${post.subject.subjectName}"></span>
                                 <span class="subject-type-badge">
                                     <span th:text="${post.subject.type.toString() == 'MAJOR' ? '전공' : '교양'}"></span>
                                 </span>
                             </div>
                             <div class="col-6">
                                 <small class="text-muted d-block">교수</small>
-                                <span class="fw-medium" th:text="${post.subject.professor.professorName}"></span>
+                                <a th:if="${post.subject != null and post.subject.professor != null}" 
+                                   th:href="@{/posts(professorId=${post.subject.professor.professorId})}"
+                                   class="post-professor-name text-decoration-none fw-medium"
+                                   th:text="${post.subject.professor.professorName}"
+                                   title="이 교수님의 다른 게시글 보기"></a>
+                                <span th:unless="${post.subject != null and post.subject.professor != null}" 
+                                      class="fw-medium" 
+                                      th:text="${post.subject.professor.professorName}"></span>
                             </div>
                             <div class="col-6">
                                 <small class="text-muted d-block">학교</small>
-                                <span class="fw-medium" th:text="${post.subject.professor.department.school.schoolName}"></span>
+                                <a th:if="${post.user != null and post.user.department != null and post.user.department.school != null}" 
+                                   th:href="@{/posts(schoolId=${post.user.department.school.schoolId})}"
+                                   class="post-school-name text-decoration-none fw-medium"
+                                   th:text="${post.subject.professor.department.school.schoolName}"
+                                   title="이 학교의 다른 게시글 보기"></a>
+                                <span th:unless="${post.user != null and post.user.department != null and post.user.department.school != null}" 
+                                      class="fw-medium" 
+                                      th:text="${post.subject.professor.department.school.schoolName}"></span>
                             </div>
                             <div class="col-6">
                                 <small class="text-muted d-block">학과</small>

@@ -264,4 +264,83 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByTitleContainingOrDescriptionContainingAndStatus(String title, String description, Post.PostStatus status, Pageable pageable);
     Page<Post> findByStatus(Post.PostStatus status, Pageable pageable);
     long countByStatus(Post.PostStatus status);
+    
+    /**
+     * 과목 ID로 게시글 검색 (필터링 포함)
+     */
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.user u " +
+           "LEFT JOIN FETCH u.department d " +
+           "LEFT JOIN FETCH d.school " +
+           "LEFT JOIN FETCH p.book " +
+           "LEFT JOIN FETCH p.subject " +
+           "WHERE p.subject.subjectId = :subjectId " +
+           "AND p.status != 'BLOCKED' " +
+           "AND (:status IS NULL OR p.status = :status) " +
+           "AND (:productType IS NULL OR p.productType = :productType) " +
+           "AND (:schoolId IS NULL OR d.school.schoolId = :schoolId) " +
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
+    Page<Post> findBySubjectIdWithFilters(@Param("subjectId") Long subjectId,
+                                         @Param("status") Post.PostStatus status,
+                                         @Param("productType") Post.ProductType productType,
+                                         @Param("schoolId") Long schoolId,
+                                         @Param("minPrice") Integer minPrice,
+                                         @Param("maxPrice") Integer maxPrice,
+                                         Pageable pageable);
+    
+    /**
+     * 교수 ID로 게시글 검색 (필터링 포함)
+     */
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.user u " +
+           "LEFT JOIN FETCH u.department d " +
+           "LEFT JOIN FETCH d.school " +
+           "LEFT JOIN FETCH p.book " +
+           "LEFT JOIN FETCH p.subject s " +
+           "LEFT JOIN FETCH s.professor " +
+           "WHERE s.professor.professorId = :professorId " +
+           "AND p.status != 'BLOCKED' " +
+           "AND (:status IS NULL OR p.status = :status) " +
+           "AND (:productType IS NULL OR p.productType = :productType) " +
+           "AND (:schoolId IS NULL OR d.school.schoolId = :schoolId) " +
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
+    Page<Post> findByProfessorIdWithFilters(@Param("professorId") Long professorId,
+                                           @Param("status") Post.PostStatus status,
+                                           @Param("productType") Post.ProductType productType,
+                                           @Param("schoolId") Long schoolId,
+                                           @Param("minPrice") Integer minPrice,
+                                           @Param("maxPrice") Integer maxPrice,
+                                           Pageable pageable);
+    
+    /**
+     * 책 제목으로 게시글 검색 (필터링 포함)
+     */
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.user u " +
+           "LEFT JOIN FETCH u.department d " +
+           "LEFT JOIN FETCH d.school " +
+           "LEFT JOIN FETCH p.book b " +
+           "LEFT JOIN FETCH p.subject " +
+           "WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :bookTitle, '%')) " +
+           "AND p.status != 'BLOCKED' " +
+           "AND (:status IS NULL OR p.status = :status) " +
+           "AND (:productType IS NULL OR p.productType = :productType) " +
+           "AND (:schoolId IS NULL OR d.school.schoolId = :schoolId) " +
+           "AND (:minPrice IS NULL OR p.price >= :minPrice) " +
+           "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
+    Page<Post> findByBookTitleWithFilters(@Param("bookTitle") String bookTitle,
+                                         @Param("status") Post.PostStatus status,
+                                         @Param("productType") Post.ProductType productType,
+                                         @Param("schoolId") Long schoolId,
+                                         @Param("minPrice") Integer minPrice,
+                                         @Param("maxPrice") Integer maxPrice,
+                                         Pageable pageable);
+    
+    /**
+     * 교수 ID로 교수명 조회
+     */
+    @Query("SELECT pr.professorName FROM Professor pr WHERE pr.professorId = :professorId")
+    Optional<String> findProfessorNameById(@Param("professorId") Long professorId);
 }

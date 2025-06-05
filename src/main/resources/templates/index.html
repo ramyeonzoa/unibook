@@ -106,28 +106,52 @@
         .search-input-group {
             position: relative;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
+            border-radius: 50px;
             overflow: hidden;
-        }
-        
-        .search-input-group input {
-            border: none;
-            padding: 20px 24px;
-            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
         
-        .search-input-group input:focus {
-            box-shadow: none;
-            background-color: #f8f9fa;
+        .search-input-group input {
+            border: none !important;
+            padding: 20px 24px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background: transparent !important;
+            border-radius: 50px 0 0 50px;
         }
         
         .search-input-group button {
             border: none;
             background: var(--primary-gradient);
+            border-radius: 0 50px 50px 0;
             padding: 20px 32px;
             font-weight: 600;
             transition: all 0.3s ease;
+        }
+        
+        /* 헤더와 완전 동일한 focus 효과 */
+        .search-input-group:focus-within {
+            background: rgba(255, 255, 255, 0.95) !important;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3) !important;
+            transform: translateY(-1px) !important;
+        }
+        
+        .search-input-group input:focus {
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* 다크 모드 */
+        [data-bs-theme="dark"] .search-input-group {
+            background: rgba(31, 41, 55, 0.8);
+        }
+        
+        [data-bs-theme="dark"] .search-input-group:focus-within {
+            background: rgba(31, 41, 55, 0.95) !important;
+            box-shadow: 0 8px 25px rgba(167, 139, 250, 0.3) !important;
         }
         
         .search-input-group button:hover {
@@ -596,48 +620,6 @@
         </div>
     </section>
 
-    <!-- Popular Books Section -->
-    <section class="py-5">
-        <div class="container">
-            <h2 class="section-title mb-4">📚 최근 등록된 교재</h2>
-            <div class="row" th:if="${!popularBooks.isEmpty()}">
-                <div class="col-md-3 mb-4" th:each="book : ${popularBooks}">
-                    <a class="book-card" href="/posts" th:href="@{/posts(search=${book.title})}">
-                        <div class="card-img-container">
-                            <img th:if="${book.imageUrl != null and !book.imageUrl.isEmpty()}" 
-                                 th:src="${book.imageUrl}" 
-                                 alt="Book cover"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <div th:unless="${book.imageUrl != null and !book.imageUrl.isEmpty()}"
-                                 class="d-flex align-items-center justify-content-center h-100">
-                                <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
-                            </div>
-                            <!-- 이미지 로드 실패 시 대체 아이콘 -->
-                            <div class="d-none align-items-center justify-content-center h-100 position-absolute top-0 start-0 w-100">
-                                <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
-                            </div>
-                        </div>
-                        <div class="card-body">
-                            <h6 class="card-title" th:text="${book.title}">교재명</h6>
-                            <p class="text-muted small mb-1" th:text="${book.author}">저자</p>
-                            <p class="text-muted small mb-2">
-                                <span th:if="${book.publicationYear}" th:text="${book.publicationYear + '년'}">2024년</span>
-                                <span th:unless="${book.publicationYear}">출판연도 미상</span>
-                            </p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            <div class="empty-state" th:if="${popularBooks.isEmpty()}">
-                <i class="bi bi-book"></i>
-                <p>아직 등록된 교재가 없습니다.</p>
-                <a href="/posts/new" class="btn btn-primary mt-3">
-                    <i class="bi bi-plus-circle me-2"></i>첫 교재 등록하기
-                </a>
-            </div>
-        </div>
-    </section>
-
     <!-- Recent Posts Section -->
     <section class="py-5 pattern-bg">
         <div class="container position-relative">
@@ -719,6 +701,48 @@
                 <p>아직 등록된 게시글이 없습니다.</p>
                 <a href="/posts/new" class="btn btn-primary mt-3">
                     <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Books Section -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="section-title mb-4">📚 교재 둘러보기</h2>
+            <div class="row" th:if="${!popularBooks.isEmpty()}">
+                <div class="col-md-3 mb-4" th:each="book : ${popularBooks}">
+                    <a class="book-card" href="/posts" th:href="@{/posts(search=${book.title})}">
+                        <div class="card-img-container">
+                            <img th:if="${book.imageUrl != null and !book.imageUrl.isEmpty()}" 
+                                 th:src="${book.imageUrl}" 
+                                 alt="Book cover"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div th:unless="${book.imageUrl != null and !book.imageUrl.isEmpty()}"
+                                 class="d-flex align-items-center justify-content-center h-100">
+                                <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                            <!-- 이미지 로드 실패 시 대체 아이콘 -->
+                            <div class="d-none align-items-center justify-content-center h-100 position-absolute top-0 start-0 w-100">
+                                <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title" th:text="${book.title}">교재명</h6>
+                            <p class="text-muted small mb-1" th:text="${book.author}">저자</p>
+                            <p class="text-muted small mb-2">
+                                <span th:if="${book.publicationYear}" th:text="${book.publicationYear + '년'}">2024년</span>
+                                <span th:unless="${book.publicationYear}">출판연도 미상</span>
+                            </p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="empty-state" th:if="${popularBooks.isEmpty()}">
+                <i class="bi bi-book"></i>
+                <p>아직 등록된 교재가 없습니다.</p>
+                <a href="/posts/new" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle me-2"></i>첫 교재 등록하기
                 </a>
             </div>
         </div>

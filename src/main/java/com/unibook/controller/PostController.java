@@ -74,6 +74,9 @@ public class PostController {
             @RequestParam(required = false) String sortBy,
             @RequestParam(required = false) Integer minPrice,
             @RequestParam(required = false) Integer maxPrice,
+            @RequestParam(required = false) Long subjectId,
+            @RequestParam(required = false) Long professorId,
+            @RequestParam(required = false) String bookTitle,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
@@ -118,7 +121,7 @@ public class PostController {
             }
         }
         
-        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId, sortBy, minPrice, maxPrice);
+        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId, sortBy, minPrice, maxPrice, subjectId, professorId, bookTitle);
         
         // Post 엔티티를 PostResponseDto로 변환하여 Hibernate proxy 문제 방지
         Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
@@ -134,6 +137,9 @@ public class PostController {
         model.addAttribute("sortBy", sortBy);
         model.addAttribute("minPrice", minPrice);
         model.addAttribute("maxPrice", maxPrice);
+        model.addAttribute("subjectId", subjectId);
+        model.addAttribute("professorId", professorId);
+        model.addAttribute("bookTitle", bookTitle);
         
         // 검색어 하이라이팅을 위해 정규화된 키워드 배열 전달
         if (search != null && !search.trim().isEmpty()) {
@@ -141,6 +147,39 @@ public class PostController {
             String[] keywords = normalized.split("\\s+");
             model.addAttribute("searchKeywords", keywords);
         }
+        
+        // 페이지 제목 및 설명 설정
+        String pageTitle = "게시글 둘러보기";
+        String pageDescription = "다양한 교재와 학습 자료를 찾아보세요";
+        
+        if (subjectId != null) {
+            // 과목 ID로 검색하는 경우 - 과목 정보를 가져와서 제목 설정
+            try {
+                String subjectInfo = postService.getSubjectInfoForTitle(subjectId);
+                pageTitle = subjectInfo + " 관련 게시글";
+                pageDescription = "해당 과목의 교재와 학습 자료를 확인하세요";
+            } catch (Exception e) {
+                log.warn("과목 정보 조회 실패: subjectId={}", subjectId, e);
+            }
+        } else if (professorId != null) {
+            // 교수 ID로 검색하는 경우 - 교수 정보를 가져와서 제목 설정
+            try {
+                String professorInfo = postService.getProfessorInfoForTitle(professorId);
+                pageTitle = professorInfo + " 관련 게시글";
+                pageDescription = "해당 교수님의 모든 과목 교재와 학습 자료를 확인하세요";
+            } catch (Exception e) {
+                log.warn("교수 정보 조회 실패: professorId={}", professorId, e);
+            }
+        } else if (bookTitle != null && !bookTitle.trim().isEmpty()) {
+            pageTitle = "'" + bookTitle + "' 검색 결과";
+            pageDescription = "해당 책과 관련된 게시글을 확인하세요";
+        } else if (search != null && !search.trim().isEmpty()) {
+            pageTitle = "'" + search + "' 검색 결과";
+            pageDescription = "검색어와 관련된 게시글을 확인하세요";
+        }
+        
+        model.addAttribute("pageTitle", pageTitle);
+        model.addAttribute("pageDescription", pageDescription);
         
         return "posts/list";
     }
@@ -654,6 +693,12 @@ public class PostController {
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
+        // UserPrincipal null 체크 (보안상 추가 검증)
+        if (userPrincipal == null) {
+            log.warn("My posts 접근 시 UserPrincipal이 null입니다. 로그인 페이지로 리다이렉트합니다.");
+            return "redirect:/login?returnUrl=/posts/my";
+        }
+        
         // 페이지 크기 검증
         if (size > 100) {
             size = DEFAULT_PAGE_SIZE;
@@ -702,6 +747,12 @@ public class PostController {
             @RequestParam(required = false) Integer maxPrice,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
+        
+        // UserPrincipal null 체크 (보안상 추가 검증)
+        if (userPrincipal == null) {
+            log.warn("Wishlist 접근 시 UserPrincipal이 null입니다. 로그인 페이지로 리다이렉트합니다.");
+            return "redirect:/login?returnUrl=/posts/wishlist";
+        }
         
         // 페이지 크기 검증
         if (size > 100) {
