@@ -12,10 +12,14 @@ import com.unibook.exception.BusinessException;
 import com.unibook.exception.ResourceNotFoundException;
 import com.unibook.exception.ValidationException;
 import com.unibook.security.UserPrincipal;
+import com.unibook.service.AuthorizationService;
 import com.unibook.service.BookService;
+import com.unibook.service.PostControllerHelper;
 import com.unibook.service.PostService;
 import com.unibook.service.UserService;
 import com.unibook.service.WishlistService;
+import com.unibook.util.PostFormDataBuilder;
+import com.unibook.controller.dto.PostSearchRequest;
 import com.unibook.repository.ReportRepository;
 import com.unibook.domain.entity.Report;
 import jakarta.validation.Valid;
@@ -59,6 +63,9 @@ public class PostController {
     private final WishlistService wishlistService;
     private final ReportRepository reportRepository;
     private final ObjectMapper objectMapper;
+    private final AuthorizationService authorizationService;
+    private final PostFormDataBuilder postFormDataBuilder;
+    private final PostControllerHelper postControllerHelper;
     
     private static final int DEFAULT_PAGE_SIZE = 12;
     private static final int MAX_IMAGES = 5;
@@ -80,109 +87,71 @@ public class PostController {
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false) Long professorId,
             @RequestParam(required = false) String bookTitle,
+            @RequestParam(required = false) Long userId,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // 페이지 크기 검증
-        if (size > 100) {
-            size = DEFAULT_PAGE_SIZE;
-        }
-        
-        // sortBy 기본값 설정: 검색어가 있으면 RELEVANCE, 없으면 NEWEST
-        if (sortBy == null || sortBy.trim().isEmpty()) {
-            sortBy = (search != null && !search.trim().isEmpty()) ? "RELEVANCE" : "NEWEST";
-        }
-        
-        // 로깅 추가 (디버깅용)
-        log.debug("검색어: '{}', 정렬: '{}'", search, sortBy);
-        
-        // 정렬 옵션에 따른 Pageable 생성
-        Pageable pageable;
-        if (search != null && !search.trim().isEmpty()) {
-            // 검색어가 있는 경우 Sort 제거 (서비스 레이어에서 처리)
-            pageable = PageRequest.of(page, size);
-        } else {
-            // 검색어가 없는 경우에만 정렬 옵션 적용
+        // userId가 있으면 특정 사용자의 게시글만 조회
+        if (userId != null) {
+            // 정렬 옵션 설정
+            if (sortBy == null || sortBy.trim().isEmpty()) {
+                sortBy = "NEWEST";
+            }
+            
             Sort sort = switch (sortBy) {
                 case "PRICE_ASC" -> Sort.by("price").ascending();
                 case "PRICE_DESC" -> Sort.by("price").descending();
                 case "VIEW_COUNT" -> Sort.by("viewCount").descending();
-                case "NEWEST" -> Sort.by("createdAt").descending();
                 default -> Sort.by("createdAt").descending();
             };
-            pageable = PageRequest.of(page, size, sort);
+            
+            Pageable pageable = PageRequest.of(page, size, sort);
+            
+            // 특정 사용자의 게시글 조회
+            Page<Post> posts = postService.getPostsByUserId(userId, pageable, minPrice, maxPrice);
+            Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
+            
+            // 사용자 정보 조회
+            User targetUser = userService.findById(userId).orElse(null);
+            String userName = targetUser != null ? targetUser.getName() : "사용자";
+            
+            model.addAttribute("posts", postDtos);
+            model.addAttribute("productTypes", Post.ProductType.values());
+            model.addAttribute("statuses", Post.PostStatus.values());
+            model.addAttribute("sortBy", sortBy);
+            model.addAttribute("minPrice", minPrice);
+            model.addAttribute("maxPrice", maxPrice);
+            model.addAttribute("pageTitle", userName + "님의 게시글");
+            model.addAttribute("pageType", "user"); // 페이지 타입 구분용
+            model.addAttribute("targetUserId", userId);
+            model.addAttribute("targetUserName", userName);
+            
+            return "posts/list";
         }
         
-        // 로그인한 사용자의 학교 ID
-        Long userSchoolId = null;
-        if (userPrincipal != null) {
-            try {
-                userSchoolId = userService.getSchoolIdByUserId(userPrincipal.getUserId());
-            } catch (Exception e) {
-                // 학교 정보 없음 (정상 케이스)
-                log.debug("사용자의 학교 정보 없음: userId={}", userPrincipal.getUserId());
-            }
-        }
+        // PostSearchRequest 생성 및 정규화 (기존 로직과 완전 동일)
+        PostSearchRequest request = PostSearchRequest.from(page, size, search, productType, status, 
+                                                          schoolId, sortBy, minPrice, maxPrice, 
+                                                          subjectId, professorId, bookTitle);
+        request.normalizeForController();
         
-        Page<Post> posts = postService.getPostsPage(pageable, search, productType, status, schoolId, sortBy, minPrice, maxPrice, subjectId, professorId, bookTitle);
+        // 로깅 추가 (디버깅용)
+        log.debug("검색어: '{}', 정렬: '{}'", request.getSearch(), request.getSortBy());
         
-        // Post 엔티티를 PostResponseDto로 변환하여 Hibernate proxy 문제 방지
-        Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
+        // Pageable 생성 (기존 로직과 완전 동일)
+        Pageable pageable = request.toPageable();
         
-        model.addAttribute("posts", postDtos);
-        model.addAttribute("search", search);
-        model.addAttribute("productType", productType);
-        model.addAttribute("status", status);
-        model.addAttribute("schoolId", schoolId);
-        model.addAttribute("userSchoolId", userSchoolId);
-        model.addAttribute("productTypes", Post.ProductType.values());
-        model.addAttribute("statuses", Post.PostStatus.values());
-        model.addAttribute("sortBy", sortBy);
-        model.addAttribute("minPrice", minPrice);
-        model.addAttribute("maxPrice", maxPrice);
-        model.addAttribute("subjectId", subjectId);
-        model.addAttribute("professorId", professorId);
-        model.addAttribute("bookTitle", bookTitle);
+        // 사용자 학교 ID 조회
+        Long userSchoolId = postControllerHelper.getUserSchoolId(userPrincipal);
         
-        // 검색어 하이라이팅을 위해 정규화된 키워드 배열 전달
-        if (search != null && !search.trim().isEmpty()) {
-            String normalized = search.trim().toLowerCase();
-            String[] keywords = normalized.split("\\s+");
-            model.addAttribute("searchKeywords", keywords);
-        }
+        // 게시글 조회 및 DTO 변환
+        Page<PostResponseDto> postDtos = postControllerHelper.getPostsWithDto(request, pageable);
+        
+        // Model 데이터 설정
+        postControllerHelper.enrichModelWithSearchData(model, request, postDtos, userSchoolId);
         
         // 페이지 제목 및 설명 설정
-        String pageTitle = "게시글 둘러보기";
-        String pageDescription = "다양한 교재와 학습 자료를 찾아보세요";
-        
-        if (subjectId != null) {
-            // 과목 ID로 검색하는 경우 - 과목 정보를 가져와서 제목 설정
-            try {
-                String subjectInfo = postService.getSubjectInfoForTitle(subjectId);
-                pageTitle = subjectInfo + " 관련 게시글";
-                pageDescription = "해당 과목의 교재와 학습 자료를 확인하세요";
-            } catch (Exception e) {
-                log.warn("과목 정보 조회 실패: subjectId={}", subjectId, e);
-            }
-        } else if (professorId != null) {
-            // 교수 ID로 검색하는 경우 - 교수 정보를 가져와서 제목 설정
-            try {
-                String professorInfo = postService.getProfessorInfoForTitle(professorId);
-                pageTitle = professorInfo + " 관련 게시글";
-                pageDescription = "해당 교수님의 모든 과목 교재와 학습 자료를 확인하세요";
-            } catch (Exception e) {
-                log.warn("교수 정보 조회 실패: professorId={}", professorId, e);
-            }
-        } else if (bookTitle != null && !bookTitle.trim().isEmpty()) {
-            pageTitle = "'" + bookTitle + "' 검색 결과";
-            pageDescription = "해당 책과 관련된 게시글을 확인하세요";
-        } else if (search != null && !search.trim().isEmpty()) {
-            pageTitle = "'" + search + "' 검색 결과";
-            pageDescription = "검색어와 관련된 게시글을 확인하세요";
-        }
-        
-        model.addAttribute("pageTitle", pageTitle);
-        model.addAttribute("pageDescription", pageDescription);
+        postControllerHelper.setPageTitleAndDescription(model, request);
         
         return "posts/list";
     }
@@ -202,13 +171,7 @@ public class PostController {
             
             // BLOCKED 상태 게시글 접근 차단 (작성자/관리자 제외)
             if (post.getStatus() == Post.PostStatus.BLOCKED) {
-                boolean isOwner = userPrincipal != null && 
-                                post.getUser().getUserId().equals(userPrincipal.getUserId());
-                boolean isAdmin = userPrincipal != null && 
-                                userPrincipal.getAuthorities().stream()
-                                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-                
-                if (!isOwner && !isAdmin) {
+                if (!authorizationService.isOwnerOrAdmin(post, userPrincipal)) {
                     log.warn("BLOCKED 게시글 비인가 접근 시도: postId={}, userId={}", 
                             id, userPrincipal != null ? userPrincipal.getUserId() : "anonymous");
                     model.addAttribute("blocked", true);
@@ -230,15 +193,9 @@ public class PostController {
             }
             
             // 작성자 여부 확인
-            boolean isOwner = false;
-            boolean canEdit = false;
-            if (userPrincipal != null) {
-                isOwner = post.getUser().getUserId().equals(userPrincipal.getUserId());
-                // 작성자이거나 관리자인 경우 수정 가능 (단, BLOCKED 상태는 관리자만 가능)
-                boolean isAdmin = userPrincipal.getAuthorities().stream()
-                        .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-                canEdit = (isOwner && post.getStatus() != Post.PostStatus.BLOCKED) || isAdmin;
-            }
+            AuthorizationService.AuthorizationInfo authInfo = authorizationService.calculateDetailPageAuth(post, userPrincipal);
+            boolean isOwner = authInfo.isOwner();
+            boolean canEdit = authInfo.canEdit();
             
             // 같은 책의 다른 게시글 (현재 게시글 제외)
             List<Post> relatedPosts = post.getBook() != null ? 
@@ -304,6 +261,7 @@ public class PostController {
         model.addAttribute("productTypes", Post.ProductType.values());
         model.addAttribute("transactionMethods", Post.TransactionMethod.values());
         model.addAttribute("selectedBookJson", "null"); // 새 게시글 작성 시에는 null
+        model.addAttribute("selectedSubjectJson", "null"); // 새 게시글 작성 시에는 null
         model.addAttribute("maxImages", MAX_IMAGES);
         
         return "posts/form";
@@ -384,67 +342,22 @@ public class PostController {
         Post post = postService.getPostByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
-        // 작성자 또는 관리자 확인
-        boolean isOwner = post.getUser().getUserId().equals(userPrincipal.getUserId());
-        boolean isAdmin = userPrincipal.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-        
-        if (!isOwner && !isAdmin) {
-            throw new AccessDeniedException("게시글 수정 권한이 없습니다.");
-        }
+        // 게시글 수정 권한 확인 (BLOCKED 게시글은 관리자만 수정 가능)
+        authorizationService.requireCanEdit(post, userPrincipal, "게시글 수정 권한이 없습니다.");
         
         // DTO로 변환
         PostRequestDto postDto = PostRequestDto.from(post);
         
         model.addAttribute("postDto", postDto);
         model.addAttribute("post", post); // 기존 이미지 표시용
-        model.addAttribute("productTypes", Post.ProductType.values());
-        model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-        model.addAttribute("statuses", Post.PostStatus.values());
-        // model.addAttribute("books", bookService.getAllBooks()); // 임시 제거 - 책 검색 API 사용
-        model.addAttribute("maxImages", MAX_IMAGES);
-        model.addAttribute("isEdit", true);
         
-        // 기존 책 정보 JSON으로 전달 (수정 시 표시용)
-        String bookJson = "null"; // 기본값
-        if (post.getBook() != null) {
-            try {
-                Map<String, Object> bookData = new HashMap<>();
-                bookData.put("bookId", post.getBook().getBookId());
-                bookData.put("title", post.getBook().getTitle());
-                bookData.put("author", post.getBook().getAuthor());
-                bookData.put("publisher", post.getBook().getPublisher());
-                bookData.put("isbn", post.getBook().getIsbn());
-                bookData.put("imageUrl", post.getBook().getImageUrl()); // 책 표지 이미지 URL 추가
-                
-                bookJson = objectMapper.writeValueAsString(bookData);
-            } catch (Exception e) {
-                log.error("책 정보 JSON 변환 실패", e);
-                // bookJson은 이미 "null"로 초기화되어 있음
-            }
-        }
-        model.addAttribute("selectedBookJson", bookJson);
+        // 폼 관련 공통 속성 설정 (리팩터링된 부분)
+        postFormDataBuilder.addFormAttributes(model, true);
         
-        // 기존 과목 정보 JSON으로 전달 (수정 시 표시용)
-        String subjectJson = "null"; // 기본값
-        if (post.getSubject() != null) {
-            try {
-                Map<String, Object> subjectData = new HashMap<>();
-                subjectData.put("subjectId", post.getSubject().getSubjectId());
-                subjectData.put("subjectName", post.getSubject().getSubjectName());
-                subjectData.put("professorName", post.getSubject().getProfessor().getProfessorName());
-                subjectData.put("departmentName", post.getSubject().getProfessor().getDepartment().getDepartmentName());
-                subjectData.put("year", post.getTakenYear());
-                subjectData.put("semester", post.getTakenSemester() != null ? post.getTakenSemester().name() : null);
-                subjectData.put("type", post.getSubject().getType().name());
-                
-                subjectJson = objectMapper.writeValueAsString(subjectData);
-            } catch (Exception e) {
-                log.error("과목 정보 JSON 변환 실패", e);
-                // subjectJson은 이미 "null"로 초기화되어 있음
-            }
-        }
-        model.addAttribute("selectedSubjectJson", subjectJson);
+        // JSON 데이터 설정 (리팩터링된 부분)
+        model.addAttribute("selectedBookJson", postFormDataBuilder.buildBookJson(post.getBook()));
+        model.addAttribute("selectedSubjectJson", postFormDataBuilder.buildSubjectJson(
+                post.getSubject(), post.getTakenYear(), post.getTakenSemester()));
         
         return "posts/form";
     }
@@ -468,14 +381,8 @@ public class PostController {
         Post existingPost = postService.getPostByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
         
-        // 권한 확인
-        boolean isOwner = existingPost.getUser().getUserId().equals(userPrincipal.getUserId());
-        boolean isAdmin = userPrincipal.getAuthorities().stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-        
-        if (!isOwner && !isAdmin) {
-            throw new AccessDeniedException("게시글 수정 권한이 없습니다.");
-        }
+        // 게시글 수정 권한 확인 (BLOCKED 게시글은 관리자만 수정 가능)
+        authorizationService.requireCanEdit(existingPost, userPrincipal, "게시글 수정 권한이 없습니다.");
         
         // 기존 이미지 + 새 이미지 개수 검증
         int currentImageCount = existingPost.getPostImages().size();
@@ -488,49 +395,8 @@ public class PostController {
         }
         
         if (bindingResult.hasErrors()) {
-            model.addAttribute("post", existingPost);
-            model.addAttribute("productTypes", Post.ProductType.values());
-            model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-            model.addAttribute("statuses", Post.PostStatus.values());
-            model.addAttribute("maxImages", MAX_IMAGES);
-            model.addAttribute("isEdit", true);
-            
-            // 기존 책 정보 다시 설정
-            String bookJson = "null";
-            if (existingPost.getBook() != null) {
-                try {
-                    Map<String, Object> bookData = new HashMap<>();
-                    bookData.put("bookId", existingPost.getBook().getBookId());
-                    bookData.put("title", existingPost.getBook().getTitle());
-                    bookData.put("author", existingPost.getBook().getAuthor());
-                    bookData.put("publisher", existingPost.getBook().getPublisher());
-                    bookData.put("isbn", existingPost.getBook().getIsbn());
-                    bookData.put("imageUrl", existingPost.getBook().getImageUrl()); // 책 표지 이미지 URL 추가
-                    bookJson = objectMapper.writeValueAsString(bookData);
-                } catch (Exception e) {
-                    log.error("책 정보 JSON 변환 실패", e);
-                }
-            }
-            model.addAttribute("selectedBookJson", bookJson);
-            
-            // 기존 과목 정보 다시 설정
-            String subjectJson = "null";
-            if (existingPost.getSubject() != null) {
-                try {
-                    Map<String, Object> subjectData = new HashMap<>();
-                    subjectData.put("subjectId", existingPost.getSubject().getSubjectId());
-                    subjectData.put("subjectName", existingPost.getSubject().getSubjectName());
-                    subjectData.put("professorName", existingPost.getSubject().getProfessor().getProfessorName());
-                    subjectData.put("departmentName", existingPost.getSubject().getProfessor().getDepartment().getDepartmentName());
-                    subjectData.put("year", existingPost.getTakenYear());
-                    subjectData.put("semester", existingPost.getTakenSemester() != null ? existingPost.getTakenSemester().name() : null);
-                    subjectData.put("type", existingPost.getSubject().getType().name());
-                    subjectJson = objectMapper.writeValueAsString(subjectData);
-                } catch (Exception e) {
-                    log.error("과목 정보 JSON 변환 실패", e);
-                }
-            }
-            model.addAttribute("selectedSubjectJson", subjectJson);
+            // 에러 처리용 폼 데이터 설정 (리팩터링된 부분)
+            postFormDataBuilder.addFormAttributesForError(model, existingPost, true);
             return "posts/form";
         }
         
@@ -544,49 +410,8 @@ public class PostController {
         } catch (ValidationException e) {
             log.error("게시글 수정 검증 실패: {}", e.getMessage());
             bindingResult.reject("global", e.getMessage());
-            model.addAttribute("post", existingPost);
-            model.addAttribute("productTypes", Post.ProductType.values());
-            model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-            model.addAttribute("statuses", Post.PostStatus.values());
-            model.addAttribute("maxImages", MAX_IMAGES);
-            model.addAttribute("isEdit", true);
-            
-            // 기존 책 정보 다시 설정
-            String bookJson = "null";
-            if (existingPost.getBook() != null) {
-                try {
-                    Map<String, Object> bookData = new HashMap<>();
-                    bookData.put("bookId", existingPost.getBook().getBookId());
-                    bookData.put("title", existingPost.getBook().getTitle());
-                    bookData.put("author", existingPost.getBook().getAuthor());
-                    bookData.put("publisher", existingPost.getBook().getPublisher());
-                    bookData.put("isbn", existingPost.getBook().getIsbn());
-                    bookData.put("imageUrl", existingPost.getBook().getImageUrl()); // 책 표지 이미지 URL 추가
-                    bookJson = objectMapper.writeValueAsString(bookData);
-                } catch (Exception e2) {
-                    log.error("책 정보 JSON 변환 실패", e2);
-                }
-            }
-            model.addAttribute("selectedBookJson", bookJson);
-            
-            // 기존 과목 정보 다시 설정
-            String subjectJson = "null";
-            if (existingPost.getSubject() != null) {
-                try {
-                    Map<String, Object> subjectData = new HashMap<>();
-                    subjectData.put("subjectId", existingPost.getSubject().getSubjectId());
-                    subjectData.put("subjectName", existingPost.getSubject().getSubjectName());
-                    subjectData.put("professorName", existingPost.getSubject().getProfessor().getProfessorName());
-                    subjectData.put("departmentName", existingPost.getSubject().getProfessor().getDepartment().getDepartmentName());
-                    subjectData.put("year", existingPost.getTakenYear());
-                    subjectData.put("semester", existingPost.getTakenSemester() != null ? existingPost.getTakenSemester().name() : null);
-                    subjectData.put("type", existingPost.getSubject().getType().name());
-                    subjectJson = objectMapper.writeValueAsString(subjectData);
-                } catch (Exception e2) {
-                    log.error("과목 정보 JSON 변환 실패", e2);
-                }
-            }
-            model.addAttribute("selectedSubjectJson", subjectJson);
+            // 에러 처리용 폼 데이터 설정 (리팩터링된 부분)
+            postFormDataBuilder.addFormAttributesForError(model, existingPost, true);
             return "posts/form";
             
         } catch (Exception e) {
@@ -609,13 +434,7 @@ public class PostController {
                     .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
             
             // 권한 확인
-            boolean isOwner = post.getUser().getUserId().equals(userPrincipal.getUserId());
-            boolean isAdmin = userPrincipal.getAuthorities().stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
-            
-            if (!isOwner && !isAdmin) {
-                throw new AccessDeniedException("게시글 삭제 권한이 없습니다.");
-            }
+            authorizationService.requireOwnerOrAdmin(post, userPrincipal, "게시글 삭제 권한이 없습니다.");
             
             // 삭제 처리 (이미지 파일도 함께 삭제)
             postService.deletePost(id);
@@ -651,9 +470,7 @@ public class PostController {
                     .orElseThrow(() -> new ResourceNotFoundException("게시글을 찾을 수 없습니다."));
             
             // 작성자 확인
-            if (!post.getUser().getUserId().equals(userPrincipal.getUserId())) {
-                throw new AccessDeniedException("게시글 상태 변경 권한이 없습니다.");
-            }
+            authorizationService.requireOwner(post, userPrincipal, "게시글 상태 변경 권한이 없습니다.");
             
             // BLOCKED 상태 게시글의 상태 변경 차단
             if (post.getStatus() == Post.PostStatus.BLOCKED) {

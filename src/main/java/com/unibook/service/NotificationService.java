@@ -40,31 +40,12 @@ public class NotificationService {
     public void createNotificationAsync(NotificationDto.CreateRequest request) {
         try {
             // 비동기 컨텍스트에서는 findById 사용 (getReferenceById는 LazyInitializationException 위험)
-            User recipient = userRepository.findById(request.getRecipientUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("받는 사용자를 찾을 수 없습니다."));
+            User recipient = findUserForAsync(request.getRecipientUserId());
+            User actor = findUserForAsync(request.getActorUserId());
+            Post relatedPost = findPostForAsync(request.getRelatedPostId());
 
-            User actor = null;
-            if (request.getActorUserId() != null) {
-                actor = userRepository.findById(request.getActorUserId())
-                        .orElseThrow(() -> new ResourceNotFoundException("행동 사용자를 찾을 수 없습니다."));
-            }
-
-            Post relatedPost = null;
-            if (request.getRelatedPostId() != null) {
-                relatedPost = postRepository.findById(request.getRelatedPostId())
-                        .orElseThrow(() -> new ResourceNotFoundException("관련 게시글을 찾을 수 없습니다."));
-            }
-
-            Notification notification = Notification.builder()
-                    .recipient(recipient)
-                    .actor(actor)
-                    .type(request.getType())
-                    .relatedPost(relatedPost)
-                    .title(request.getTitle())
-                    .content(request.getContent())
-                    .url(request.getUrl())
-                    .build();
-
+            Notification notification = buildNotification(request, recipient, actor, relatedPost);
+            
             Notification saved = notificationRepository.save(notification);
             log.info("비동기 알림 생성됨: userId={}, type={}, title={}", 
                     request.getRecipientUserId(), request.getType(), request.getTitle());
@@ -85,27 +66,11 @@ public class NotificationService {
     @Transactional
     public NotificationDto.Response createNotification(NotificationDto.CreateRequest request) {
         // getReferenceById 사용으로 불필요한 DB 조회 최소화
-        User recipient = userRepository.getReferenceById(request.getRecipientUserId());
+        User recipient = getReferenceUser(request.getRecipientUserId());
+        User actor = getReferenceUser(request.getActorUserId());
+        Post relatedPost = getReferencePost(request.getRelatedPostId());
 
-        User actor = null;
-        if (request.getActorUserId() != null) {
-            actor = userRepository.getReferenceById(request.getActorUserId());
-        }
-
-        Post relatedPost = null;
-        if (request.getRelatedPostId() != null) {
-            relatedPost = postRepository.getReferenceById(request.getRelatedPostId());
-        }
-
-        Notification notification = Notification.builder()
-                .recipient(recipient)
-                .actor(actor)
-                .type(request.getType())
-                .relatedPost(relatedPost)
-                .title(request.getTitle())
-                .content(request.getContent())
-                .url(request.getUrl())
-                .build();
+        Notification notification = buildNotification(request, recipient, actor, relatedPost);
 
         Notification saved = notificationRepository.save(notification);
         log.info("알림 생성됨: userId={}, type={}, title={}", 
@@ -125,24 +90,21 @@ public class NotificationService {
     @Async
     @Transactional
     public void createWishlistStatusNotificationAsync(Long recipientUserId, Long postId, Post.PostStatus newStatus) {
-        try {
-            String title = "찜한 게시글 상태 변경";
-            String content = generateStatusChangeMessage(newStatus);
-            String url = "/posts/" + postId;
+        String title = "찜한 게시글 상태 변경";
+        String content = generateStatusChangeMessage(newStatus);
+        String url = "/posts/" + postId;
 
-            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
-                    .recipientUserId(recipientUserId)
-                    .type(Notification.NotificationType.WISHLIST_STATUS_CHANGED)
-                    .relatedPostId(postId)
-                    .title(title)
-                    .content(content)
-                    .url(url)
-                    .build();
+        NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                .recipientUserId(recipientUserId)
+                .type(Notification.NotificationType.WISHLIST_STATUS_CHANGED)
+                .relatedPostId(postId)
+                .title(title)
+                .content(content)
+                .url(url)
+                .build();
 
-            createNotification(request);
-        } catch (Exception e) {
-            log.error("찜 상태 변경 알림 생성 실패: userId={}, postId={}", recipientUserId, postId, e);
-        }
+        createNotificationSafely("찜 상태 변경", request, 
+                "userId", recipientUserId, "postId", postId, "status", newStatus);
     }
 
     /**
@@ -152,26 +114,22 @@ public class NotificationService {
     @Async
     @Transactional
     public void createPostWishlistedNotificationAsync(Long postOwnerId, Long postId, String postTitle) {
-        try {
-            String title = "회원님의 게시글이 찜되었습니다! 💝";
-            String content = String.format("'%s' 게시글을 누군가 찜했습니다.", postTitle);
-            String url = "/posts/" + postId;
+        String title = "회원님의 게시글이 찜되었습니다! 💝";
+        String content = String.format("'%s' 게시글을 누군가 찜했습니다.", postTitle);
+        String url = "/posts/" + postId;
 
-            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
-                    .recipientUserId(postOwnerId)
-                    .actorUserId(null)  // 익명이므로 actor 없음
-                    .type(Notification.NotificationType.POST_WISHLISTED)
-                    .relatedPostId(postId)
-                    .title(title)
-                    .content(content)
-                    .url(url)
-                    .build();
+        NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                .recipientUserId(postOwnerId)
+                .actorUserId(null)  // 익명이므로 actor 없음
+                .type(Notification.NotificationType.POST_WISHLISTED)
+                .relatedPostId(postId)
+                .title(title)
+                .content(content)
+                .url(url)
+                .build();
 
-            createNotification(request);
-            log.info("게시글 찜 익명 알림 생성: postOwnerId={}, postId={}", postOwnerId, postId);
-        } catch (Exception e) {
-            log.error("게시글 찜 익명 알림 생성 실패: postOwnerId={}, postId={}", postOwnerId, postId, e);
-        }
+        createNotificationSafely("게시글 찜 익명", request, 
+                "postOwnerId", postOwnerId, "postId", postId);
     }
 
     /**
@@ -300,26 +258,23 @@ public class NotificationService {
     @Async
     @Transactional
     public void notifyReportProcessed(Long reporterId, Long reportId, Report.ReportStatus status) {
-        try {
-            String title = "신고 처리 결과";
-            String content = switch (status) {
-                case COMPLETED -> "신고하신 내용이 처리되었습니다. 감사합니다.";
-                case REJECTED -> "신고하신 내용을 검토한 결과, 규정 위반 사항이 확인되지 않았습니다.";
-                default -> "신고하신 내용이 처리 중입니다.";
-            };
-            
-            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
-                    .recipientUserId(reporterId)
-                    .type(Notification.NotificationType.REPORT_PROCESSED)
-                    .title(title)
-                    .content(content)
-                    .url("/reports/my") // 내 신고 내역 페이지로
-                    .build();
-            
-            createNotification(request);
-        } catch (Exception e) {
-            log.error("신고 처리 결과 알림 생성 실패: reporterId={}, reportId={}", reporterId, reportId, e);
-        }
+        String title = "신고 처리 결과";
+        String content = switch (status) {
+            case COMPLETED -> "신고하신 내용이 처리되었습니다. 감사합니다.";
+            case REJECTED -> "신고하신 내용을 검토한 결과, 규정 위반 사항이 확인되지 않았습니다.";
+            default -> "신고하신 내용이 처리 중입니다.";
+        };
+        
+        NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                .recipientUserId(reporterId)
+                .type(Notification.NotificationType.REPORT_PROCESSED)
+                .title(title)
+                .content(content)
+                .url("/reports/my") // 내 신고 내역 페이지로
+                .build();
+        
+        createNotificationSafely("신고 처리 결과", request, 
+                "reporterId", reporterId, "reportId", reportId, "status", status);
     }
     
     /**
@@ -356,27 +311,11 @@ public class NotificationService {
      */
     private NotificationDto.Response createPriceChangeNotification(NotificationDto.CreateRequest request, Integer oldPrice, Integer newPrice) {
         // getReferenceById 사용으로 불필요한 DB 조회 최소화
-        User recipient = userRepository.getReferenceById(request.getRecipientUserId());
+        User recipient = getReferenceUser(request.getRecipientUserId());
+        User actor = getReferenceUser(request.getActorUserId());
+        Post relatedPost = getReferencePost(request.getRelatedPostId());
 
-        User actor = null;
-        if (request.getActorUserId() != null) {
-            actor = userRepository.getReferenceById(request.getActorUserId());
-        }
-
-        Post relatedPost = null;
-        if (request.getRelatedPostId() != null) {
-            relatedPost = postRepository.getReferenceById(request.getRelatedPostId());
-        }
-
-        Notification notification = Notification.builder()
-                .recipient(recipient)
-                .actor(actor)
-                .type(request.getType())
-                .relatedPost(relatedPost)
-                .title(request.getTitle())
-                .content(request.getContent())
-                .url(request.getUrl())
-                .build();
+        Notification notification = buildNotification(request, recipient, actor, relatedPost);
         
         // 가격 정보를 payload에 추가
         notification.addPayload("oldPrice", oldPrice);
@@ -396,30 +335,103 @@ public class NotificationService {
     }
     
     /**
+     * 안전한 비동기 알림 생성 템플릿 (예외 처리 포함)
+     */
+    private void createNotificationSafely(String operationName, NotificationDto.CreateRequest request, Object... logParams) {
+        try {
+            createNotification(request);
+            log.info("{} 알림 생성: {}", operationName, formatLogMessage(logParams));
+        } catch (Exception e) {
+            log.error("{} 알림 생성 실패: {}", operationName, formatLogMessage(logParams), e);
+        }
+    }
+    
+    /**
+     * 로그 메시지 포맷팅
+     */
+    private String formatLogMessage(Object... params) {
+        if (params == null || params.length == 0) return "";
+        
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < params.length; i += 2) {
+            if (i + 1 < params.length) {
+                sb.append(params[i]).append("=").append(params[i + 1]);
+                if (i + 2 < params.length) sb.append(", ");
+            }
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Notification 엔티티 빌드
+     */
+    private Notification buildNotification(NotificationDto.CreateRequest request, User recipient, User actor, Post relatedPost) {
+        return Notification.builder()
+                .recipient(recipient)
+                .actor(actor)
+                .type(request.getType())
+                .relatedPost(relatedPost)
+                .title(request.getTitle())
+                .content(request.getContent())
+                .url(request.getUrl())
+                .build();
+    }
+    
+    /**
+     * 알림용 User 조회 (비동기 컨텍스트용 - findById 사용)
+     */
+    private User findUserForAsync(Long userId) {
+        if (userId == null) return null;
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+    }
+    
+    /**
+     * 알림용 User 조회 (동기 컨텍스트용 - getReferenceById 사용)
+     */
+    private User getReferenceUser(Long userId) {
+        if (userId == null) return null;
+        return userRepository.getReferenceById(userId);
+    }
+    
+    /**
+     * 알림용 Post 조회 (비동기 컨텍스트용 - findById 사용)
+     */
+    private Post findPostForAsync(Long postId) {
+        if (postId == null) return null;
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("관련 게시글을 찾을 수 없습니다."));
+    }
+    
+    /**
+     * 알림용 Post 조회 (동기 컨텍스트용 - getReferenceById 사용)
+     */
+    private Post getReferencePost(Long postId) {
+        if (postId == null) return null;
+        return postRepository.getReferenceById(postId);
+    }
+    
+    /**
      * 키워드 매칭 알림 (비동기)
      */
     @Async
     @Transactional
     public void createKeywordMatchNotificationAsync(Long userId, Long postId, String postTitle, String keyword) {
-        try {
-            String title = "등록한 키워드와 일치하는 게시글이 올라왔어요! 🔔";
-            String content = String.format("'%s' 키워드와 일치하는 '%s' 게시글이 등록되었습니다.", keyword, postTitle);
-            String url = "/posts/" + postId;
-            
-            NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
-                    .recipientUserId(userId)
-                    .actorUserId(null)  // 시스템 알림이므로 actor 없음
-                    .type(Notification.NotificationType.KEYWORD_MATCH)
-                    .relatedPostId(postId)
-                    .title(title)
-                    .content(content)
-                    .url(url)
-                    .build();
-            
-            createNotification(request);
-            log.info("키워드 매칭 알림 생성: userId={}, postId={}, keyword={}", userId, postId, keyword);
-        } catch (Exception e) {
-            log.error("키워드 매칭 알림 생성 실패: userId={}, postId={}, keyword={}", userId, postId, keyword, e);
-        }
+        String title = "등록한 키워드와 일치하는 게시글이 올라왔어요! 🔔";
+        String content = String.format("'%s' 키워드와 일치하는 '%s' 게시글이 등록되었습니다.", keyword, postTitle);
+        String url = "/posts/" + postId;
+        
+        NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
+                .recipientUserId(userId)
+                .actorUserId(null)  // 시스템 알림이므로 actor 없음
+                .type(Notification.NotificationType.KEYWORD_MATCH)
+                .relatedPostId(postId)
+                .title(title)
+                .content(content)
+                .url(url)
+                .build();
+        
+        createNotificationSafely("키워드 매칭", request, 
+                "userId", userId, "postId", postId, "keyword", keyword);
     }
 }

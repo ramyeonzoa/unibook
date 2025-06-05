@@ -63,48 +63,43 @@ public class PostService {
     
     /**
      * 게시글 페이지 조회 (필터링 포함)
-     * Full-text 검색 및 필터링 지원
+     * Full-text 검색 및 필터링 지원 - 모든 조건이 함께 적용됨
      */
     public Page<Post> getPostsPage(Pageable pageable, String search, 
                                   Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy,
                                   Integer minPrice, Integer maxPrice, Long subjectId, Long professorId, String bookTitle) {
         
-        // 과목 ID로 검색하는 경우 (우선순위 최고)
-        if (subjectId != null) {
-            log.info("과목 ID로 검색: subjectId={}, productType={}, status={}, schoolId={}", 
-                    subjectId, productType, status, schoolId);
-            return postRepository.findBySubjectIdWithFilters(subjectId, status, productType, schoolId, minPrice, maxPrice, pageable);
+        String trimmedBookTitle = (bookTitle != null && !bookTitle.trim().isEmpty()) ? bookTitle.trim() : null;
+        
+        // 로깅을 위한 조건 확인
+        boolean hasSpecificFilters = subjectId != null || professorId != null || trimmedBookTitle != null;
+        boolean hasSearch = search != null && !search.trim().isEmpty();
+        
+        if (hasSpecificFilters) {
+            if (subjectId != null) {
+                log.info("과목 ID로 검색: subjectId={}, search='{}', status={}, productType={}", 
+                        subjectId, search, status, productType);
+            } else if (professorId != null) {
+                log.info("교수 ID로 검색: professorId={}, search='{}', status={}, productType={}", 
+                        professorId, search, status, productType);
+            } else {
+                log.info("책 제목으로 검색: bookTitle='{}', search='{}', status={}, productType={}", 
+                        trimmedBookTitle, search, status, productType);
+            }
         }
         
-        // 교수 ID로 검색하는 경우 (우선순위 2순위)
-        if (professorId != null) {
-            log.info("교수 ID로 검색: professorId={}, productType={}, status={}, schoolId={}", 
-                    professorId, productType, status, schoolId);
-            return postRepository.findByProfessorIdWithFilters(professorId, status, productType, schoolId, minPrice, maxPrice, pageable);
-        }
-        
-        // 책 제목으로 검색하는 경우 (우선순위 3순위)
-        if (bookTitle != null && !bookTitle.trim().isEmpty()) {
-            log.info("책 제목으로 검색: bookTitle='{}', productType={}, status={}, schoolId={}", 
-                    bookTitle, productType, status, schoolId);
-            return postRepository.findByBookTitleWithFilters(bookTitle.trim(), status, productType, schoolId, minPrice, maxPrice, pageable);
-        }
-        
-        // 검색어가 있는 경우
-        if (search != null && !search.trim().isEmpty()) {
+        // 검색어가 있는 경우 Full-text 검색 우선 실행
+        if (hasSearch) {
             String normalized = QueryNormalizer.normalize(search);
             
             // 최소 2글자 이상만 검색 (ngram_token_size=2)
             if (normalized.length() >= 2) {
-                log.info("Full-text 검색 실행: query='{}', normalized='{}', productType={}, status={}, schoolId={}", 
-                        search, normalized, productType, status, schoolId);
+                log.info("Full-text 검색 실행: query='{}', normalized='{}', 추가 필터={}", 
+                        search, normalized, hasSpecificFilters);
                 
-                // OR 검색을 기본으로 사용 (더 유연한 검색 결과)
-                // "선형대수학 김선형" → "선형대수학 김선형" (각 단어 중 하나라도 포함)
-                // QueryNormalizer가 이미 특수문자를 제거했으므로 안전함
                 String booleanQuery = normalized;
                 
-                // Full-text 검색 실행
+                // Full-text 검색 실행 (기본 필터만 적용)
                 Page<PostSearchProjection> searchResults = postRepository.searchPostsWithFulltext(
                         booleanQuery,
                         status != null ? status.name() : null,
@@ -115,14 +110,8 @@ public class PostService {
                         pageable
                 );
                 
-                // 검색 결과가 있으면 Post 엔티티로 변환
+                // 검색 결과가 있으면 Post 엔티티로 변환 및 추가 필터링
                 if (!searchResults.isEmpty()) {
-                    // 관련도 점수 로깅 (디버그용)
-                    if (log.isDebugEnabled()) {
-                        searchResults.getContent().forEach(result -> 
-                            log.debug("Post ID: {}, Score: {}", result.getPostId(), result.getTotalScore())
-                        );
-                    }
                     List<Long> postIds = searchResults.getContent().stream()
                             .map(PostSearchProjection::getPostId)
                             .collect(Collectors.toList());
@@ -130,64 +119,106 @@ public class PostService {
                     // ID로 Post 엔티티들을 조회 (Fetch Join)
                     List<Post> posts = postRepository.findAllByIdInWithDetails(postIds);
                     
-                    // 검색 결과의 순서를 유지하기 위해 Map으로 변환 후 정렬
-                    Map<Long, Post> postMap = posts.stream()
-                            .collect(Collectors.toMap(Post::getPostId, post -> post));
+                    // 추가 필터링 적용 (subjectId, professorId, bookTitle)
+                    List<Post> filteredPosts = applyAdditionalFilters(posts, subjectId, professorId, trimmedBookTitle);
                     
-                    List<Post> orderedPosts;
+                    // 정렬 적용
+                    List<Post> orderedPosts = applySorting(filteredPosts, postIds, sortBy);
                     
-                    // 정렬 옵션에 따라 재정렬
-                    if ("RELEVANCE".equals(sortBy)) {
-                        // 관련도순 - 검색 결과 순서 유지
-                        orderedPosts = postIds.stream()
-                                .map(postMap::get)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList());
-                    } else {
-                        // 다른 정렬 옵션 적용
-                        Stream<Post> postStream = postMap.values().stream();
-                        
-                        switch (sortBy) {
-                            case "PRICE_ASC":
-                                postStream = postStream.sorted(Comparator.comparing(Post::getPrice));
-                                break;
-                            case "PRICE_DESC":
-                                postStream = postStream.sorted(Comparator.comparing(Post::getPrice).reversed());
-                                break;
-                            case "VIEW_COUNT":
-                                postStream = postStream.sorted(Comparator.comparing(Post::getViewCount, 
-                                        Comparator.nullsLast(Comparator.naturalOrder())).reversed());
-                                break;
-                            case "NEWEST":
-                            default:
-                                postStream = postStream.sorted(Comparator.comparing(Post::getCreatedAt).reversed());
-                                break;
-                        }
-                        
-                        orderedPosts = postStream.collect(Collectors.toList());
-                    }
-                    
-                    // 페이징 처리
+                    // 페이징 처리 (추가 필터링으로 인한 결과 수 변화 반영)
                     int start = (int) pageable.getOffset();
                     int end = Math.min(start + pageable.getPageSize(), orderedPosts.size());
                     
-                    List<Post> pagedPosts = orderedPosts.subList(start, Math.min(end, orderedPosts.size()));
+                    if (start >= orderedPosts.size()) {
+                        return Page.empty(pageable);
+                    }
                     
-                    // Page 객체로 변환하여 반환
-                    return new PageImpl<>(pagedPosts, pageable, searchResults.getTotalElements());
+                    List<Post> pagedPosts = orderedPosts.subList(start, end);
+                    
+                    // 전체 결과 수는 추가 필터링 후의 결과 수로 설정
+                    return new PageImpl<>(pagedPosts, pageable, orderedPosts.size());
                 }
                 
                 return Page.empty(pageable);
             } else {
-                log.info("검색어가 너무 짧음: '{}' (최소 2글자)", normalized);
-                // 검색어가 짧을 때도 필터링은 적용
+                log.info("검색어가 너무 짧음: '{}' (최소 2글자), 필터링만 적용", normalized);
             }
         }
         
-        // 검색어가 없거나 너무 짧은 경우 - 필터링만 적용
-        log.info("필터링 조회: productType={}, status={}, schoolId={}, minPrice={}, maxPrice={}", 
-                productType, status, schoolId, minPrice, maxPrice);
-        return postRepository.findByFilters(status, productType, schoolId, minPrice, maxPrice, pageable);
+        // 검색어가 없거나 너무 짧은 경우 - 모든 필터링 적용
+        log.info("통합 필터링 조회: subjectId={}, professorId={}, bookTitle='{}', status={}, productType={}", 
+                subjectId, professorId, trimmedBookTitle, status, productType);
+        return postRepository.findPostsWithOptionalFilters(
+            subjectId, professorId, trimmedBookTitle, 
+            status, productType, schoolId, minPrice, maxPrice, pageable);
+    }
+    
+    /**
+     * Full-text 검색 결과에 추가 필터 적용
+     */
+    private List<Post> applyAdditionalFilters(List<Post> posts, Long subjectId, Long professorId, String bookTitle) {
+        return posts.stream()
+                .filter(post -> {
+                    // 과목 필터
+                    if (subjectId != null) {
+                        return post.getSubject() != null && subjectId.equals(post.getSubject().getSubjectId());
+                    }
+                    
+                    // 교수 필터
+                    if (professorId != null) {
+                        return post.getSubject() != null && 
+                               post.getSubject().getProfessor() != null && 
+                               professorId.equals(post.getSubject().getProfessor().getProfessorId());
+                    }
+                    
+                    // 책 제목 필터
+                    if (bookTitle != null) {
+                        return post.getBook() != null && 
+                               post.getBook().getTitle() != null &&
+                               post.getBook().getTitle().toLowerCase().contains(bookTitle.toLowerCase());
+                    }
+                    
+                    return true;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 정렬 적용
+     */
+    private List<Post> applySorting(List<Post> posts, List<Long> originalOrder, String sortBy) {
+        if ("RELEVANCE".equals(sortBy)) {
+            // 관련도순 - 원래 검색 결과 순서 유지
+            Map<Long, Post> postMap = posts.stream()
+                    .collect(Collectors.toMap(Post::getPostId, post -> post));
+            
+            return originalOrder.stream()
+                    .map(postMap::get)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+        } else {
+            // 다른 정렬 옵션 적용
+            Stream<Post> postStream = posts.stream();
+            
+            switch (sortBy) {
+                case "PRICE_ASC":
+                    postStream = postStream.sorted(Comparator.comparing(Post::getPrice));
+                    break;
+                case "PRICE_DESC":
+                    postStream = postStream.sorted(Comparator.comparing(Post::getPrice).reversed());
+                    break;
+                case "VIEW_COUNT":
+                    postStream = postStream.sorted(Comparator.comparing(Post::getViewCount, 
+                            Comparator.nullsLast(Comparator.naturalOrder())).reversed());
+                    break;
+                case "NEWEST":
+                default:
+                    postStream = postStream.sorted(Comparator.comparing(Post::getCreatedAt).reversed());
+                    break;
+            }
+            
+            return postStream.collect(Collectors.toList());
+        }
     }
     
     /**
@@ -240,18 +271,14 @@ public class PostService {
      * 사용자별 게시글 조회 (Fetch Join으로 N+1 방지)
      */
     public Page<Post> getPostsByUserId(Long userId, Pageable pageable) {
-        return postRepository.findByUserIdWithDetails(userId, pageable);
+        return postRepository.findUserPostsByUserUnified(userId, null, null, pageable);
     }
     
     /**
      * 사용자별 게시글 조회 (가격 필터링 포함)
      */
     public Page<Post> getPostsByUserId(Long userId, Pageable pageable, Integer minPrice, Integer maxPrice) {
-        if (minPrice == null && maxPrice == null) {
-            return postRepository.findByUserIdWithDetails(userId, pageable);
-        } else {
-            return postRepository.findByUserIdWithDetailsAndPriceFilter(userId, minPrice, maxPrice, pageable);
-        }
+        return postRepository.findUserPostsByUserUnified(userId, minPrice, maxPrice, pageable);
     }
     
     /**
@@ -306,27 +333,10 @@ public class PostService {
             post.setUser(user);
             
             // 2. Book 연결 (교재 타입인 경우만 처리)
-            if (postDto.getProductType().isTextbookType()) {
-                if (postDto.getBookId() != null) {
-                    Book book = bookRepository.findById(postDto.getBookId())
-                            .orElseThrow(() -> new ValidationException("선택하신 책 정보를 찾을 수 없습니다. 다시 검색해주세요."));
-                    post.setBook(book);
-                    log.debug("책 정보 연결: bookId={}, title={}", book.getBookId(), book.getTitle());
-                }
-                // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
-            }
+            setupBookConnection(post, postDto);
             
             // 3. Subject 연결 (모든 상품 타입에서 가능)
-            if (postDto.getSubjectId() != null) {
-                Subject subject = subjectRepository.findById(postDto.getSubjectId())
-                        .orElseThrow(() -> new ValidationException("선택하신 과목 정보를 찾을 수 없습니다."));
-                post.setSubject(subject);
-                post.setTakenYear(postDto.getTakenYear());
-                post.setTakenSemester(postDto.getTakenSemester());
-                log.debug("과목 정보 연결: subjectId={}, name={}, year={}, semester={}", 
-                        subject.getSubjectId(), subject.getSubjectName(), 
-                        postDto.getTakenYear(), postDto.getTakenSemester());
-            }
+            setupSubjectConnection(post, postDto);
             
             // 4. Post 저장
             Post savedPost = postRepository.save(post);
@@ -380,104 +390,24 @@ public class PostService {
             // 1. 기본 정보 업데이트
             postDto.updateEntity(post);
             
-            // 2. Book 연결 업데이트 (교재 타입인 경우만 처리)
-            if (postDto.getProductType().isTextbookType()) {
-                if (postDto.isRemoveBook()) {
-                    // 명시적으로 책 연결 해제 요청
-                    log.debug("책 연결 해제 요청");
-                    post.setBook(null);
-                } else if (postDto.getBookId() != null) {
-                    // 새로운 책으로 변경
-                    Book book = bookRepository.findById(postDto.getBookId())
-                            .orElseThrow(() -> new ValidationException("선택하신 책 정보를 찾을 수 없습니다. 다시 검색해주세요."));
-                    post.setBook(book);
-                    log.debug("책 정보 업데이트: bookId={}, title={}", book.getBookId(), book.getTitle());
-                } else {
-                    // bookId가 null이고 removeBook이 false면 기존 연결 유지
-                    log.debug("책 정보 유지: 기존 연결 유지");
-                }
-                // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
-            } else {
-                // 교재 타입이 아닌 경우 책 연결 해제
-                if (post.getBook() != null) {
-                    log.debug("상품 타입 변경으로 책 연결 해제");
-                    post.setBook(null);
-                }
-            }
+            // 2. Book 연결 업데이트
+            updateBookConnection(post, postDto);
             
-            // 3. Subject 연결 업데이트 (모든 상품 타입에서 가능)
-            if (postDto.isRemoveSubject()) {
-                // 명시적으로 과목 연결 해제 요청
-                log.debug("과목 연결 해제 요청");
-                post.setSubject(null);
-                post.setTakenYear(null);
-                post.setTakenSemester(null);
-            } else if (postDto.getSubjectId() != null) {
-                // 새로운 과목으로 변경
-                Subject subject = subjectRepository.findById(postDto.getSubjectId())
-                        .orElseThrow(() -> new ValidationException("선택하신 과목 정보를 찾을 수 없습니다."));
-                post.setSubject(subject);
-                post.setTakenYear(postDto.getTakenYear());
-                post.setTakenSemester(postDto.getTakenSemester());
-                log.debug("과목 정보 업데이트: subjectId={}, name={}, year={}, semester={}", 
-                        subject.getSubjectId(), subject.getSubjectName(),
-                        postDto.getTakenYear(), postDto.getTakenSemester());
-            }
+            // 3. Subject 연결 업데이트
+            updateSubjectConnection(post, postDto);
             
             // 4. SubjectBook reference count 관리
-            Long newSubjectId = post.getSubject() != null ? post.getSubject().getSubjectId() : null;
-            Long newBookId = post.getBook() != null ? post.getBook().getBookId() : null;
-            boolean hasNewSubjectBookConnection = (newSubjectId != null && newBookId != null);
+            updateSubjectBookReferenceCount(post, oldSubjectId, oldBookId, hadSubjectBookConnection);
             
-            // 기존 연결과 새 연결이 다른 경우 reference count 업데이트
-            if (hadSubjectBookConnection && 
-                (!hasNewSubjectBookConnection || !oldSubjectId.equals(newSubjectId) || !oldBookId.equals(newBookId))) {
-                // 기존 연결 해제 (reference count 감소)
-                subjectBookService.decrementPostCount(oldSubjectId, oldBookId);
-            }
-            
-            if (hasNewSubjectBookConnection && 
-                (!hadSubjectBookConnection || !oldSubjectId.equals(newSubjectId) || !oldBookId.equals(newBookId))) {
-                // 새 연결 생성 (reference count 증가)
-                subjectBookService.incrementPostCount(newSubjectId, newBookId);
-            }
-            
-            // 3. 이미지 삭제 처리
-            if (deleteImageIds != null && !deleteImageIds.isEmpty()) {
-                deleteImages(post, deleteImageIds);
-            }
-            
-            // 4. 새 이미지 추가 (순서 정보와 함께)
-            if (newImages != null && !newImages.isEmpty()) {
-                processImagesWithOrder(post, newImages, newImageOrders);
-            }
-            
-            // 5. 이미지 순서 업데이트
-            if (imageOrders != null && !imageOrders.isEmpty()) {
-                updateImageOrders(post, imageOrders);
-            }
+            // 5. 이미지 처리 (삭제, 추가, 순서 업데이트)
+            handleImageUpdates(post, newImages, deleteImageIds, imageOrders, newImageOrders);
             
             // Note: SubjectBook reference count는 위에서 이미 처리됨
             
             Post updatedPost = postRepository.save(post);
             
-            // 가격 변동 감지 및 알림 발송
-            Integer newPrice = updatedPost.getPrice();
-            if (oldPrice != null && newPrice != null && !oldPrice.equals(newPrice)) {
-                log.info("가격 변동 감지: postId={}, {}원 -> {}원", postId, oldPrice, newPrice);
-                
-                // 가격이 변경된 경우에만 위시리스트 사용자들에게 알림 발송
-                notifyWishlistUsersOfPriceChange(updatedPost, oldPrice, newPrice);
-            }
-            
-            // 상태 변경 감지 및 알림 발송
-            Post.PostStatus newStatus = updatedPost.getStatus();
-            if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
-                log.info("상태 변경 감지: postId={}, {} -> {}", postId, oldStatus, newStatus);
-                
-                // 상태가 변경된 경우에만 위시리스트 사용자들에게 알림 발송
-                publishWishlistStatusChangeNotifications(updatedPost, newStatus);
-            }
+            // 6. 변경사항 감지 및 알림 발송  
+            handleChangeNotifications(updatedPost, oldPrice, oldStatus, postId);
             
             log.info("게시글 수정 완료: postId={}", postId);
             
@@ -1086,6 +1016,157 @@ public class PostService {
                     .completed(List.of())
                     .hasData(false)
                     .build();
+        }
+    }
+    
+    /**
+     * 게시글 생성시 Book 연결 설정
+     */
+    private void setupBookConnection(Post post, PostRequestDto postDto) {
+        if (postDto.getProductType().isTextbookType()) {
+            if (postDto.getBookId() != null) {
+                Book book = bookRepository.findById(postDto.getBookId())
+                        .orElseThrow(() -> new ValidationException("선택하신 책 정보를 찾을 수 없습니다. 다시 검색해주세요."));
+                post.setBook(book);
+                log.debug("책 정보 연결: bookId={}, title={}", book.getBookId(), book.getTitle());
+            }
+            // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
+        }
+    }
+    
+    /**
+     * 게시글 생성시 Subject 연결 설정
+     */
+    private void setupSubjectConnection(Post post, PostRequestDto postDto) {
+        if (postDto.getSubjectId() != null) {
+            Subject subject = subjectRepository.findById(postDto.getSubjectId())
+                    .orElseThrow(() -> new ValidationException("선택하신 과목 정보를 찾을 수 없습니다."));
+            post.setSubject(subject);
+            post.setTakenYear(postDto.getTakenYear());
+            post.setTakenSemester(postDto.getTakenSemester());
+            log.debug("과목 정보 연결: subjectId={}, name={}, year={}, semester={}", 
+                    subject.getSubjectId(), subject.getSubjectName(), 
+                    postDto.getTakenYear(), postDto.getTakenSemester());
+        }
+    }
+    
+    /**
+     * 변경사항 감지 및 알림 발송 처리
+     */
+    private void handleChangeNotifications(Post updatedPost, Integer oldPrice, Post.PostStatus oldStatus, Long postId) {
+        // 가격 변동 감지 및 알림 발송
+        Integer newPrice = updatedPost.getPrice();
+        if (oldPrice != null && newPrice != null && !oldPrice.equals(newPrice)) {
+            log.info("가격 변동 감지: postId={}, {}원 -> {}원", postId, oldPrice, newPrice);
+            
+            // 가격이 변경된 경우에만 위시리스트 사용자들에게 알림 발송
+            notifyWishlistUsersOfPriceChange(updatedPost, oldPrice, newPrice);
+        }
+        
+        // 상태 변경 감지 및 알림 발송
+        Post.PostStatus newStatus = updatedPost.getStatus();
+        if (oldStatus != null && newStatus != null && !oldStatus.equals(newStatus)) {
+            log.info("상태 변경 감지: postId={}, {} -> {}", postId, oldStatus, newStatus);
+            
+            // 상태가 변경된 경우에만 위시리스트 사용자들에게 알림 발송
+            publishWishlistStatusChangeNotifications(updatedPost, newStatus);
+        }
+    }
+    
+    /**
+     * 이미지 처리 (삭제, 추가, 순서 업데이트)
+     */
+    private void handleImageUpdates(Post post, List<MultipartFile> newImages, List<Long> deleteImageIds,
+                                  List<String> imageOrders, List<String> newImageOrders) throws IOException {
+        // 이미지 삭제 처리
+        if (deleteImageIds != null && !deleteImageIds.isEmpty()) {
+            deleteImages(post, deleteImageIds);
+        }
+        
+        // 새 이미지 추가 (순서 정보와 함께)
+        if (newImages != null && !newImages.isEmpty()) {
+            processImagesWithOrder(post, newImages, newImageOrders);
+        }
+        
+        // 이미지 순서 업데이트
+        if (imageOrders != null && !imageOrders.isEmpty()) {
+            updateImageOrders(post, imageOrders);
+        }
+    }
+    
+    /**
+     * SubjectBook reference count 관리
+     */
+    private void updateSubjectBookReferenceCount(Post post, Long oldSubjectId, Long oldBookId, 
+                                               boolean hadSubjectBookConnection) {
+        Long newSubjectId = post.getSubject() != null ? post.getSubject().getSubjectId() : null;
+        Long newBookId = post.getBook() != null ? post.getBook().getBookId() : null;
+        boolean hasNewSubjectBookConnection = (newSubjectId != null && newBookId != null);
+        
+        // 기존 연결과 새 연결이 다른 경우 reference count 업데이트
+        if (hadSubjectBookConnection && 
+            (!hasNewSubjectBookConnection || !oldSubjectId.equals(newSubjectId) || !oldBookId.equals(newBookId))) {
+            // 기존 연결 해제 (reference count 감소)
+            subjectBookService.decrementPostCount(oldSubjectId, oldBookId);
+        }
+        
+        if (hasNewSubjectBookConnection && 
+            (!hadSubjectBookConnection || !oldSubjectId.equals(newSubjectId) || !oldBookId.equals(newBookId))) {
+            // 새 연결 생성 (reference count 증가)
+            subjectBookService.incrementPostCount(newSubjectId, newBookId);
+        }
+    }
+    
+    /**
+     * Subject 연결 업데이트 처리  
+     */
+    private void updateSubjectConnection(Post post, PostRequestDto postDto) {
+        if (postDto.isRemoveSubject()) {
+            // 명시적으로 과목 연결 해제 요청
+            log.debug("과목 연결 해제 요청");
+            post.setSubject(null);
+            post.setTakenYear(null);
+            post.setTakenSemester(null);
+        } else if (postDto.getSubjectId() != null) {
+            // 새로운 과목으로 변경
+            Subject subject = subjectRepository.findById(postDto.getSubjectId())
+                    .orElseThrow(() -> new ValidationException("선택하신 과목 정보를 찾을 수 없습니다."));
+            post.setSubject(subject);
+            post.setTakenYear(postDto.getTakenYear());
+            post.setTakenSemester(postDto.getTakenSemester());
+            log.debug("과목 정보 업데이트: subjectId={}, name={}, year={}, semester={}", 
+                    subject.getSubjectId(), subject.getSubjectName(),
+                    postDto.getTakenYear(), postDto.getTakenSemester());
+        }
+    }
+    
+    /**
+     * Book 연결 업데이트 처리
+     */
+    private void updateBookConnection(Post post, PostRequestDto postDto) {
+        // 교재 타입인 경우만 처리
+        if (postDto.getProductType().isTextbookType()) {
+            if (postDto.isRemoveBook()) {
+                // 명시적으로 책 연결 해제 요청
+                log.debug("책 연결 해제 요청");
+                post.setBook(null);
+            } else if (postDto.getBookId() != null) {
+                // 새로운 책으로 변경
+                Book book = bookRepository.findById(postDto.getBookId())
+                        .orElseThrow(() -> new ValidationException("선택하신 책 정보를 찾을 수 없습니다. 다시 검색해주세요."));
+                post.setBook(book);
+                log.debug("책 정보 업데이트: bookId={}, title={}", book.getBookId(), book.getTitle());
+            } else {
+                // bookId가 null이고 removeBook이 false면 기존 연결 유지
+                log.debug("책 정보 유지: 기존 연결 유지");
+            }
+            // TODO: 향후 수동 입력 기능 추가 시 else if 분기 추가
+        } else {
+            // 교재 타입이 아닌 경우 책 연결 해제
+            if (post.getBook() != null) {
+                log.debug("상품 타입 변경으로 책 연결 해제");
+                post.setBook(null);
+            }
         }
     }
     

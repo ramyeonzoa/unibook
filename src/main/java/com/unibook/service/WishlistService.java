@@ -93,18 +93,14 @@ public class WishlistService {
      * 사용자의 찜한 게시글 목록 조회 (Fetch Join으로 N+1 방지)
      */
     public Page<Post> getUserWishlistPosts(Long userId, Pageable pageable) {
-        return postRepository.findWishlistedPostsByUser(userId, pageable);
+        return postRepository.findWishlistedPostsByUserUnified(userId, null, null, pageable);
     }
     
     /**
      * 사용자의 찜한 게시글 목록 조회 (가격 필터링 포함)
      */
     public Page<Post> getUserWishlistPosts(Long userId, Pageable pageable, Integer minPrice, Integer maxPrice) {
-        if (minPrice == null && maxPrice == null) {
-            return postRepository.findWishlistedPostsByUser(userId, pageable);
-        } else {
-            return postRepository.findWishlistedPostsByUserWithPriceFilter(userId, minPrice, maxPrice, pageable);
-        }
+        return postRepository.findWishlistedPostsByUserUnified(userId, minPrice, maxPrice, pageable);
     }
     
     /**
