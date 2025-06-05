@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
+    
+    <title>마이페이지 - Unibook</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- 공통 스타일 (알림 등) -->
+    <div th:replace="~{fragments/header :: styles}"></div>
+    <style>
+        .profile-header {
+            background-color: #f8f9fa;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .profile-card {
+            border: none;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .profile-info {
+            padding: 2rem;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+            width: 120px;
+            display: inline-block;
+        }
+        
+        .tab-content {
+            padding: 2rem 0;
+        }
+        
+        .form-section {
+            background-color: #f8f9fa;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .password-requirements {
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+            border: 1px solid #dee2e6;
+        }
+        
+        .password-requirements small {
+            color: #6c757d;
+            transition: color 0.3s ease;
+        }
+        
+        .password-requirements small.valid {
+            color: #198754;
+            font-weight: 500;
+        }
+        
+        .requirement-icon {
+            font-size: 0.8rem;
+            margin-right: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+<!-- 공통 헤더 포함 -->
+<nav th:replace="~{fragments/header :: header}"></nav>
+
+<!-- 공통 메시지 포함 -->
+<div th:replace="~{fragments/header :: messages}"></div>
+
+<!-- 프로필 헤더 -->
+<div class="profile-header">
+    <div class="container">
+        <h2><i class="bi bi-person-circle"></i> 마이페이지</h2>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <!-- 사용자 정보 카드 -->
+            <div class="card profile-card">
+                <div class="profile-info">
+                    <h4 class="mb-4">기본 정보</h4>
+                    <div class="mb-3">
+                        <span class="info-label">이름</span>
+                        <span th:text="${user.name}">이름</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">이메일</span>
+                        <span th:text="${user.email}">이메일</span>
+                        <span th:if="${user.verified}" class="badge bg-success ms-2">
+                            <i class="bi bi-check-circle"></i> 인증됨
+                        </span>
+                        <span th:unless="${user.verified}" class="badge bg-warning text-dark ms-2">
+                            <i class="bi bi-exclamation-circle"></i> 미인증
+                        </span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">학교</span>
+                        <span th:text="${user.department?.school?.schoolName ?: '정보 없음'}">학교</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">학과</span>
+                        <span th:text="${user.department?.departmentName ?: '정보 없음'}">학과</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">전화번호</span>
+                        <span th:text="${user.phoneNumber}">전화번호</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="info-label">가입일</span>
+                        <span th:text="${#temporals.format(user.createdAt, 'yyyy년 MM월 dd일')}">가입일</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 탭 메뉴 -->
+            <ul class="nav nav-tabs" id="profileTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" th:classappend="${passwordError ? '' : 'active'}" 
+                            id="info-tab" data-bs-toggle="tab" data-bs-target="#info" 
+                            type="button" role="tab" aria-controls="info" 
+                            th:aria-selected="${!passwordError}">
+                        <i class="bi bi-person"></i> 정보 수정
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" th:classappend="${passwordError ? 'active' : ''}" 
+                            id="password-tab" data-bs-toggle="tab" data-bs-target="#password" 
+                            type="button" role="tab" aria-controls="password" 
+                            th:aria-selected="${passwordError}">
+                        <i class="bi bi-lock"></i> 비밀번호 변경
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" 
+                            data-bs-target="#notifications" type="button" role="tab" 
+                            aria-controls="notifications" aria-selected="false">
+                        <i class="bi bi-bell"></i> 알림
+                        <span th:if="${unreadCount > 0}" class="badge bg-danger ms-1" th:text="${unreadCount}">0</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="keyword-alerts-tab" data-bs-toggle="tab" 
+                            data-bs-target="#keyword-alerts" type="button" role="tab" 
+                            aria-controls="keyword-alerts" aria-selected="false">
+                        <i class="bi bi-bell-fill"></i> 키워드 알림
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- 탭 컨텐츠 -->
+            <div class="tab-content" id="profileTabContent">
+                <!-- 정보 수정 탭 -->
+                <div class="tab-pane fade" th:classappend="${passwordError ? '' : 'show active'}" 
+                     id="info" role="tabpanel" aria-labelledby="info-tab">
+                    <div class="form-section">
+                        <h5 class="mb-4">정보 수정</h5>
+                        <form th:action="@{/profile/info}" method="post" th:object="${infoUpdateForm}">
+                            <div class="mb-3">
+                                <label for="infoCurrentPassword" class="form-label">현재 비밀번호</label>
+                                <input type="password" class="form-control" id="infoCurrentPassword" 
+                                       th:field="*{currentPassword}" 
+                                       placeholder="보안을 위해 현재 비밀번호를 입력해주세요">
+                                <div th:if="${#fields.hasErrors('currentPassword')}" 
+                                     class="text-danger mt-1" th:errors="*{currentPassword}">에러</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phoneNumber" class="form-label">전화번호</label>
+                                <input type="tel" class="form-control" id="phoneNumber" 
+                                       th:field="*{phoneNumber}" 
+                                       placeholder="010-0000-0000">
+                                <div th:if="${#fields.hasErrors('phoneNumber')}" 
+                                     class="text-danger mt-1" th:errors="*{phoneNumber}">에러</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> 정보 수정
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 비밀번호 변경 탭 -->
+                <div class="tab-pane fade" th:classappend="${passwordError ? 'show active' : ''}" 
+                     id="password" role="tabpanel" aria-labelledby="password-tab">
+                    <div class="form-section">
+                        <h5 class="mb-4">비밀번호 변경</h5>
+                        <form th:action="@{/profile/password}" method="post" th:object="${passwordChangeForm}">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">현재 비밀번호</label>
+                                <input type="password" class="form-control" id="currentPassword" 
+                                       th:field="*{currentPassword}">
+                                <div th:if="${#fields.hasErrors('currentPassword')}" 
+                                     class="text-danger mt-1" th:errors="*{currentPassword}">에러</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">새 비밀번호</label>
+                                <input type="password" class="form-control" id="newPassword" 
+                                       th:field="*{newPassword}">
+                                <div class="password-requirements" id="passwordRequirements">
+                                    <small class="d-block" id="lengthCheck">
+                                        <span class="requirement-icon">❌</span> 8자 이상
+                                    </small>
+                                    <small class="d-block" id="letterCheck">
+                                        <span class="requirement-icon">❌</span> 영문 포함
+                                    </small>
+                                    <small class="d-block" id="numberCheck">
+                                        <span class="requirement-icon">❌</span> 숫자 포함
+                                    </small>
+                                    <small class="d-block" id="specialCheck">
+                                        <span class="requirement-icon">❌</span> 특수문자 포함
+                                    </small>
+                                </div>
+                                <div th:if="${#fields.hasErrors('newPassword')}" 
+                                     class="text-danger mt-1" th:errors="*{newPassword}">에러</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPasswordConfirm" class="form-label">새 비밀번호 확인</label>
+                                <input type="password" class="form-control" id="newPasswordConfirm" 
+                                       th:field="*{newPasswordConfirm}">
+                                <div th:if="${#fields.hasErrors('newPasswordConfirm')}" 
+                                     class="text-danger mt-1" th:errors="*{newPasswordConfirm}">에러</div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-lock"></i> 비밀번호 변경
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- 알림 탭 -->
+                <div class="tab-pane fade" id="notifications" role="tabpanel" aria-labelledby="notifications-tab">
+                    <div class="form-section">
+                        <h5 class="mb-4">알림 목록</h5>
+                        
+                        <!-- 알림 통계 -->
+                        <div class="alert alert-info" id="notificationStats">
+                            <i class="bi bi-info-circle"></i>
+                            <span th:if="${unreadCount > 0}">
+                                읽지 않은 알림 <strong class="unread-count" th:text="${unreadCount}">0</strong>개가 있습니다.
+                            </span>
+                            <span th:unless="${unreadCount > 0}">
+                                모든 알림을 확인했습니다.
+                            </span>
+                        </div>
+                        
+                        <!-- 모두 읽음 버튼 -->
+                        <div class="mb-3 text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="markAllReadBtn">
+                                <i class="bi bi-check-all"></i> 모두 읽음
+                            </button>
+                        </div>
+                        
+                        <!-- 알림 목록 -->
+                        <div id="notificationListContainer">
+                            <div th:if="${notifications.empty}" class="text-center py-5" id="emptyNotifications">
+                                <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                                <p class="text-muted mt-3">알림이 없습니다.</p>
+                            </div>
+                            
+                            <div class="list-group" id="profileNotificationList">
+                                <a th:each="notification : ${notifications.content}" 
+                                   th:href="${notification.url}" 
+                                   class="list-group-item list-group-item-action notification-item"
+                                   th:classappend="${!notification.isRead} ? 'unread' : ''"
+                                   th:data-notification-id="${notification.notificationId}">
+                                    <div class="d-flex align-items-start">
+                                        <div class="notification-icon me-3"
+                                             th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'wishlist' : 
+                                                           (${notification.type == 'POST_WISHLISTED'} ? 'post' : 'message')">
+                                            <i class="bi" 
+                                               th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'bi-heart-fill' : 
+                                                             (${notification.type == 'POST_WISHLISTED'} ? 'bi-heart' : 'bi-envelope')"></i>
+                                        </div>
+                                        <div class="notification-content">
+                                            <div class="notification-title" th:text="${notification.title}">알림 제목</div>
+                                            <div class="notification-text" th:text="${notification.content}">알림 내용</div>
+                                            <div class="notification-time text-muted small" 
+                                                 th:text="${#temporals.format(notification.createdAt, 'yyyy-MM-dd HH:mm')}">시간</div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 페이지네이션 -->
+                        <nav th:if="${notifications.totalPages > 1}" aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                <li class="page-item" th:classappend="${notifications.first} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number - 1})}" 
+                                       aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                                
+                                <li th:each="pageNum : ${#numbers.sequence(0, notifications.totalPages - 1)}" 
+                                    class="page-item" th:classappend="${pageNum == notifications.number} ? 'active'">
+                                    <a class="page-link" th:href="@{/profile#notifications(page=${pageNum})}" 
+                                       th:text="${pageNum + 1}">1</a>
+                                </li>
+                                
+                                <li class="page-item" th:classappend="${notifications.last} ? 'disabled'">
+                                    <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number + 1})}" 
+                                       aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+                
+                <!-- 키워드 알림 탭 -->
+                <div class="tab-pane fade" id="keyword-alerts" role="tabpanel" aria-labelledby="keyword-alerts-tab">
+                    <div class="keyword-alerts-section">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0">
+                                <i class="bi bi-bell-fill me-2"></i>키워드 알림 관리
+                            </h5>
+                            <span class="badge bg-secondary">
+                                최대 10개
+                            </span>
+                        </div>
+                        
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            관심있는 키워드를 등록하면 해당 키워드가 포함된 게시글이 올라올 때 <strong>실시간 알림</strong>을 받을 수 있습니다.
+                        </div>
+                        
+                        <!-- 키워드 추가 폼 -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-plus-circle me-2"></i>새 키워드 추가
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-2">
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control" id="newKeywordInput" 
+                                               placeholder="추가할 키워드를 입력하세요 (예: 선형대수학, 운영체제)" 
+                                               maxlength="50">
+                                        <div class="form-text">2자 이상 50자 이하로 입력해주세요.</div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <button type="button" class="btn btn-primary w-100" onclick="addKeyword()">
+                                            <i class="bi bi-plus-circle me-1"></i>키워드 추가
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 등록된 키워드 목록 -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="bi bi-list-ul me-2"></i>등록된 키워드 
+                                    <span class="badge bg-primary ms-2" id="keywordCount">0</span>
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="keyword-list-container">
+                                    <div id="keywordListEmpty" class="text-center py-4 text-muted" style="display: none;">
+                                        <i class="bi bi-bell-slash fs-3"></i>
+                                        <p class="mt-2 mb-0">등록된 키워드가 없습니다.</p>
+                                        <small>키워드를 등록하여 새로운 게시글 알림을 받아보세요!</small>
+                                    </div>
+                                    
+                                    <div id="keywordList" class="row g-2">
+                                        <!-- JavaScript로 동적 생성 -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-muted">
+                                <small>
+                                    <i class="bi bi-lightbulb me-1"></i>
+                                    <strong>팁:</strong> 키워드는 게시글 제목에서 대소문자 구분 없이 검색됩니다. 
+                                    "수학"으로 등록하면 "선형대수학", "미적분학" 등도 매칭됩니다.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- 공통 푸터 포함 -->
+<footer th:replace="~{fragments/header :: footer}"></footer>
+
+<!-- 공통 스크립트 포함 -->
+<div th:replace="~{fragments/header :: scripts}"></div>
+
+<script>
+$(document).ready(function() {
+    // URL 해시에 따라 탭 자동 선택
+    if (window.location.hash === '#notifications') {
+        $('#notifications-tab').tab('show');
+    }
+    
+    // 전화번호 자동 포맷팅
+    $('#phoneNumber').on('input', function() {
+        let value = $(this).val().replace(/[^0-9]/g, '');
+        let formattedValue = '';
+        
+        if (value.length >= 3) {
+            formattedValue = value.substring(0, 3);
+            if (value.length >= 7) {
+                formattedValue += '-' + value.substring(3, 7);
+                if (value.length >= 11) {
+                    formattedValue += '-' + value.substring(7, 11);
+                } else if (value.length > 7) {
+                    formattedValue += '-' + value.substring(7);
+                }
+            } else if (value.length > 3) {
+                formattedValue += '-' + value.substring(3);
+            }
+        } else {
+            formattedValue = value;
+        }
+        
+        $(this).val(formattedValue);
+    });
+    
+    // 새 비밀번호 실시간 검증 (회원가입과 동일)
+    $("#newPassword").on("input", function() {
+        const password = $(this).val();
+        
+        // 길이 체크
+        if (password.length >= 8) {
+            $("#lengthCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#lengthCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 영문 체크
+        if (/[A-Za-z]/.test(password)) {
+            $("#letterCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#letterCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 숫자 체크
+        if (/\d/.test(password)) {
+            $("#numberCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#numberCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 특수문자 체크 (@ $ ! % * # ? & _)
+        if (/[@$!%*#?&_]/.test(password)) {
+            $("#specialCheck").addClass("valid").find(".requirement-icon").text("✅");
+        } else {
+            $("#specialCheck").removeClass("valid").find(".requirement-icon").text("❌");
+        }
+        
+        // 비밀번호 확인 필드가 있으면 재검증
+        if ($("#newPasswordConfirm").val()) {
+            checkPasswordMatch();
+        }
+    });
+    
+    // 비밀번호 확인 체크
+    function checkPasswordMatch() {
+        const password = $("#newPassword").val();
+        const passwordConfirm = $("#newPasswordConfirm").val();
+        
+        if (passwordConfirm && password !== passwordConfirm) {
+            $("#newPasswordConfirm").addClass("is-invalid");
+            // 기존 에러 메시지 제거 후 새로 추가
+            $("#newPasswordConfirm").siblings(".text-danger").remove();
+            $("#newPasswordConfirm").after('<div class="text-danger mt-1">비밀번호가 일치하지 않습니다.</div>');
+        } else if (passwordConfirm) {
+            $("#newPasswordConfirm").removeClass("is-invalid");
+            $("#newPasswordConfirm").siblings(".text-danger").remove();
+        }
+    }
+    
+    $("#newPasswordConfirm").on("input", checkPasswordMatch);
+    
+    // CSRF 토큰 설정
+    const token = $('meta[name="_csrf"]').attr('content');
+    const header = $('meta[name="_csrf_header"]').attr('content');
+    
+    $.ajaxSetup({
+        beforeSend: function(xhr) {
+            if (header && token) {
+                xhr.setRequestHeader(header, token);
+            }
+        }
+    });
+    
+    // 알림 클릭 시 읽음 처리 (이벤트 위임 사용)
+    $(document).on('click', '.notification-item', function(e) {
+        e.preventDefault();
+        const $this = $(this);
+        const notificationId = $this.data('notification-id');
+        const targetUrl = $this.attr('href');
+        
+        // 이미 읽은 알림이면 바로 이동
+        if (!$this.hasClass('unread')) {
+            window.location.href = targetUrl;
+            return;
+        }
+        
+        // 읽음으로 표시
+        $.ajax({
+            url: '/api/notifications/' + notificationId + '/read',
+            type: 'POST',
+            success: function() {
+                $this.removeClass('unread');
+                // 읽지 않은 알림 수 감소
+                const $unreadCount = $('#notifications-tab .badge');
+                
+                if ($unreadCount.length) {
+                    const count = parseInt($unreadCount.text()) - 1;
+                    if (count > 0) {
+                        $unreadCount.text(count);
+                    } else {
+                        $unreadCount.remove();
+                    }
+                }
+                
+                // 알림 통계 업데이트
+                updateNotificationStats();
+                // 페이지 이동
+                window.location.href = targetUrl;
+            },
+            error: function(xhr) {
+                console.error('알림 읽음 처리 실패:', xhr);
+                // 실패해도 페이지 이동은 수행
+                window.location.href = targetUrl;
+            }
+        });
+    });
+    
+    // 모두 읽음 버튼 클릭 (이벤트 위임 사용)
+    $(document).on('click', '#markAllReadBtn', function() {
+        $.ajax({
+            url: '/api/notifications/read-all',
+            type: 'POST',
+            success: function() {
+                $('.notification-item.unread').removeClass('unread');
+                $('#notifications-tab .badge').remove();
+                updateNotificationStats();
+            },
+            error: function(xhr) {
+                console.error('모두 읽음 처리 실패:', xhr);
+            }
+        });
+    });
+    
+    // 알림 통계 업데이트 함수
+    function updateNotificationStats() {
+        const unreadCount = $('.notification-item.unread').length;
+        const $statsDiv = $('#notificationStats');
+        
+        if (unreadCount > 0) {
+            $statsDiv.html('<i class="bi bi-info-circle"></i> 읽지 않은 알림 <strong class="unread-count">' + unreadCount + '</strong>개가 있습니다.');
+        } else {
+            $statsDiv.html('<i class="bi bi-info-circle"></i> 모든 알림을 확인했습니다.');
+        }
+    }
+    
+    // 실시간 알림 수신 처리
+    $(document).on('notification:new', function(event, notification) {
+        // 알림 탭이 활성화되어 있고 첫 페이지에 있을 때만 추가
+        if ($('#notifications-tab').hasClass('active')) {
+            const currentPage = parseInt(new URLSearchParams(window.location.search).get('page') || '0');
+            if (currentPage === 0) {
+                addNotificationToList(notification);
+            } else {
+                // 다른 페이지에 있으면 탭 배지만 업데이트
+                const $badge = $('#notifications-tab .badge');
+                if ($badge.length) {
+                    $badge.text(parseInt($badge.text()) + 1);
+                } else {
+                    $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
+                }
+            }
+        } else {
+            // 알림 탭이 비활성화 상태이면 배지만 업데이트
+            const $badge = $('#notifications-tab .badge');
+            if ($badge.length) {
+                $badge.text(parseInt($badge.text()) + 1);
+            } else {
+                $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
+            }
+        }
+    });
+    
+    // 새 알림을 목록에 추가하는 함수
+    function addNotificationToList(notification) {
+        console.log('=== addNotificationToList START ===');
+        console.log('Notification:', notification);
+        
+        // 빈 알림 메시지 제거
+        $('#emptyNotifications').remove();
+        
+        // 알림 목록이 없으면 생성
+        if (!$('#profileNotificationList').length) {
+            console.log('Creating notification list');
+            $('#notificationListContainer').html('<div class="list-group" id="profileNotificationList"></div>');
+        }
+        
+        // 알림 목록 표시
+        $('#profileNotificationList').show();
+        console.log('NotificationList visible after show():', $('#profileNotificationList').is(':visible'));
+        
+        // 중복 체크
+        if ($('[data-notification-id="' + notification.notificationId + '"]').length > 0) {
+            console.log('Duplicate notification, skipping');
+            return;
+        }
+        
+        // 알림 타입에 따른 아이콘 클래스 설정
+        let iconClass = 'bi-envelope';
+        let iconTypeClass = 'message';
+        if (notification.type === 'WISHLIST_STATUS_CHANGED') {
+            iconClass = 'bi-heart-fill';
+            iconTypeClass = 'wishlist';
+        } else if (notification.type === 'POST_WISHLISTED') {
+            iconClass = 'bi-heart';
+            iconTypeClass = 'post';
+        }
+        
+        // 새 알림 HTML 생성 (새 알림은 항상 unread)
+        const notificationHtml = `
+            <a href="${notification.url}" 
+               class="list-group-item list-group-item-action notification-item unread"
+               data-notification-id="${notification.notificationId}">
+                <div class="d-flex align-items-start">
+                    <div class="notification-icon me-3 ${iconTypeClass}">
+                        <i class="bi ${iconClass}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">${notification.title}</div>
+                        <div class="notification-text">${notification.content}</div>
+                        <div class="notification-time text-muted small">방금 전</div>
+                    </div>
+                </div>
+            </a>
+        `;
+        
+        // HTML 생성 확인
+        console.log('Generated HTML:', notificationHtml);
+        
+        // 목록 상단에 추가
+        const $newItem = $(notificationHtml);
+        console.log('New item created:', $newItem.length);
+        
+        // 현재 알림 개수 확인
+        const $items = $('#profileNotificationList .notification-item');
+        console.log('Current items count:', $items.length);
+        
+        // 페이징 제한 - 10개 이상이면 마지막 항목 제거
+        if ($items.length >= 10) {
+            console.log('Removing last item');
+            $items.last().remove();
+        }
+        
+        // 새 아이템 추가
+        console.log('Before prepend - NotificationList HTML:', $('#profileNotificationList').html());
+        $('#profileNotificationList').prepend($newItem);
+        console.log('After prepend - NotificationList HTML:', $('#profileNotificationList').html());
+        console.log('New item in DOM:', $('[data-notification-id="' + notification.notificationId + '"]').length);
+        
+        // 알림 목록을 강제로 표시
+        $('#profileNotificationList').css('display', 'block');
+        console.log('Force display block - visible?', $('#profileNotificationList').is(':visible'));
+        
+        // 부모 요소들 확인
+        console.log('Parent container visible?', $('#notificationListContainer').is(':visible'));
+        console.log('Notifications tab pane visible?', $('#notifications').is(':visible'));
+        console.log('Notifications tab pane classes:', $('#notifications').attr('class'));
+        
+        // 탭 패널도 강제로 표시
+        $('#notifications').addClass('show active');
+        console.log('After forcing tab - visible?', $('#notificationList').is(':visible'));
+        
+        console.log('=== addNotificationToList END ===');
+        
+        // 알림 통계 업데이트
+        updateNotificationStats();
+        
+        // 탭 배지 업데이트
+        const $badge = $('#notifications-tab .badge');
+        if ($badge.length) {
+            $badge.text(parseInt($badge.text()) + 1);
+        } else {
+            $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
+        }
+    }
+    
+    // 키워드 관리 관련 함수들
+    
+    // 페이지 로드 시 키워드 목록 로드
+    if ($('#keyword-alerts-tab').length) {
+        $('#keyword-alerts-tab').on('shown.bs.tab', function() {
+            loadKeywords();
+        });
+        
+        // 초기 로드 (키워드 알림 탭이 활성화되어 있는 경우)
+        if ($('#keyword-alerts-tab').hasClass('active')) {
+            loadKeywords();
+        }
+    }
+    
+    // 키워드 추가 함수
+    window.addKeyword = function() {
+        const input = document.getElementById('newKeywordInput');
+        const keyword = input.value.trim();
+        
+        if (keyword.length < 2) {
+            showToast('키워드는 2자 이상 입력해주세요.');
+            return;
+        }
+        
+        if (keyword.length > 50) {
+            showToast('키워드는 50자 이하로 입력해주세요.');
+            return;
+        }
+        
+        $.ajax({
+            url: '/api/keyword-alerts',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ keyword: keyword }),
+            success: function(response) {
+                if (response.success) {
+                    showToast('키워드가 추가되었습니다! 🔔');
+                    input.value = '';
+                    loadKeywords(); // 목록 새로고침
+                } else {
+                    showToast(response.message || '키워드 추가에 실패했습니다.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 400 && xhr.responseJSON) {
+                    showToast(xhr.responseJSON.message || '키워드 추가에 실패했습니다.');
+                } else {
+                    showToast('키워드 추가 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    };
+    
+    // 키워드 삭제 함수
+    window.deleteKeyword = function(keyword) {
+        if (!confirm('정말로 이 키워드를 삭제하시겠습니까?')) {
+            return;
+        }
+        
+        $.ajax({
+            url: '/api/keyword-alerts',
+            type: 'DELETE',
+            data: { keyword: keyword },
+            success: function(response) {
+                if (response.success) {
+                    showToast('키워드가 삭제되었습니다.');
+                    loadKeywords(); // 목록 새로고침
+                } else {
+                    showToast(response.message || '키워드 삭제에 실패했습니다.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 400 && xhr.responseJSON) {
+                    showToast(xhr.responseJSON.message || '키워드 삭제에 실패했습니다.');
+                } else {
+                    showToast('키워드 삭제 중 오류가 발생했습니다.');
+                }
+            }
+        });
+    };
+    
+    // 키워드 목록 로드 함수
+    function loadKeywords() {
+        $.ajax({
+            url: '/api/keyword-alerts/my',
+            type: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    renderKeywords(response.keywords);
+                    updateKeywordCount(response.count);
+                } else {
+                    console.error('키워드 목록 로드 실패:', response.message);
+                }
+            },
+            error: function(xhr) {
+                console.error('키워드 목록 로드 중 오류:', xhr);
+            }
+        });
+    }
+    
+    // 키워드 목록 렌더링
+    function renderKeywords(keywords) {
+        const container = document.getElementById('keywordList');
+        const emptyDiv = document.getElementById('keywordListEmpty');
+        
+        if (keywords.length === 0) {
+            container.innerHTML = '';
+            emptyDiv.style.display = 'block';
+        } else {
+            emptyDiv.style.display = 'none';
+            container.innerHTML = keywords.map(keyword => `
+                <div class="col-auto">
+                    <span class="badge bg-primary fs-6 p-2 keyword-badge">
+                        ${keyword}
+                        <button type="button" class="btn-close btn-close-white ms-2" 
+                                onclick="deleteKeyword('${keyword}')" 
+                                title="키워드 삭제"
+                                style="font-size: 0.7em;"></button>
+                    </span>
+                </div>
+            `).join('');
+        }
+    }
+    
+    // 키워드 개수 업데이트
+    function updateKeywordCount(count) {
+        document.getElementById('keywordCount').textContent = count;
+    }
+    
+    // Enter 키로 키워드 추가
+    $('#newKeywordInput').on('keypress', function(e) {
+        if (e.which === 13) { // Enter 키
+            addKeyword();
+        }
+    });
+    
+    // 토스트 메시지 함수 (기존에 없으면 추가)
+    function showToast(message) {
+        $('.toast-container').remove();
+        
+        var isWarning = message.includes('실패') || message.includes('오류');
+        var backgroundColor = isWarning ? 'rgba(255, 193, 7, 0.9)' : 'rgba(25, 135, 84, 0.9)';
+        var textColor = isWarning ? '#664d03' : '#ffffff';
+        
+        var toast = $('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1050;">' +
+                      '<div class="toast border-0" role="alert" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' +
+                      '<div class="toast-body text-center fw-medium">' + message + '</div>' +
+                      '</div></div>');
+        
+        $('body').append(toast);
+        
+        var bsToast = new bootstrap.Toast(toast.find('.toast')[0], {
+            autohide: true,
+            delay: isWarning ? 3000 : 2000
+        });
+        bsToast.show();
+        
+        setTimeout(function() {
+            toast.remove();
+        }, isWarning ? 4000 : 3000);
+    }
+});
+</script>
+
+</body>
+</html>

@@ -13,66 +13,12 @@
     <title>마이페이지 - Unibook</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Enhanced Header CSS -->
+    <link th:href="@{/css/enhanced-header.css}" rel="stylesheet">
+    <!-- Profile Page CSS -->
+    <link th:href="@{/css/profile.css}" rel="stylesheet">
     <!-- 공통 스타일 (알림 등) -->
     <div th:replace="~{fragments/header :: styles}"></div>
-    <style>
-        .profile-header {
-            background-color: #f8f9fa;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-        
-        .profile-card {
-            border: none;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .profile-info {
-            padding: 2rem;
-        }
-        
-        .info-label {
-            font-weight: 600;
-            color: #495057;
-            width: 120px;
-            display: inline-block;
-        }
-        
-        .tab-content {
-            padding: 2rem 0;
-        }
-        
-        .form-section {
-            background-color: #f8f9fa;
-            padding: 2rem;
-            border-radius: 0.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .password-requirements {
-            margin-top: 0.5rem;
-            padding: 0.75rem;
-            background-color: #f8f9fa;
-            border-radius: 0.25rem;
-            border: 1px solid #dee2e6;
-        }
-        
-        .password-requirements small {
-            color: #6c757d;
-            transition: color 0.3s ease;
-        }
-        
-        .password-requirements small.valid {
-            color: #198754;
-            font-weight: 500;
-        }
-        
-        .requirement-icon {
-            font-size: 0.8rem;
-            margin-right: 0.25rem;
-        }
-    </style>
 </head>
 <body>
 <!-- 공통 헤더 포함 -->
@@ -81,317 +27,375 @@
 <!-- 공통 메시지 포함 -->
 <div th:replace="~{fragments/header :: messages}"></div>
 
-<!-- 프로필 헤더 -->
-<div class="profile-header">
+<!-- Profile Hero Section -->
+<div class="profile-hero">
     <div class="container">
-        <h2><i class="bi bi-person-circle"></i> 마이페이지</h2>
+        <div class="text-center">
+            <div class="profile-hero-icon">
+                <i class="bi bi-person-circle"></i>
+            </div>
+            <h1>My Profile</h1>
+            <p class="lead">개인 정보를 관리하고 알림을 확인하세요</p>
+        </div>
     </div>
 </div>
 
 <div class="container">
     <div class="row">
-        <div class="col-md-8 mx-auto">
-            <!-- 사용자 정보 카드 -->
-            <div class="card profile-card">
-                <div class="profile-info">
-                    <h4 class="mb-4">기본 정보</h4>
-                    <div class="mb-3">
-                        <span class="info-label">이름</span>
-                        <span th:text="${user.name}">이름</span>
-                    </div>
-                    <div class="mb-3">
-                        <span class="info-label">이메일</span>
-                        <span th:text="${user.email}">이메일</span>
-                        <span th:if="${user.verified}" class="badge bg-success ms-2">
-                            <i class="bi bi-check-circle"></i> 인증됨
-                        </span>
-                        <span th:unless="${user.verified}" class="badge bg-warning text-dark ms-2">
-                            <i class="bi bi-exclamation-circle"></i> 미인증
-                        </span>
-                    </div>
-                    <div class="mb-3">
-                        <span class="info-label">학교</span>
-                        <span th:text="${user.department?.school?.schoolName ?: '정보 없음'}">학교</span>
-                    </div>
-                    <div class="mb-3">
-                        <span class="info-label">학과</span>
-                        <span th:text="${user.department?.departmentName ?: '정보 없음'}">학과</span>
-                    </div>
-                    <div class="mb-3">
-                        <span class="info-label">전화번호</span>
-                        <span th:text="${user.phoneNumber}">전화번호</span>
-                    </div>
-                    <div class="mb-3">
-                        <span class="info-label">가입일</span>
-                        <span th:text="${#temporals.format(user.createdAt, 'yyyy년 MM월 dd일')}">가입일</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 탭 메뉴 -->
-            <ul class="nav nav-tabs" id="profileTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" th:classappend="${passwordError ? '' : 'active'}" 
-                            id="info-tab" data-bs-toggle="tab" data-bs-target="#info" 
-                            type="button" role="tab" aria-controls="info" 
-                            th:aria-selected="${!passwordError}">
-                        <i class="bi bi-person"></i> 정보 수정
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" th:classappend="${passwordError ? 'active' : ''}" 
-                            id="password-tab" data-bs-toggle="tab" data-bs-target="#password" 
-                            type="button" role="tab" aria-controls="password" 
-                            th:aria-selected="${passwordError}">
-                        <i class="bi bi-lock"></i> 비밀번호 변경
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" 
-                            data-bs-target="#notifications" type="button" role="tab" 
-                            aria-controls="notifications" aria-selected="false">
-                        <i class="bi bi-bell"></i> 알림
-                        <span th:if="${unreadCount > 0}" class="badge bg-danger ms-1" th:text="${unreadCount}">0</span>
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="keyword-alerts-tab" data-bs-toggle="tab" 
-                            data-bs-target="#keyword-alerts" type="button" role="tab" 
-                            aria-controls="keyword-alerts" aria-selected="false">
-                        <i class="bi bi-bell-fill"></i> 키워드 알림
-                    </button>
-                </li>
-            </ul>
-            
-            <!-- 탭 컨텐츠 -->
-            <div class="tab-content" id="profileTabContent">
-                <!-- 정보 수정 탭 -->
-                <div class="tab-pane fade" th:classappend="${passwordError ? '' : 'show active'}" 
-                     id="info" role="tabpanel" aria-labelledby="info-tab">
-                    <div class="form-section">
-                        <h5 class="mb-4">정보 수정</h5>
-                        <form th:action="@{/profile/info}" method="post" th:object="${infoUpdateForm}">
-                            <div class="mb-3">
-                                <label for="infoCurrentPassword" class="form-label">현재 비밀번호</label>
-                                <input type="password" class="form-control" id="infoCurrentPassword" 
-                                       th:field="*{currentPassword}" 
-                                       placeholder="보안을 위해 현재 비밀번호를 입력해주세요">
-                                <div th:if="${#fields.hasErrors('currentPassword')}" 
-                                     class="text-danger mt-1" th:errors="*{currentPassword}">에러</div>
+        <div class="col-lg-10 mx-auto">
+            <!-- Main Profile Card with Glassmorphism -->
+            <div class="profile-main-card">
+                <!-- Profile Info Section -->
+                <div class="profile-info-section">
+                    <!-- Profile Header -->
+                    <div class="profile-info-header">
+                        <div class="profile-avatar">
+                            <span th:text="${user.name?.substring(0, 1)?.toUpperCase() ?: 'U'}">U</span>
+                            <div th:if="${user.verified}" class="profile-avatar-verified">
+                                <i class="bi bi-check"></i>
                             </div>
-                            <div class="mb-3">
-                                <label for="phoneNumber" class="form-label">전화번호</label>
-                                <input type="tel" class="form-control" id="phoneNumber" 
-                                       th:field="*{phoneNumber}" 
-                                       placeholder="010-0000-0000">
-                                <div th:if="${#fields.hasErrors('phoneNumber')}" 
-                                     class="text-danger mt-1" th:errors="*{phoneNumber}">에러</div>
-                            </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-lg"></i> 정보 수정
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                
-                <!-- 비밀번호 변경 탭 -->
-                <div class="tab-pane fade" th:classappend="${passwordError ? 'show active' : ''}" 
-                     id="password" role="tabpanel" aria-labelledby="password-tab">
-                    <div class="form-section">
-                        <h5 class="mb-4">비밀번호 변경</h5>
-                        <form th:action="@{/profile/password}" method="post" th:object="${passwordChangeForm}">
-                            <div class="mb-3">
-                                <label for="currentPassword" class="form-label">현재 비밀번호</label>
-                                <input type="password" class="form-control" id="currentPassword" 
-                                       th:field="*{currentPassword}">
-                                <div th:if="${#fields.hasErrors('currentPassword')}" 
-                                     class="text-danger mt-1" th:errors="*{currentPassword}">에러</div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="newPassword" class="form-label">새 비밀번호</label>
-                                <input type="password" class="form-control" id="newPassword" 
-                                       th:field="*{newPassword}">
-                                <div class="password-requirements" id="passwordRequirements">
-                                    <small class="d-block" id="lengthCheck">
-                                        <span class="requirement-icon">❌</span> 8자 이상
-                                    </small>
-                                    <small class="d-block" id="letterCheck">
-                                        <span class="requirement-icon">❌</span> 영문 포함
-                                    </small>
-                                    <small class="d-block" id="numberCheck">
-                                        <span class="requirement-icon">❌</span> 숫자 포함
-                                    </small>
-                                    <small class="d-block" id="specialCheck">
-                                        <span class="requirement-icon">❌</span> 특수문자 포함
-                                    </small>
+                        </div>
+                        <div class="profile-user-info">
+                            <h2 th:text="${user.name}">사용자명</h2>
+                            <div class="profile-user-meta">
+                                <div class="profile-user-meta-item">
+                                    <i class="bi bi-envelope"></i>
+                                    <span th:text="${user.email}">이메일</span>
                                 </div>
-                                <div th:if="${#fields.hasErrors('newPassword')}" 
-                                     class="text-danger mt-1" th:errors="*{newPassword}">에러</div>
+                                <div class="profile-user-meta-item">
+                                    <i class="bi bi-calendar"></i>
+                                    <span th:text="${#temporals.format(user.createdAt, 'yyyy.MM.dd')} + ' 가입'">가입일</span>
+                                </div>
+                                <div class="profile-user-meta-item" th:if="${user.verified}">
+                                    <i class="bi bi-patch-check"></i>
+                                    <span class="text-success">인증된 사용자</span>
+                                </div>
+                                <div class="profile-user-meta-item" th:unless="${user.verified}">
+                                    <i class="bi bi-patch-exclamation"></i>
+                                    <span class="text-warning">미인증 사용자</span>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="newPasswordConfirm" class="form-label">새 비밀번호 확인</label>
-                                <input type="password" class="form-control" id="newPasswordConfirm" 
-                                       th:field="*{newPasswordConfirm}">
-                                <div th:if="${#fields.hasErrors('newPasswordConfirm')}" 
-                                     class="text-danger mt-1" th:errors="*{newPasswordConfirm}">에러</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile Info Grid -->
+                    <div class="profile-info-grid">
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-building"></i>
                             </div>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-lock"></i> 비밀번호 변경
-                            </button>
-                        </form>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">학교</div>
+                                <div class="profile-info-value" th:text="${user.department?.school?.schoolName ?: '정보 없음'}">학교명</div>
+                            </div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-mortarboard"></i>
+                            </div>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">학과</div>
+                                <div class="profile-info-value" th:text="${user.department?.departmentName ?: '정보 없음'}">학과명</div>
+                            </div>
+                        </div>
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="bi bi-telephone"></i>
+                            </div>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">전화번호</div>
+                                <div class="profile-info-value" th:text="${user.phoneNumber}">전화번호</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            
+                <!-- Modern Tab System -->
+                <div class="profile-tabs-container">
+                    <div class="profile-tabs">
+                        <button class="profile-tab-button" th:classappend="${passwordError ? '' : 'active'}" 
+                                onclick="showTab('info', this)" 
+                                id="info-tab" data-target="info" 
+                                th:aria-selected="${!passwordError}">
+                            <i class="bi bi-person"></i>
+                            <span>정보 수정</span>
+                        </button>
+                        <button class="profile-tab-button" th:classappend="${passwordError ? 'active' : ''}" 
+                                onclick="showTab('password', this)" 
+                                id="password-tab" data-target="password" 
+                                th:aria-selected="${passwordError}">
+                            <i class="bi bi-lock"></i>
+                            <span>비밀번호 변경</span>
+                        </button>
+                        <button class="profile-tab-button" 
+                                onclick="showTab('notifications', this)" 
+                                id="notifications-tab" data-target="notifications" 
+                                aria-selected="false">
+                            <i class="bi bi-bell"></i>
+                            <span>알림</span>
+                            <span th:if="${unreadCount > 0}" class="badge" th:text="${unreadCount}">0</span>
+                        </button>
+                        <button class="profile-tab-button" 
+                                onclick="showTab('keyword-alerts', this)" 
+                                id="keyword-alerts-tab" data-target="keyword-alerts" 
+                                aria-selected="false">
+                            <i class="bi bi-bell-fill"></i>
+                            <span>키워드 알림</span>
+                        </button>
+                    </div>
+            
+                    <!-- Tab Contents -->
+                    <div class="profile-tab-content" th:classappend="${passwordError ? '' : 'active'}" id="info">
+                        <div class="profile-form-section">
+                            <h3 class="profile-form-title">
+                                <i class="bi bi-person"></i>
+                                정보 수정
+                            </h3>
+                            <form th:action="@{/profile/info}" method="post" th:object="${infoUpdateForm}">
+                                <div class="mb-3">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control" id="infoCurrentPassword" 
+                                               th:field="*{currentPassword}">
+<!--                                               placeholder="현재 비밀번호">-->
+                                        <label for="infoCurrentPassword">
+                                            <i class="bi bi-lock me-2"></i>현재 비밀번호
+                                        </label>
+                                    </div>
+                                    <div th:if="${#fields.hasErrors('currentPassword')}" 
+                                         class="text-danger mt-2" th:errors="*{currentPassword}">에러</div>
+                                    <div class="form-text">보안을 위해 현재 비밀번호를 입력해주세요.</div>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="form-floating">
+                                        <input type="tel" class="form-control" id="phoneNumber" 
+                                               th:field="*{phoneNumber}">
+<!--                                               placeholder="010-0000-0000">-->
+                                        <label for="phoneNumber">
+                                            <i class="bi bi-telephone me-2"></i>전화번호
+                                        </label>
+                                    </div>
+                                    <div th:if="${#fields.hasErrors('phoneNumber')}" 
+                                         class="text-danger mt-2" th:errors="*{phoneNumber}">에러</div>
+                                </div>
+                                <button type="submit" class="btn-profile-primary">
+                                    <i class="bi bi-check-lg me-2"></i>정보 수정
+                                </button>
+                            </form>
+                        </div>
+                    </div>
                 
-                <!-- 알림 탭 -->
-                <div class="tab-pane fade" id="notifications" role="tabpanel" aria-labelledby="notifications-tab">
-                    <div class="form-section">
-                        <h5 class="mb-4">알림 목록</h5>
-                        
-                        <!-- 알림 통계 -->
-                        <div class="alert alert-info" id="notificationStats">
-                            <i class="bi bi-info-circle"></i>
-                            <span th:if="${unreadCount > 0}">
-                                읽지 않은 알림 <strong class="unread-count" th:text="${unreadCount}">0</strong>개가 있습니다.
-                            </span>
-                            <span th:unless="${unreadCount > 0}">
-                                모든 알림을 확인했습니다.
-                            </span>
+                    <div class="profile-tab-content" th:classappend="${passwordError ? 'active' : ''}" id="password">
+                        <div class="profile-form-section">
+                            <h3 class="profile-form-title">
+                                <i class="bi bi-lock"></i>
+                                비밀번호 변경
+                            </h3>
+                            <form th:action="@{/profile/password}" method="post" th:object="${passwordChangeForm}">
+                                <div class="mb-3">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control" id="currentPassword" 
+                                               th:field="*{currentPassword}">
+<!--                                               placeholder="현재 비밀번호">-->
+                                        <label for="currentPassword">
+                                            <i class="bi bi-lock me-2"></i>현재 비밀번호
+                                        </label>
+                                    </div>
+                                    <div th:if="${#fields.hasErrors('currentPassword')}" 
+                                         class="text-danger mt-2" th:errors="*{currentPassword}">에러</div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control" id="newPassword" 
+                                               th:field="*{newPassword}">
+<!--                                               placeholder="새 비밀번호">-->
+                                        <label for="newPassword">
+                                            <i class="bi bi-key me-2"></i>새 비밀번호
+                                        </label>
+                                    </div>
+                                    <div class="password-requirements" id="passwordRequirements">
+                                        <small class="d-block" id="lengthCheck">
+                                            <span class="requirement-icon">❌</span> 8자 이상
+                                        </small>
+                                        <small class="d-block" id="letterCheck">
+                                            <span class="requirement-icon">❌</span> 영문 포함
+                                        </small>
+                                        <small class="d-block" id="numberCheck">
+                                            <span class="requirement-icon">❌</span> 숫자 포함
+                                        </small>
+                                        <small class="d-block" id="specialCheck">
+                                            <span class="requirement-icon">❌</span> 특수문자 포함
+                                        </small>
+                                    </div>
+                                    <div th:if="${#fields.hasErrors('newPassword')}" 
+                                         class="text-danger mt-2" th:errors="*{newPassword}">에러</div>
+                                </div>
+                                <div class="mb-4">
+                                    <div class="form-floating">
+                                        <input type="password" class="form-control" id="newPasswordConfirm" 
+                                               th:field="*{newPasswordConfirm}">
+<!--                                               placeholder="새 비밀번호 확인">-->
+                                        <label for="newPasswordConfirm">
+                                            <i class="bi bi-check-circle me-2"></i>새 비밀번호 확인
+                                        </label>
+                                    </div>
+                                    <div th:if="${#fields.hasErrors('newPasswordConfirm')}" 
+                                         class="text-danger mt-2" th:errors="*{newPasswordConfirm}">에러</div>
+                                </div>
+                                <button type="submit" class="btn-profile-primary">
+                                    <i class="bi bi-lock me-2"></i>비밀번호 변경
+                                </button>
+                            </form>
                         </div>
+                    </div>
+                
+                    <div class="profile-tab-content" id="notifications">
+                        <div class="profile-form-section">
+                            <h3 class="profile-form-title">
+                                <i class="bi bi-bell"></i>
+                                알림 목록
+                            </h3>
                         
-                        <!-- 모두 읽음 버튼 -->
-                        <div class="mb-3 text-end">
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="markAllReadBtn">
-                                <i class="bi bi-check-all"></i> 모두 읽음
-                            </button>
-                        </div>
-                        
-                        <!-- 알림 목록 -->
-                        <div id="notificationListContainer">
-                            <div th:if="${notifications.empty}" class="text-center py-5" id="emptyNotifications">
-                                <i class="bi bi-bell-slash fs-1 text-muted"></i>
-                                <p class="text-muted mt-3">알림이 없습니다.</p>
+                            <!-- 알림 통계 -->
+                            <div class="alert alert-info" id="notificationStats">
+                                <i class="bi bi-info-circle"></i>
+                                <span th:if="${unreadCount > 0}">
+                                    읽지 않은 알림 <strong class="unread-count" th:text="${unreadCount}">0</strong>개가 있습니다.
+                                </span>
+                                <span th:unless="${unreadCount > 0}">
+                                    모든 알림을 확인했습니다.
+                                </span>
                             </div>
                             
-                            <div class="list-group" id="profileNotificationList">
-                                <a th:each="notification : ${notifications.content}" 
-                                   th:href="${notification.url}" 
-                                   class="list-group-item list-group-item-action notification-item"
-                                   th:classappend="${!notification.isRead} ? 'unread' : ''"
-                                   th:data-notification-id="${notification.notificationId}">
-                                    <div class="d-flex align-items-start">
-                                        <div class="notification-icon me-3"
-                                             th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'wishlist' : 
-                                                           (${notification.type == 'POST_WISHLISTED'} ? 'post' : 'message')">
-                                            <i class="bi" 
-                                               th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'bi-heart-fill' : 
-                                                             (${notification.type == 'POST_WISHLISTED'} ? 'bi-heart' : 'bi-envelope')"></i>
-                                        </div>
-                                        <div class="notification-content">
-                                            <div class="notification-title" th:text="${notification.title}">알림 제목</div>
-                                            <div class="notification-text" th:text="${notification.content}">알림 내용</div>
-                                            <div class="notification-time text-muted small" 
-                                                 th:text="${#temporals.format(notification.createdAt, 'yyyy-MM-dd HH:mm')}">시간</div>
-                                        </div>
-                                    </div>
-                                </a>
+                            <!-- 모두 읽음 버튼 -->
+                            <div class="mb-3 text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="markAllReadBtn" 
+                                        th:style="${unreadCount > 0} ? '' : 'display: none;'">
+                                    <i class="bi bi-check-all"></i> 모두 읽음
+                                </button>
                             </div>
-                        </div>
                         
-                        <!-- 페이지네이션 -->
-                        <nav th:if="${notifications.totalPages > 1}" aria-label="Page navigation" class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                <li class="page-item" th:classappend="${notifications.first} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number - 1})}" 
-                                       aria-label="Previous">
-                                        <span aria-hidden="true">&laquo;</span>
-                                    </a>
-                                </li>
+                            <!-- 알림 목록 -->
+                            <div id="notificationListContainer">
+                                <div th:if="${notifications.empty}" class="text-center py-5" id="emptyNotifications">
+                                    <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                                    <p class="text-muted mt-3">알림이 없습니다.</p>
+                                </div>
                                 
-                                <li th:each="pageNum : ${#numbers.sequence(0, notifications.totalPages - 1)}" 
-                                    class="page-item" th:classappend="${pageNum == notifications.number} ? 'active'">
-                                    <a class="page-link" th:href="@{/profile#notifications(page=${pageNum})}" 
-                                       th:text="${pageNum + 1}">1</a>
-                                </li>
-                                
-                                <li class="page-item" th:classappend="${notifications.last} ? 'disabled'">
-                                    <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number + 1})}" 
-                                       aria-label="Next">
-                                        <span aria-hidden="true">&raquo;</span>
+                                <div class="list-group" id="profileNotificationList">
+                                    <a th:each="notification : ${notifications.content}" 
+                                       th:href="${notification.url}" 
+                                       class="list-group-item list-group-item-action notification-item"
+                                       th:classappend="${!notification.isRead} ? 'unread' : ''"
+                                       th:data-notification-id="${notification.notificationId}">
+                                        <div class="d-flex align-items-start">
+                                            <div class="notification-icon me-3"
+                                                 th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'wishlist' : 
+                                                               (${notification.type == 'POST_WISHLISTED'} ? 'post' : 
+                                                               (${notification.type == 'KEYWORD_MATCH'} ? 'keyword' : 'message'))">
+                                                <i class="bi" 
+                                                   th:classappend="${notification.type == 'WISHLIST_STATUS_CHANGED'} ? 'bi-heart-fill' : 
+                                                                 (${notification.type == 'POST_WISHLISTED'} ? 'bi-heart' : 
+                                                                 (${notification.type == 'KEYWORD_MATCH'} ? 'bi-search' : 'bi-envelope'))"></i>
+                                            </div>
+                                            <div class="notification-content">
+                                                <div class="notification-title" th:text="${notification.title}">알림 제목</div>
+                                                <div class="notification-text" th:text="${notification.content}">알림 내용</div>
+                                                <div class="notification-time text-muted small" 
+                                                     th:text="${#temporals.format(notification.createdAt, 'yyyy-MM-dd HH:mm')}">시간</div>
+                                            </div>
+                                        </div>
                                     </a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
-                </div>
-                
-                <!-- 키워드 알림 탭 -->
-                <div class="tab-pane fade" id="keyword-alerts" role="tabpanel" aria-labelledby="keyword-alerts-tab">
-                    <div class="keyword-alerts-section">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="mb-0">
-                                <i class="bi bi-bell-fill me-2"></i>키워드 알림 관리
-                            </h5>
-                            <span class="badge bg-secondary">
-                                최대 10개
-                            </span>
-                        </div>
-                        
-                        <div class="alert alert-info mb-4">
-                            <i class="bi bi-info-circle me-2"></i>
-                            관심있는 키워드를 등록하면 해당 키워드가 포함된 게시글이 올라올 때 <strong>실시간 알림</strong>을 받을 수 있습니다.
-                        </div>
-                        
-                        <!-- 키워드 추가 폼 -->
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h6 class="card-title mb-0">
-                                    <i class="bi bi-plus-circle me-2"></i>새 키워드 추가
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-2">
-                                    <div class="col-md-8">
-                                        <input type="text" class="form-control" id="newKeywordInput" 
-                                               placeholder="추가할 키워드를 입력하세요 (예: 선형대수학, 운영체제)" 
-                                               maxlength="50">
-                                        <div class="form-text">2자 이상 50자 이하로 입력해주세요.</div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <button type="button" class="btn btn-primary w-100" onclick="addKeyword()">
-                                            <i class="bi bi-plus-circle me-1"></i>키워드 추가
-                                        </button>
-                                    </div>
                                 </div>
                             </div>
-                        </div>
                         
-                        <!-- 등록된 키워드 목록 -->
-                        <div class="card">
-                            <div class="card-header">
-                                <h6 class="card-title mb-0">
-                                    <i class="bi bi-list-ul me-2"></i>등록된 키워드 
-                                    <span class="badge bg-primary ms-2" id="keywordCount">0</span>
-                                </h6>
+                            <!-- 페이지네이션 -->
+                            <nav th:if="${notifications.totalPages > 1}" aria-label="Page navigation" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item" th:classappend="${notifications.first} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number - 1})}" 
+                                           aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    
+                                    <li th:each="pageNum : ${#numbers.sequence(0, notifications.totalPages - 1)}" 
+                                        class="page-item" th:classappend="${pageNum == notifications.number} ? 'active'">
+                                        <a class="page-link" th:href="@{/profile#notifications(page=${pageNum})}" 
+                                           th:text="${pageNum + 1}">1</a>
+                                    </li>
+                                    
+                                    <li class="page-item" th:classappend="${notifications.last} ? 'disabled'">
+                                        <a class="page-link" th:href="@{/profile#notifications(page=${notifications.number + 1})}" 
+                                           aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                
+                    <div class="profile-tab-content" id="keyword-alerts">
+                        <div class="profile-form-section">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h3 class="profile-form-title mb-0">
+                                    <i class="bi bi-bell-fill"></i>
+                                    키워드 알림 관리
+                                </h3>
+                                <span class="badge bg-secondary">
+                                    최대 10개
+                                </span>
                             </div>
-                            <div class="card-body">
+                            
+                            <div class="alert alert-info mb-4">
+                                <i class="bi bi-info-circle me-2"></i>
+                                관심있는 키워드를 등록하면 해당 키워드가 포함된 게시글이 올라올 때 <strong>실시간 알림</strong>을 받을 수 있습니다.
+                            </div>
+                        
+                            <!-- 키워드 추가 섹션 -->
+                            <div class="keyword-section mb-4">
+                                <h5 class="mb-3">
+                                    <i class="bi bi-plus-circle me-2"></i>새 키워드 추가
+                                </h5>
+                                <div class="keyword-input-group">
+                                    <input type="text" class="keyword-input" id="newKeywordInput" 
+                                           placeholder="추가할 키워드를 입력하세요 (예: 선형대수학, 운영체제)" 
+                                           maxlength="50">
+                                    <button type="button" class="btn-profile-primary" onclick="addKeyword()">
+                                        <i class="bi bi-plus-circle me-1"></i>추가
+                                    </button>
+                                </div>
+                                <div class="form-text mt-2">2자 이상 50자 이하로 입력해주세요.</div>
+                            </div>
+                        
+                            <!-- 등록된 키워드 목록 -->
+                            <div class="keyword-section">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="mb-0">
+                                        <i class="bi bi-list-ul me-2"></i>등록된 키워드
+                                    </h5>
+                                    <span class="badge bg-primary" id="keywordCount">0</span>
+                                </div>
+                                
                                 <div class="keyword-list-container">
-                                    <div id="keywordListEmpty" class="text-center py-4 text-muted" style="display: none;">
-                                        <i class="bi bi-bell-slash fs-3"></i>
-                                        <p class="mt-2 mb-0">등록된 키워드가 없습니다.</p>
+                                    <div id="keywordListEmpty" class="keyword-empty" style="display: none;">
+                                        <i class="bi bi-bell-slash"></i>
+                                        <p class="mt-3 mb-1">등록된 키워드가 없습니다.</p>
                                         <small>키워드를 등록하여 새로운 게시글 알림을 받아보세요!</small>
                                     </div>
                                     
-                                    <div id="keywordList" class="row g-2">
+                                    <div id="keywordList" class="keyword-list">
                                         <!-- JavaScript로 동적 생성 -->
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-footer text-muted">
-                                <small>
-                                    <i class="bi bi-lightbulb me-1"></i>
-                                    <strong>팁:</strong> 키워드는 게시글 제목에서 대소문자 구분 없이 검색됩니다. 
-                                    "수학"으로 등록하면 "선형대수학", "미적분학" 등도 매칭됩니다.
-                                </small>
+                                
+                                <div class="mt-4 p-3 rounded" style="background: var(--profile-section-bg); border: 1px solid var(--profile-section-border);">
+                                    <small class="profile-text-muted">
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        <strong>팁:</strong> 키워드는 게시글 제목에서 대소문자 구분 없이 검색됩니다. 
+                                        "수학"으로 등록하면 "선형대수학", "미적분학" 등도 매칭됩니다.
+                                    </small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -409,11 +413,68 @@
 <div th:replace="~{fragments/header :: scripts}"></div>
 
 <script>
-$(document).ready(function() {
-    // URL 해시에 따라 탭 자동 선택
-    if (window.location.hash === '#notifications') {
-        $('#notifications-tab').tab('show');
+
+
+// Modern Tab System Functions
+function showTab(tabName, button) {
+    // 스크롤 위치 저장
+    const scrollPosition = window.pageYOffset;
+    
+    // Hide all tab contents
+    document.querySelectorAll('.profile-tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.profile-tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab and activate button
+    document.getElementById(tabName).classList.add('active');
+    button.classList.add('active');
+    
+    // 스크롤 위치 복원
+    window.scrollTo(0, scrollPosition);
+    
+    // Load keyword data if keyword tab is selected
+    if (tabName === 'keyword-alerts' && typeof loadKeywords === 'function') {
+        loadKeywords();
     }
+}
+
+$(document).ready(function() {
+    // Initialize tabs based on URL hash or error state
+    let activeTab = 'info';
+    const hasPasswordError = /*[[${passwordError}]]*/ false;
+    
+    if (window.location.hash === '#notifications') {
+        activeTab = 'notifications';
+    } else if (hasPasswordError) {
+        activeTab = 'password';
+    }
+    
+    // Show the active tab
+    const activeButton = document.querySelector(`[data-target="${activeTab}"]`);
+    if (activeButton) {
+        showTab(activeTab, activeButton);
+    }
+    
+    // Update notification stats on initial load if notifications tab is active
+    if (activeTab === 'notifications') {
+        updateNotificationStats();
+    }
+    
+    // Handle URL hash changes
+    window.addEventListener('hashchange', function() {
+        if (window.location.hash === '#notifications') {
+            const notificationsButton = document.querySelector('[data-target="notifications"]');
+            if (notificationsButton) {
+                showTab('notifications', notificationsButton);
+                updateNotificationStats();
+            }
+        }
+    });
     
     // 전화번호 자동 포맷팅
     $('#phoneNumber').on('input', function() {
@@ -526,19 +587,7 @@ $(document).ready(function() {
             type: 'POST',
             success: function() {
                 $this.removeClass('unread');
-                // 읽지 않은 알림 수 감소
-                const $unreadCount = $('#notifications-tab .badge');
-                
-                if ($unreadCount.length) {
-                    const count = parseInt($unreadCount.text()) - 1;
-                    if (count > 0) {
-                        $unreadCount.text(count);
-                    } else {
-                        $unreadCount.remove();
-                    }
-                }
-                
-                // 알림 통계 업데이트
+                // 알림 통계 업데이트 (서버에서 최신 카운트 가져옴)
                 updateNotificationStats();
                 // 페이지 이동
                 window.location.href = targetUrl;
@@ -558,7 +607,7 @@ $(document).ready(function() {
             type: 'POST',
             success: function() {
                 $('.notification-item.unread').removeClass('unread');
-                $('#notifications-tab .badge').remove();
+                // 서버에서 최신 카운트를 가져와서 업데이트
                 updateNotificationStats();
             },
             error: function(xhr) {
@@ -569,40 +618,65 @@ $(document).ready(function() {
     
     // 알림 통계 업데이트 함수
     function updateNotificationStats() {
-        const unreadCount = $('.notification-item.unread').length;
-        const $statsDiv = $('#notificationStats');
-        
-        if (unreadCount > 0) {
-            $statsDiv.html('<i class="bi bi-info-circle"></i> 읽지 않은 알림 <strong class="unread-count">' + unreadCount + '</strong>개가 있습니다.');
-        } else {
-            $statsDiv.html('<i class="bi bi-info-circle"></i> 모든 알림을 확인했습니다.');
-        }
+        // 서버에서 실제 읽지 않은 알림 수를 가져옴
+        $.ajax({
+            url: '/api/notifications/count',
+            type: 'GET',
+            success: function(response) {
+                const unreadCount = response.data?.unreadCount || 0;
+                const $statsDiv = $('#notificationStats');
+                
+                if (unreadCount > 0) {
+                    $statsDiv.html('<i class="bi bi-info-circle"></i> 읽지 않은 알림 <strong class="unread-count">' + unreadCount + '</strong>개가 있습니다.');
+                    $('#markAllReadBtn').show();
+                } else {
+                    $statsDiv.html('<i class="bi bi-info-circle"></i> 모든 알림을 확인했습니다.');
+                    $('#markAllReadBtn').hide();
+                }
+                
+                // 탭 배지 업데이트
+                const $badge = $('#notifications-tab .badge');
+                if (unreadCount > 0) {
+                    if ($badge.length) {
+                        $badge.text(unreadCount);
+                    } else {
+                        $('#notifications-tab').append('<span class="badge">' + unreadCount + '</span>');
+                    }
+                } else {
+                    $badge.remove();
+                }
+            },
+            error: function() {
+                // 실패 시 현재 페이지의 알림만 카운트 (fallback)
+                const visibleUnreadCount = $('.notification-item.unread').length;
+                const $statsDiv = $('#notificationStats');
+                
+                if (visibleUnreadCount > 0) {
+                    $statsDiv.html('<i class="bi bi-info-circle"></i> 읽지 않은 알림이 있습니다.');
+                    $('#markAllReadBtn').show();
+                } else {
+                    $statsDiv.html('<i class="bi bi-info-circle"></i> 모든 알림을 확인했습니다.');
+                    $('#markAllReadBtn').hide();
+                }
+            }
+        });
     }
     
     // 실시간 알림 수신 처리
     $(document).on('notification:new', function(event, notification) {
         // 알림 탭이 활성화되어 있고 첫 페이지에 있을 때만 추가
-        if ($('#notifications-tab').hasClass('active')) {
+        const isNotificationTabActive = document.getElementById('notifications-tab').classList.contains('active');
+        if (isNotificationTabActive) {
             const currentPage = parseInt(new URLSearchParams(window.location.search).get('page') || '0');
             if (currentPage === 0) {
                 addNotificationToList(notification);
             } else {
-                // 다른 페이지에 있으면 탭 배지만 업데이트
-                const $badge = $('#notifications-tab .badge');
-                if ($badge.length) {
-                    $badge.text(parseInt($badge.text()) + 1);
-                } else {
-                    $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
-                }
+                // 다른 페이지에 있으면 서버에서 최신 카운트 가져와서 배지 업데이트
+                updateNotificationStats();
             }
         } else {
-            // 알림 탭이 비활성화 상태이면 배지만 업데이트
-            const $badge = $('#notifications-tab .badge');
-            if ($badge.length) {
-                $badge.text(parseInt($badge.text()) + 1);
-            } else {
-                $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
-            }
+            // 알림 탭이 비활성화 상태이면 서버에서 최신 카운트 가져와서 배지 업데이트
+            updateNotificationStats();
         }
     });
     
@@ -639,6 +713,9 @@ $(document).ready(function() {
         } else if (notification.type === 'POST_WISHLISTED') {
             iconClass = 'bi-heart';
             iconTypeClass = 'post';
+        } else if (notification.type === 'KEYWORD_MATCH') {
+            iconClass = 'bi-search';
+            iconTypeClass = 'keyword';
         }
         
         // 새 알림 HTML 생성 (새 알림은 항상 unread)
@@ -697,16 +774,8 @@ $(document).ready(function() {
         
         console.log('=== addNotificationToList END ===');
         
-        // 알림 통계 업데이트
+        // 알림 통계 업데이트 (서버에서 최신 카운트 가져옴)
         updateNotificationStats();
-        
-        // 탭 배지 업데이트
-        const $badge = $('#notifications-tab .badge');
-        if ($badge.length) {
-            $badge.text(parseInt($badge.text()) + 1);
-        } else {
-            $('#notifications-tab').append(' <span class="badge bg-danger ms-1">1</span>');
-        }
     }
     
     // 키워드 관리 관련 함수들
@@ -820,15 +889,12 @@ $(document).ready(function() {
         } else {
             emptyDiv.style.display = 'none';
             container.innerHTML = keywords.map(keyword => `
-                <div class="col-auto">
-                    <span class="badge bg-primary fs-6 p-2 keyword-badge">
-                        ${keyword}
-                        <button type="button" class="btn-close btn-close-white ms-2" 
-                                onclick="deleteKeyword('${keyword}')" 
-                                title="키워드 삭제"
-                                style="font-size: 0.7em;"></button>
-                    </span>
-                </div>
+                <span class="keyword-badge">
+                    ${keyword}
+                    <button type="button" class="btn-close" 
+                            onclick="deleteKeyword('${keyword}')" 
+                            title="키워드 삭제"></button>
+                </span>
             `).join('');
         }
     }
