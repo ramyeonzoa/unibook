@@ -3,6 +3,7 @@ package com.unibook.service;
 import com.unibook.common.AppConstants;
 import com.unibook.domain.dto.PostRequestDto;
 import com.unibook.domain.dto.PostResponseDto;
+import com.unibook.domain.dto.PriceTrendDto;
 import com.unibook.domain.entity.*;
 import com.unibook.exception.BusinessException;
 import com.unibook.exception.DuplicateResourceException;
@@ -1023,5 +1024,87 @@ public class PostService {
                     post.getPostId(), post.getSubject().getSubjectId(), post.getBook().getBookId(), e.getMessage());
         }
         // NPE, 프로그래밍 오류 등은 상위로 전파하여 개발자가 인지할 수 있도록 함
+    }
+    
+    /**
+     * 책의 가격 시세 데이터 조회 (차트용)
+     */
+    public PriceTrendDto.ChartData getBookPriceTrend(Long bookId) {
+        log.info("시세 데이터 조회 시작: bookId={}", bookId);
+        
+        try {
+            // 동일한 책의 모든 게시글 조회 (시간순)
+            List<Post> posts = postRepository.findByBookIdForPriceTrend(bookId);
+            log.info("조회된 게시글 수: {}", posts.size());
+            
+            if (posts.isEmpty()) {
+                log.info("해당 책의 게시글이 없음: bookId={}", bookId);
+                return PriceTrendDto.ChartData.builder()
+                        .availableAndReserved(List.of())
+                        .completed(List.of())
+                        .hasData(false)
+                        .build();
+            }
+            
+            // 책 정보 추출 (첫 번째 게시글에서)
+            Post firstPost = posts.get(0);
+            log.info("첫 번째 게시글 정보: postId={}, title={}", firstPost.getPostId(), firstPost.getTitle());
+            
+            PriceTrendDto.BookInfo bookInfo = PriceTrendDto.BookInfo.builder()
+                    .bookId(firstPost.getBook().getBookId())
+                    .title(firstPost.getBook().getTitle())
+                    .author(firstPost.getBook().getAuthor())
+                    .isbn(firstPost.getBook().getIsbn())
+                    .build();
+            
+            // 상태별로 데이터 분리
+            List<PriceTrendDto.DataPoint> availableAndReserved = posts.stream()
+                    .filter(post -> post.getStatus() == Post.PostStatus.AVAILABLE || 
+                                   post.getStatus() == Post.PostStatus.RESERVED)
+                    .map(this::convertToDataPoint)
+                    .collect(Collectors.toList());
+            
+            List<PriceTrendDto.DataPoint> completed = posts.stream()
+                    .filter(post -> post.getStatus() == Post.PostStatus.COMPLETED)
+                    .map(this::convertToDataPoint)
+                    .collect(Collectors.toList());
+            
+            log.info("데이터 분류 완료: available={}, completed={}", 
+                    availableAndReserved.size(), completed.size());
+            
+            return PriceTrendDto.ChartData.builder()
+                    .availableAndReserved(availableAndReserved)
+                    .completed(completed)
+                    .bookInfo(bookInfo)
+                    .hasData(!availableAndReserved.isEmpty() || !completed.isEmpty())
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("책 시세 데이터 조회 실패: bookId={}", bookId, e);
+            return PriceTrendDto.ChartData.builder()
+                    .availableAndReserved(List.of())
+                    .completed(List.of())
+                    .hasData(false)
+                    .build();
+        }
+    }
+    
+    /**
+     * Post를 Chart.js용 DataPoint로 변환
+     */
+    private PriceTrendDto.DataPoint convertToDataPoint(Post post) {
+        String statusText = switch (post.getStatus()) {
+            case AVAILABLE -> "판매중";
+            case RESERVED -> "예약중";
+            case COMPLETED -> "거래완료";
+            default -> post.getStatus().name();
+        };
+        
+        return PriceTrendDto.DataPoint.builder()
+                .date(post.getCreatedAt().toString()) // ISO 형태로 전달
+                .price(post.getPrice())
+                .status(statusText)
+                .postId(post.getPostId())
+                .build();
     }
 }

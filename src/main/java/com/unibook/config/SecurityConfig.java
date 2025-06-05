@@ -49,6 +49,7 @@ public class SecurityConfig {
                 // 게시글 목록과 상세보기는 모두 허용
                 .requestMatchers("/posts").permitAll()
                 .requestMatchers("/posts/*").permitAll()
+                .requestMatchers("/posts/price-trend/*").permitAll()
                 // 게시글 작성/수정/삭제는 인증 필요
                 .requestMatchers("/posts/new", "/posts/*/edit", "/posts/*/delete", "/posts/*/status").authenticated()
                 // 찜 목록과 내 게시글은 인증 필요

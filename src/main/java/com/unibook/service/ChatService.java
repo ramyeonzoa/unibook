@@ -132,6 +132,7 @@ public class ChatService {
             .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
     }
     
+    
     /**
      * 마지막 메시지 정보 업데이트
      */

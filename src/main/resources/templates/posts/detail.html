@@ -14,6 +14,9 @@
     <!-- Swiper CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
     
+    <!-- Chart.js 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <!-- Status Badge CSS -->
     <link th:href="@{/css/status-badge.css}" rel="stylesheet">
     
@@ -1190,6 +1193,28 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- 가격 시세 차트를 교재 정보 안에 통합 -->
+                        <div class="mt-3">
+                            <div id="price-trend-container">
+                                <div id="price-chart-loading" class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">차트 로딩 중...</span>
+                                    </div>
+                                    <p class="mt-2 mb-0 text-muted small">시세 데이터를 불러오는 중...</p>
+                                </div>
+                                <canvas id="price-trend-chart" style="display: none; width: 100%; height: 220px;"></canvas>
+                                <div id="price-chart-empty" style="display: none;" class="text-center py-3 text-muted">
+                                    <i class="bi bi-graph-up" style="font-size: 1.5rem;"></i>
+                                    <p class="mt-2 mb-0 small">아직 시세 데이터가 없습니다.</p>
+                                    <small class="text-muted">이 책의 다른 게시글이 등록되면 시세 그래프를 확인할 수 있습니다.</small>
+                                </div>
+                                <div id="price-chart-error" style="display: none;" class="text-center py-3 text-muted">
+                                    <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem;"></i>
+                                    <p class="mt-2 mb-0 small">시세 데이터를 불러올 수 없습니다.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- 과목 정보 -->
@@ -1994,7 +2019,259 @@ function showToast(message) {
         toast.remove();
     }, isWarning ? 3500 : 3000);
 }
+
+// 가격 시세 차트 초기화
+function initPriceTrendChart() {
+    const bookId = /*[[${post.book?.bookId}]]*/ null;
+    
+    if (!bookId) {
+        return;
+    }
+    
+    // Chart.js 로드 확인
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js가 로드되지 않았습니다.');
+        document.getElementById('price-chart-loading').style.display = 'none';
+        document.getElementById('price-chart-error').style.display = 'block';
+        return;
+    }
+    
+    // API 호출하여 데이터 가져오기
+    console.log('시세 데이터 요청 시작:', bookId);
+    fetch(`/posts/price-trend/${bookId}`)
+        .then(response => {
+            console.log('API 응답 상태:', response.status);
+            console.log('응답 헤더:', response.headers.get('content-type'));
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            // 응답이 JSON인지 확인
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.error('JSON이 아닌 응답:', contentType);
+                return response.text().then(text => {
+                    console.log('실제 응답 내용:', text.substring(0, 200));
+                    throw new Error('Invalid JSON response');
+                });
+            }
+            
+            return response.json();
+        })
+        .then(data => {
+            console.log('시세 데이터 응답:', data);
+            document.getElementById('price-chart-loading').style.display = 'none';
+            
+            if (!data.hasData) {
+                console.log('시세 데이터 없음');
+                document.getElementById('price-chart-empty').style.display = 'block';
+                return;
+            }
+            
+            console.log('차트 렌더링 시작');
+            renderPriceTrendChart(data);
+        })
+        .catch(error => {
+            console.error('시세 데이터 로드 실패:', error);
+            document.getElementById('price-chart-loading').style.display = 'none';
+            document.getElementById('price-chart-error').style.display = 'block';
+        });
+}
+
+
+// 차트 렌더링
+function renderPriceTrendChart(data) {
+    const canvas = document.getElementById('price-trend-chart');
+    const ctx = canvas.getContext('2d');
+    
+    console.log('차트 렌더링 데이터:', data);
+    
+    // 간단한 방식으로 Chart.js 구성
+    const availableData = data.availableAndReserved.map(point => ({
+        x: new Date(point.date).toLocaleDateString('ko-KR'),
+        y: point.price
+    }));
+    
+    const completedData = data.completed.map(point => ({
+        x: new Date(point.date).toLocaleDateString('ko-KR'),
+        y: point.price
+    }));
+    
+    const config = {
+        type: 'scatter',
+        data: {
+            datasets: [
+                {
+                    label: '판매중/예약중',
+                    data: availableData,
+                    borderColor: '#667eea',
+                    backgroundColor: '#667eea',
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    showLine: true,
+                    fill: false
+                },
+                {
+                    label: '거래완료',
+                    data: completedData,
+                    borderColor: '#28a745',
+                    backgroundColor: '#28a745',
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    showLine: true,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 5,
+                    bottom: 5,
+                    left: 5,
+                    right: 5
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: '시세',
+                    font: {
+                        size: 14,
+                        weight: '600'
+                    },
+                    color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#ffffff' : '#212529',
+                    padding: {
+                        bottom: 10
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 12
+                        },
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#ffffff' : '#212529'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#667eea',
+                    borderWidth: 1,
+                    callbacks: {
+                        title: function(context) {
+                            return context[0].parsed.x;
+                        },
+                        label: function(context) {
+                            const point = context.raw;
+                            return `${context.dataset.label}: ${point.y.toLocaleString()}원 (${point.status})`;
+                        },
+                        afterLabel: function(context) {
+                            return '클릭하여 게시글 보기';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'category',
+                    title: {
+                        display: true,
+                        text: '등록 날짜',
+                        font: {
+                            size: 11
+                        },
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#ffffff' : '#212529'
+                    },
+                    grid: {
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
+                        },
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#ffffff' : '#212529'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: '가격 (원)',
+                        font: {
+                            size: 11
+                        },
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#ffffff' : '#212529'
+                    },
+                    grid: {
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                    },
+                    ticks: {
+                        font: {
+                            size: 10
+                        },
+                        color: document.documentElement.getAttribute('data-bs-theme') === 'dark' ? '#ffffff' : '#212529',
+                        callback: function(value) {
+                            return value.toLocaleString() + '원';
+                        }
+                    }
+                }
+            },
+            onHover: (event, activeElements) => {
+                canvas.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+            },
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const datasetIndex = activeElements[0].datasetIndex;
+                    const dataIndex = activeElements[0].index;
+                    let postId;
+                    
+                    if (datasetIndex === 0 && data.availableAndReserved[dataIndex]) {
+                        postId = data.availableAndReserved[dataIndex].postId;
+                    } else if (datasetIndex === 1 && data.completed[dataIndex]) {
+                        postId = data.completed[dataIndex].postId;
+                    }
+                    
+                    if (postId) {
+                        window.open(`/posts/${postId}`, '_blank');
+                    }
+                }
+            }
+        }
+    };
+    
+    new Chart(ctx, config);
+    canvas.style.display = 'block';
+}
+
+// 페이지 로드 시 차트 초기화
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM 로드 완료, Chart.js 상태:', typeof Chart !== 'undefined' ? '로드됨' : '로드 안됨');
+    
+    function tryInitChart(attempts = 0) {
+        if (typeof Chart !== 'undefined') {
+            console.log('Chart.js 로드 확인, 차트 초기화 시작');
+            initPriceTrendChart();
+        } else if (attempts < 10) {
+            console.log(`Chart.js 로드 대기 중... 시도 ${attempts + 1}/10`);
+            setTimeout(() => tryInitChart(attempts + 1), 500);
+        } else {
+            console.error('Chart.js 로드 실패');
+            document.getElementById('price-chart-loading').style.display = 'none';
+            document.getElementById('price-chart-error').style.display = 'block';
+        }
+    }
+    
+    tryInitChart();
+});
 /*]]>*/
 </script>
+
 </body>
 </html>

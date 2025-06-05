@@ -107,6 +107,98 @@
         [data-bs-theme="dark"] .reports-table {
             background: var(--bs-gray-800);
         }
+        
+        /* Modal 완전한 다크모드 스타일 */
+        [data-bs-theme="dark"] .modal-content {
+            background: var(--bs-gray-800);
+            border: 1px solid var(--bs-gray-700);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .modal-header {
+            border-bottom-color: var(--bs-gray-700);
+            background: var(--bs-gray-900);
+        }
+        
+        [data-bs-theme="dark"] .modal-footer {
+            border-top-color: var(--bs-gray-700);
+            background: var(--bs-gray-900);
+        }
+        
+        [data-bs-theme="dark"] .modal-title {
+            color: var(--bs-gray-100);
+        }
+        
+        /* Modal 내부 카드 다크모드 */
+        [data-bs-theme="dark"] .modal-body .card {
+            background: var(--bs-gray-700);
+            border: 1px solid var(--bs-gray-600);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .modal-body .card-header {
+            background: var(--bs-gray-600) !important;
+            border-bottom: 1px solid var(--bs-gray-500);
+            color: var(--bs-gray-100) !important;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .card-header.bg-primary {
+            background: linear-gradient(135deg, #0d6efd, #6610f2) !important;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .card-header.bg-warning {
+            background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .card-header.bg-light {
+            background: var(--bs-gray-600) !important;
+            color: var(--bs-gray-100) !important;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .card-body {
+            background: var(--bs-gray-700);
+            color: var(--bs-gray-100);
+        }
+        
+        /* Report type badges */
+        .report-type-badge.post {
+            background: #0d6efd;
+            color: white;
+        }
+        
+        .report-type-badge.chat {
+            background: #198754;
+            color: white;
+        }
+        
+        .report-type-badge.user {
+            background: #dc3545;
+            color: white;
+        }
+        
+        /* Modal 로딩 및 에러 상태 다크모드 */
+        [data-bs-theme="dark"] .modal-body .text-muted {
+            color: var(--bs-gray-400) !important;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .text-danger {
+            color: #ff6b6b !important;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .btn-outline-primary {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        [data-bs-theme="dark"] .modal-body .btn-outline-primary:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* Spinner 다크모드 */
+        [data-bs-theme="dark"] .spinner-border.text-primary {
+            color: #667eea !important;
+        }
     </style>
 </head>
 <body>
@@ -246,10 +338,12 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex gap-1">
-                                                    <a th:href="@{'/admin/reports/' + ${report.reportId}}" 
-                                                       class="btn btn-sm btn-outline-primary" title="상세보기">
+                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                            onclick="showReportDetail(this.getAttribute('data-report-id'))" 
+                                                            th:data-report-id="${report.reportId}"
+                                                            title="상세보기">
                                                         <i class="bi bi-eye"></i>
-                                                    </a>
+                                                    </button>
                                                     <button th:if="${report.status.toString() == 'PENDING'}"
                                                             class="btn btn-sm btn-outline-success" 
                                                             onclick="processReport(this.getAttribute('data-report-id'), 'PROCESSING')"
@@ -306,6 +400,30 @@
         </div>
     </div>
     
+    <!-- 신고 상세보기 Modal -->
+    <div class="modal fade" id="reportDetailModal" tabindex="-1" aria-labelledby="reportDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportDetailModalLabel">
+                        <i class="bi bi-exclamation-triangle me-2"></i>신고 상세정보
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="reportDetailContent">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">로딩중...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <!-- Footer -->
     <footer th:replace="~{fragments/header :: footer}"></footer>
     
@@ -313,6 +431,150 @@
     <div th:replace="~{fragments/header :: scripts}"></div>
     
     <script>
+        // 신고 상세보기 Modal
+        function showReportDetail(reportId) {
+            if (!reportId) return;
+            
+            // Modal 열기
+            const modal = new bootstrap.Modal(document.getElementById('reportDetailModal'));
+            modal.show();
+            
+            // 로딩 상태 표시
+            document.getElementById('reportDetailContent').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">로딩중...</span>
+                    </div>
+                    <p class="mt-3 text-muted">신고 정보를 불러오는 중...</p>
+                </div>
+            `;
+            
+            // API 호출
+            fetch(`/admin/api/reports/${reportId}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        renderReportDetail(result.report);
+                    } else {
+                        document.getElementById('reportDetailContent').innerHTML = `
+                            <div class="text-center py-5">
+                                <i class="bi bi-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                                <p class="mt-3 text-danger">${result.message || '정보를 불러올 수 없습니다.'}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('reportDetailContent').innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="bi bi-wifi-off text-muted" style="font-size: 3rem;"></i>
+                            <p class="mt-3 text-muted">네트워크 오류가 발생했습니다.</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // 신고 상세정보 렌더링
+        function renderReportDetail(report) {
+            const formatDate = (dateStr) => {
+                const date = new Date(dateStr);
+                return date.toLocaleString('ko-KR');
+            };
+            
+            const getStatusBadge = (status) => {
+                const statusMap = {
+                    'PENDING': '<span class="badge status-badge inline pending">대기중</span>',
+                    'PROCESSING': '<span class="badge status-badge inline processing">처리중</span>',
+                    'COMPLETED': '<span class="badge status-badge inline completed">처리완료</span>',
+                    'REJECTED': '<span class="badge status-badge inline rejected">기각</span>'
+                };
+                return statusMap[status] || `<span class="badge bg-secondary">${status}</span>`;
+            };
+            
+            const getTypeBadge = (type) => {
+                const typeMap = {
+                    'POST': '<span class="badge report-type-badge post">게시글</span>',
+                    'CHAT': '<span class="badge report-type-badge chat">채팅</span>',
+                    'USER': '<span class="badge report-type-badge user">사용자</span>'
+                };
+                return typeMap[type] || `<span class="badge bg-secondary">${type}</span>`;
+            };
+            
+            let targetContent = '';
+            
+            // 신고된 게시글/채팅 내용 표시
+            if (report.reportType === 'POST' && report.targetId) {
+                targetContent = `
+                    <div class="card mt-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-file-post me-2"></i>신고된 게시글</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>게시글 ID:</strong> #${report.targetId}</p>
+                            <p class="mb-0"><a href="/posts/${report.targetId}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-external-link"></i> 게시글 보기
+                            </a></p>
+                        </div>
+                    </div>
+                `;
+            } else if (report.reportType === 'CHAT' && report.targetId) {
+                targetContent = `
+                    <div class="card mt-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-chat-dots me-2"></i>신고된 채팅</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>채팅방 ID:</strong> #${report.targetId}</p>
+                            <p class="mb-0"><a href="/chat/${report.targetId}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-external-link"></i> 채팅방 보기
+                            </a></p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('reportDetailContent').innerHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <!-- 기본 정보 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">신고 기본정보</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>신고 ID:</strong> #${report.reportId}</p>
+                                        <p class="mb-2"><strong>신고 타입:</strong> ${getTypeBadge(report.reportType)}</p>
+                                        <p class="mb-2"><strong>신고 사유:</strong> ${report.category?.description || report.category}</p>
+                                        <p class="mb-0"><strong>신고일:</strong> ${formatDate(report.createdAt)}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2"><strong>상태:</strong> ${getStatusBadge(report.status)}</p>
+                                        <p class="mb-2"><strong>신고자:</strong> ${report.reporter?.name || '알 수 없음'}</p>
+                                        <p class="mb-2"><strong>피신고자:</strong> ${report.targetUser?.name || '알 수 없음'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 신고 내용 -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-warning text-dark">
+                                <h6 class="mb-0"><i class="bi bi-chat-quote me-2"></i>신고 내용</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0">${report.content || '신고 내용이 없습니다.'}</p>
+                            </div>
+                        </div>
+                        
+                        ${targetContent}
+                    </div>
+                </div>
+            `;
+        }
+        
         // 신고 상태 변경
         function processReport(reportId, newStatus) {
             if (!reportId) return;

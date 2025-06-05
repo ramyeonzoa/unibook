@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -83,7 +84,7 @@ public class AdminController {
     }
     
     /**
-     * 신고 상세 조회
+     * 신고 상세 조회 (기존 페이지)
      */
     @GetMapping("/reports/{reportId}")
     public String reportDetail(@PathVariable Long reportId, Model model) {
@@ -94,6 +95,57 @@ public class AdminController {
         } catch (Exception e) {
             log.error("신고 상세 조회 실패: reportId={}", reportId, e);
             return "redirect:/admin/reports?error=notfound";
+        }
+    }
+    
+    /**
+     * 신고 상세 조회 (Modal용 API)
+     */
+    @GetMapping("/api/reports/{reportId}")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getReportDetail(@PathVariable Long reportId) {
+        try {
+            Report report = reportService.getReportDetailWithContent(reportId);
+            
+            // 순환 참조 방지를 위해 필요한 데이터만 Map으로 변환
+            Map<String, Object> reportData = Map.of(
+                "reportId", report.getReportId(),
+                "reportType", report.getReportType().name(),
+                "targetId", report.getTargetId(),
+                "category", Map.of(
+                    "name", report.getCategory().name(),
+                    "description", report.getCategory().getDescription()
+                ),
+                "content", report.getContent() != null ? report.getContent() : "",
+                "status", report.getStatus().name(),
+                "createdAt", report.getCreatedAt().toString(),
+                "reporter", Map.of(
+                    "userId", report.getReporter().getUserId(),
+                    "name", report.getReporter().getName(),
+                    "email", report.getReporter().getEmail()
+                ),
+                "targetUser", Map.of(
+                    "userId", report.getTargetUser().getUserId(),
+                    "name", report.getTargetUser().getName(),
+                    "email", report.getTargetUser().getEmail()
+                )
+            );
+            
+            Map<String, Object> response = Map.of(
+                "success", true,
+                "report", reportData
+            );
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("신고 상세 조회 실패: reportId={}", reportId, e);
+            
+            Map<String, Object> response = Map.of(
+                "success", false,
+                "message", "신고 정보를 찾을 수 없습니다."
+            );
+            
+            return ResponseEntity.badRequest().body(response);
         }
     }
     
@@ -184,4 +236,5 @@ public class AdminController {
         
         return "admin/statistics";
     }
+    
 }

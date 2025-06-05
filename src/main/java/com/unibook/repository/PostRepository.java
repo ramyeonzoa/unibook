@@ -343,4 +343,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      */
     @Query("SELECT pr.professorName FROM Professor pr WHERE pr.professorId = :professorId")
     Optional<String> findProfessorNameById(@Param("professorId") Long professorId);
+    
+    /**
+     * 동일한 책의 모든 게시글 조회 (시세 그래프용)
+     * BLOCKED 상태 제외, 시간순 정렬
+     */
+    @Query("SELECT p FROM Post p " +
+           "LEFT JOIN FETCH p.user u " +
+           "LEFT JOIN FETCH u.department d " +
+           "LEFT JOIN FETCH d.school " +
+           "WHERE p.book.bookId = :bookId " +
+           "AND p.status != 'BLOCKED' " +
+           "ORDER BY p.createdAt ASC")
+    List<Post> findByBookIdForPriceTrend(@Param("bookId") Long bookId);
 }

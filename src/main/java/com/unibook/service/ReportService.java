@@ -266,6 +266,45 @@ public class ReportService {
     }
     
     /**
+     * 신고 상세 정보 조회 (신고된 게시글/채팅 내용 포함)
+     */
+    public Report getReportDetailWithContent(Long reportId) {
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("신고를 찾을 수 없습니다."));
+        
+        // 연관 엔티티 명시적 로딩 (Lazy Loading 해결)
+        report.getReporter().getName(); // Reporter 정보 로딩
+        report.getTargetUser().getName(); // TargetUser 정보 로딩
+        
+        // 신고 타입에 따라 관련 내용 로딩
+        if (report.getReportType() == ReportType.POST && report.getTargetId() != null) {
+            // 게시글 정보 로딩
+            postRepository.findById(report.getTargetId()).ifPresent(post -> {
+                // Post 정보 강제 로딩
+                post.getTitle();
+                post.getDescription();
+                if (post.getUser() != null) {
+                    post.getUser().getName();
+                }
+            });
+        } else if (report.getReportType() == ReportType.CHAT && report.getTargetId() != null) {
+            // 채팅방 정보 로딩
+            chatRoomRepository.findById(report.getTargetId()).ifPresent(chatRoom -> {
+                // ChatRoom 정보 강제 로딩
+                chatRoom.getFirebaseRoomId();
+                if (chatRoom.getBuyer() != null) {
+                    chatRoom.getBuyer().getName();
+                }
+                if (chatRoom.getSeller() != null) {
+                    chatRoom.getSeller().getName();
+                }
+            });
+        }
+        
+        return report;
+    }
+    
+    /**
      * 사용자의 신고 내역 조회
      */
     public Page<Report> getUserReports(Long userId, Pageable pageable) {

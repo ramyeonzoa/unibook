@@ -5,6 +5,7 @@ import com.unibook.common.AppConstants;
 import com.unibook.common.Messages;
 import com.unibook.domain.dto.PostRequestDto;
 import com.unibook.domain.dto.PostResponseDto;
+import com.unibook.domain.dto.PriceTrendDto;
 import com.unibook.domain.entity.Post;
 import com.unibook.domain.entity.User;
 import com.unibook.exception.BusinessException;
@@ -31,6 +32,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
@@ -831,5 +834,34 @@ public class PostController {
         }
         
         return response;
+    }
+    
+    /**
+     * 책의 가격 시세 데이터 조회 (차트용 API)
+     */
+    @GetMapping(value = "/price-trend/{bookId}", produces = "application/json")
+    @ResponseBody
+    public ResponseEntity<PriceTrendDto.ChartData> getBookPriceTrend(@PathVariable Long bookId) {
+        try {
+            log.info("책 시세 데이터 조회 요청: bookId={}", bookId);
+            PriceTrendDto.ChartData result = postService.getBookPriceTrend(bookId);
+            log.info("시세 데이터 조회 결과: hasData={}, available={}, completed={}", 
+                    result.isHasData(), 
+                    result.getAvailableAndReserved().size(), 
+                    result.getCompleted().size());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(result);
+        } catch (Exception e) {
+            log.error("책 시세 데이터 조회 실패: bookId={}", bookId, e);
+            PriceTrendDto.ChartData errorResult = PriceTrendDto.ChartData.builder()
+                    .availableAndReserved(List.of())
+                    .completed(List.of())
+                    .hasData(false)
+                    .build();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(errorResult);
+        }
     }
 }
