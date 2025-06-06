@@ -46,7 +46,9 @@ public class ProfileController {
     @PreAuthorize("isAuthenticated()")
     public String profile(Model model, 
                          @AuthenticationPrincipal UserPrincipal userPrincipal,
-                         @PageableDefault(size = 10) Pageable pageable) {
+                         @PageableDefault(size = 10) Pageable pageable,
+                         @RequestParam(value = "tab", required = false) String tab,
+                         @RequestParam(value = "success", required = false) Boolean success) {
         // Department, School 정보까지 한 번에 가져오기 (N+1 방지)
         User user = userRepository.findByIdWithDepartmentAndSchool(userPrincipal.getUserId())
                 .orElseThrow(() -> new ValidationException("사용자를 찾을 수 없습니다."));
@@ -67,6 +69,11 @@ public class ProfileController {
         model.addAttribute("notifications", notifications);
         model.addAttribute("totalCount", notificationCount.getTotalCount());
         model.addAttribute("unreadCount", notificationCount.getUnreadCount());
+        
+        // 쿼리 파라미터로 받은 탭 정보 추가
+        if (tab != null) {
+            model.addAttribute("activeTab", tab);
+        }
         
         return "profile";
     }
@@ -104,16 +111,35 @@ public class ProfileController {
         }
         
         if (bindingResult.hasErrors()) {
-            model.addAttribute("user", user);
-            model.addAttribute("infoUpdateForm", new InfoUpdateForm(user.getPhoneNumber()));
+            // Department, School 정보까지 한 번에 가져오기 (N+1 방지)
+            User userWithRelations = userRepository.findByIdWithDepartmentAndSchool(userPrincipal.getUserId())
+                    .orElseThrow(() -> new ValidationException("사용자를 찾을 수 없습니다."));
+            
+            // 알림 데이터 조회 (페이지 기본값 사용)
+            org.springframework.data.domain.Pageable defaultPageable = 
+                org.springframework.data.domain.PageRequest.of(0, 10);
+            Page<NotificationDto.Response> notifications = notificationService.getNotifications(
+                    userPrincipal.getUserId(), defaultPageable);
+            NotificationDto.CountResponse notificationCount = notificationService.getNotificationCount(
+                    userPrincipal.getUserId());
+            
+            model.addAttribute("user", userWithRelations);
+            model.addAttribute("infoUpdateForm", new InfoUpdateForm(userWithRelations.getPhoneNumber()));
             model.addAttribute("passwordError", true);
+            model.addAttribute("infoError", false);
+            
+            // 알림 관련 데이터 추가 (누락된 부분)
+            model.addAttribute("notifications", notifications);
+            model.addAttribute("totalCount", notificationCount.getTotalCount());
+            model.addAttribute("unreadCount", notificationCount.getUnreadCount());
+            
             return "profile";
         }
         
         try {
             userService.updatePassword(user.getUserId(), form.getNewPassword());
             redirectAttributes.addFlashAttribute("successMessage", "비밀번호가 변경되었습니다.");
-            return "redirect:/profile";
+            return "redirect:/profile?tab=password&success=true";
             
         } catch (Exception e) {
             log.error("비밀번호 변경 중 오류 발생", e);
@@ -143,17 +169,31 @@ public class ProfileController {
         }
         
         if (bindingResult.hasErrors()) {
+            // 알림 데이터 조회 (페이지 기본값 사용)
+            org.springframework.data.domain.Pageable defaultPageable = 
+                org.springframework.data.domain.PageRequest.of(0, 10);
+            Page<NotificationDto.Response> notifications = notificationService.getNotifications(
+                    userPrincipal.getUserId(), defaultPageable);
+            NotificationDto.CountResponse notificationCount = notificationService.getNotificationCount(
+                    userPrincipal.getUserId());
+            
             model.addAttribute("user", user);
             model.addAttribute("passwordChangeForm", new PasswordChangeForm());
             model.addAttribute("passwordError", false);
             model.addAttribute("infoError", true);
+            
+            // 알림 관련 데이터 추가 (누락된 부분)
+            model.addAttribute("notifications", notifications);
+            model.addAttribute("totalCount", notificationCount.getTotalCount());
+            model.addAttribute("unreadCount", notificationCount.getUnreadCount());
+            
             return "profile";
         }
         
         try {
             userService.updatePhoneNumber(user.getUserId(), form.getPhoneNumber());
             redirectAttributes.addFlashAttribute("successMessage", "정보가 수정되었습니다.");
-            return "redirect:/profile";
+            return "redirect:/profile?tab=info&success=true";
             
         } catch (Exception e) {
             log.error("정보 수정 중 오류 발생", e);

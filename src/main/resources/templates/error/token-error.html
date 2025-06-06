@@ -12,37 +12,110 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
     <style>
+        :root {
+            --error-bg: #f8f9fa;
+            --error-card-bg: #ffffff;
+            --error-card-border: rgba(0,0,0,0.08);
+            --error-icon-color: #dc3545;
+            --error-title-color: #212529;
+            --error-text-color: #6c757d;
+            --error-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        [data-bs-theme="dark"] {
+            --error-bg: #0d1117;
+            --error-card-bg: #21262d;
+            --error-card-border: rgba(255,255,255,0.1);
+            --error-icon-color: #f85149;
+            --error-title-color: #f0f6fc;
+            --error-text-color: #8b949e;
+            --error-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        body {
+            background-color: var(--error-bg);
+            transition: background-color 0.3s ease;
+        }
+        
         .error-container {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #f8f9fa;
+            padding: 2rem 1rem;
         }
+        
         .error-card {
             max-width: 500px;
+            width: 100%;
             text-align: center;
-            padding: 3rem;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 3rem 2rem;
+            background: var(--error-card-bg);
+            border: 1px solid var(--error-card-border);
+            border-radius: 16px;
+            box-shadow: var(--error-shadow);
+            transition: all 0.3s ease;
         }
+        
         .error-icon {
             font-size: 4rem;
-            color: #dc3545;
-            margin-bottom: 1rem;
+            color: var(--error-icon-color);
+            margin-bottom: 1.5rem;
+            animation: pulse 2s ease-in-out infinite alternate;
         }
+        
+        @keyframes pulse {
+            from { opacity: 0.8; }
+            to { opacity: 1; }
+        }
+        
         .error-title {
-            color: #333;
+            color: var(--error-title-color);
+            font-weight: 600;
+            font-size: 1.75rem;
             margin-bottom: 1rem;
         }
+        
         .error-message {
-            color: #666;
-            margin-bottom: 2rem;
+            color: var(--error-text-color);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+        
+        @media (max-width: 576px) {
+            .error-card {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .error-icon {
+                font-size: 3rem;
+            }
+            
+            .error-title {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- 다크모드 적용 -->
+    <script>
+        const theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', theme);
+    </script>
 
 <div class="error-container">
     <div class="error-card">

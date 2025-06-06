@@ -72,4 +72,22 @@ public class UserApiController {
         
         return ResponseEntity.ok(result);
     }
+    
+    /**
+     * 현재 사용자의 이메일 인증 상태 조회
+     */
+    @Operation(summary = "이메일 인증 상태 조회", description = "현재 로그인된 사용자의 이메일 인증 상태를 반환합니다.")
+    @GetMapping("/verification-status")
+    public ResponseEntity<Map<String, Object>> getVerificationStatus(
+            @Parameter(hidden = true) Authentication authentication) {
+        
+        com.unibook.security.UserPrincipal userPrincipal = 
+                (com.unibook.security.UserPrincipal) authentication.getPrincipal();
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("verified", userPrincipal.isVerified());
+        result.put("email", userPrincipal.getEmail());
+        
+        return ResponseEntity.ok(result);
+    }
 }

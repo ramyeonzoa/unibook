@@ -27,6 +27,7 @@
 <!-- 공통 메시지 포함 -->
 <div th:replace="~{fragments/header :: messages}"></div>
 
+
 <!-- Profile Hero Section -->
 <div class="profile-hero">
     <div class="container">
@@ -82,7 +83,7 @@
                     <div class="profile-info-grid">
                         <div class="profile-info-item">
                             <div class="profile-info-icon">
-                                <i class="bi bi-building"></i>
+                                <i class="bi bi-building-fill"></i>
                             </div>
                             <div class="profile-info-content">
                                 <div class="profile-info-label">학교</div>
@@ -276,7 +277,7 @@
                         
                             <!-- 알림 목록 -->
                             <div id="notificationListContainer">
-                                <div th:if="${notifications.empty}" class="text-center py-5" id="emptyNotifications">
+                                <div th:if="${notifications == null or notifications.empty}" class="text-center py-5" id="emptyNotifications">
                                     <i class="bi bi-bell-slash fs-1 text-muted"></i>
                                     <p class="text-muted mt-3">알림이 없습니다.</p>
                                 </div>
@@ -444,13 +445,35 @@ function showTab(tabName, button) {
 }
 
 $(document).ready(function() {
-    // Initialize tabs based on URL hash or error state
-    let activeTab = 'info';
-    const hasPasswordError = /*[[${passwordError}]]*/ false;
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
     
-    if (window.location.hash === '#notifications') {
+    // Initialize tabs based on various sources
+    let activeTab = 'info';
+    const hasPasswordError = [[${passwordError}]];
+    const modelActiveTab = /*[[${activeTab}]]*/ null;
+    
+    // 1. URL parameter 우선 (redirect 후)
+    if (tabParam) {
+        activeTab = tabParam;
+    }
+    // 2. Model attribute
+    else if (modelActiveTab) {
+        activeTab = modelActiveTab;
+    }
+    // 3. URL hash 확인
+    else if (window.location.hash === '#password') {
+        activeTab = 'password';
+    } else if (window.location.hash === '#info') {
+        activeTab = 'info';
+    } else if (window.location.hash === '#notifications') {
         activeTab = 'notifications';
-    } else if (hasPasswordError) {
+    } else if (window.location.hash === '#keyword-alerts') {
+        activeTab = 'keyword-alerts';
+    }
+    // 4. 오류 상태 확인
+    else if (hasPasswordError) {
         activeTab = 'password';
     }
     

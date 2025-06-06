@@ -699,7 +699,7 @@
             <div class="empty-state" th:if="${recentPosts.isEmpty()}">
                 <i class="bi bi-clipboard"></i>
                 <p>아직 등록된 게시글이 없습니다.</p>
-                <a href="/posts/new" class="btn btn-primary mt-3">
+                <a href="/posts/new" class="btn btn-primary mt-3 post-write-btn">
                     <i class="bi bi-plus-circle me-2"></i>첫 게시글 작성하기
                 </a>
             </div>
@@ -741,7 +741,7 @@
             <div class="empty-state" th:if="${popularBooks.isEmpty()}">
                 <i class="bi bi-book"></i>
                 <p>아직 등록된 교재가 없습니다.</p>
-                <a href="/posts/new" class="btn btn-primary mt-3">
+                <a href="/posts/new" class="btn btn-primary mt-3 post-write-btn">
                     <i class="bi bi-plus-circle me-2"></i>첫 교재 등록하기
                 </a>
             </div>
@@ -786,7 +786,7 @@
                 <a href="/posts" class="btn btn-outline-primary btn-lg">
                     <i class="bi bi-search me-2"></i>교재 둘러보기
                 </a>
-                <a href="/posts/new" class="btn btn-primary btn-lg">
+                <a href="/posts/new" class="btn btn-primary btn-lg post-write-btn">
                     <i class="bi bi-plus-circle me-2"></i>판매 등록하기
                 </a>
             </div>
