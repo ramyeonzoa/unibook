@@ -106,7 +106,7 @@
     transition: all 0.3s ease;
     border-radius: 8px;
     margin: 0 8px;
-    padding: 8px 12px !important;
+    padding: 8px 12px;
     white-space: nowrap;
     flex-shrink: 0;
     color: var(--bs-body-color) !important;
@@ -124,6 +124,7 @@
     border-radius: 8px;
     opacity: 0;
     transition: opacity 0.3s ease;
+    z-index: -1;
 }
 
 .posts-link:hover::before {
@@ -514,9 +515,6 @@
         font-size: 0.9rem;
     }
     
-    .posts-link span {
-        display: none;
-    }
     
     .header-search {
         position: relative;
@@ -563,6 +561,12 @@
 @media (max-width: 576px) {
     .navbar-brand {
         font-size: 1.1rem !important;
+    }
+    
+    .posts-link {
+        padding: 4px 6px !important;
+        margin: 0 2px !important;
+        font-size: 0.8rem !important;
     }
     
     .header-search {
@@ -664,9 +668,6 @@
         width: 40%;
     }
     
-    .posts-link span {
-        display: inline;
-    }
     
     /* Desktop Quick Actions Improvements */
     .d-none.d-lg-flex {

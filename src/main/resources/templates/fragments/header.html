@@ -14,13 +14,13 @@
                 
                 <!-- Posts Link (항상 표시) -->
                 <a class="nav-link posts-link" href="/posts">
-                    <i class="bi bi-grid-2x2 me-1"></i>
-                    <span>게시글</span>
+                    <i class="bi bi-grid-fill"></i>
+                    <span class="ms-1">게시글</span>
                 </a>
             </div>
             
-            <!-- Centered Search Bar -->
-            <div class="header-search">
+            <!-- Centered Search Bar (Desktop only) -->
+            <div class="header-search d-none d-sm-block">
                 <form action="/posts" method="get" class="position-relative">
                     <input type="text" 
                            id="headerSearch"
@@ -82,7 +82,7 @@
                 </div>
                 
                 <!-- 글쓰기 버튼 -->
-                <a class="btn btn-primary btn-sm post-write-btn" href="/posts/new" title="판매글 작성">
+                <a class="btn btn-primary btn-sm" href="/posts/new" title="판매글 작성">
                     <i class="bi bi-plus"></i>
                 </a>
                 
@@ -230,7 +230,7 @@
                         </div>
                         
                         <!-- Desktop Write Button -->
-                        <a class="btn btn-primary btn-sm post-write-btn" href="/posts/new" title="판매글 작성">
+                        <a class="btn btn-primary btn-sm" href="/posts/new" title="판매글 작성">
                             <i class="bi bi-plus-circle me-1"></i>
                             <span class="d-none d-xl-inline">판매글 작성</span>
                         </a>
@@ -795,84 +795,6 @@
                     // navigator.serviceWorker.register('/sw.js'); // 추후 구현 시
                 });
             }
-            
-            // 판매글 작성 버튼 인증 체크
-            $(document).ready(function() {
-                $('.post-write-btn').on('click', function(e) {
-                    e.preventDefault();
-                    
-                    const $btn = $(this);
-                    const targetUrl = $btn.attr('href');
-                    
-                    // 로그인 상태 체크 (user-meta가 있는지 확인)
-                    if (!$('meta[name="user-id"]').length) {
-                        // 로그인되지 않은 경우 - 로그인 페이지로 리다이렉트
-                        window.location.href = '/login?returnUrl=' + encodeURIComponent(targetUrl);
-                        return;
-                    }
-                    
-                    // 이메일 인증 상태 체크
-                    $.ajax({
-                        url: '/api/users/verification-status',
-                        type: 'GET',
-                        success: function(response) {
-                            if (response.verified) {
-                                // 인증된 경우 정상적으로 페이지 이동
-                                window.location.href = targetUrl;
-                            } else {
-                                // 미인증된 경우 토스트 메시지 표시
-                                showVerificationRequiredToast();
-                            }
-                        },
-                        error: function(xhr) {
-                            console.error('인증 상태 확인 중 오류:', xhr);
-                            // 오류 발생 시 기본 동작 (페이지 이동)
-                            window.location.href = targetUrl;
-                        }
-                    });
-                });
-                
-                // 인증 필요 토스트 메시지 표시 함수
-                function showVerificationRequiredToast() {
-                    // 기존 토스트 제거
-                    $('.toast-container').remove();
-                    
-                    const toastHtml = `
-                        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1055;">
-                            <div class="toast border-0 shadow-lg" role="alert" style="background: linear-gradient(135deg, #ffeaa7, #fdcb6e); color: #2d3436;">
-                                <div class="toast-header border-0" style="background: rgba(255,255,255,0.3); color: #2d3436;">
-                                    <i class="bi bi-envelope-exclamation-fill me-2"></i>
-                                    <strong class="me-auto">이메일 인증 필요</strong>
-                                    <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-                                </div>
-                                <div class="toast-body fw-medium">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-info-circle-fill me-2"></i>
-                                        <span>이메일 인증 후 게시글 작성이 가능합니다.</span>
-                                    </div>
-                                    <div class="mt-2 small" style="opacity: 0.8;">
-                                        <i class="bi bi-arrow-up me-1"></i>인증 메일 재발송 버튼을 이용해주세요.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    $('body').append(toastHtml);
-                    
-                    const toast = new bootstrap.Toast($('.toast')[0], {
-                        autohide: true,
-                        delay: 5000
-                    });
-                    
-                    toast.show();
-                    
-                    // 토스트가 사라진 후 DOM에서 제거
-                    setTimeout(() => {
-                        $('.toast-container').remove();
-                    }, 6000);
-                }
-            });
         </script>
     </div>
     
