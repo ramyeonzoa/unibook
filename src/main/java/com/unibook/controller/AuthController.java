@@ -65,32 +65,16 @@ public class AuthController {
             UserResponseDto newUser = userService.signup(signupDto);
             log.info(Messages.LOG_NEW_USER_REGISTERED, newUser.getEmail());
             
-            // 이메일 발송은 별도로 처리 (순환 참조 방지)
-            try {
-                User user = userService.getUserByEmail(newUser.getEmail()).orElseThrow();
-                emailService.sendVerificationEmail(user);
-            } catch (Exception e) {
-                log.error(Messages.LOG_EMAIL_SEND_FAILED, e);
-                // 이메일 발송 실패해도 회원가입은 성공
-            }
+            // 이메일 발송 처리
+            sendVerificationEmailSafely(newUser);
             
             redirectAttributes.addFlashAttribute("successMessage", Messages.SIGNUP_SUCCESS);
             return "redirect:/login";
             
         } catch (ValidationException e) {
-            log.error(Messages.LOG_SIGNUP_FAILED, e.getMessage());
-            
-            // TODO: Day 11 - ActivityLogService로 회원가입 실패 로그 기록
-            // activityLogService.logUserActivity(signupDto.getEmail(), "SIGNUP", "FAILED: " + e.getMessage());
-            
-            bindingResult.rejectValue("email", "error.signupForm", e.getMessage());
-            restoreDepartmentSelection(signupDto, model);
-            return "auth/signup";
+            return handleSignupValidationError(e, signupDto, bindingResult, model);
         } catch (Exception e) {
-            log.error(Messages.LOG_UNEXPECTED_ERROR, e);
-            bindingResult.rejectValue("email", "error.signupForm", Messages.SIGNUP_ERROR);
-            restoreDepartmentSelection(signupDto, model);
-            return "auth/signup";
+            return handleSignupGeneralError(e, signupDto, bindingResult, model);
         }
     }
     
@@ -133,26 +117,11 @@ public class AuthController {
             
             // 현재 로그인한 사용자와 인증을 완료한 사용자가 동일한 경우
             if (currentUser != null && currentUser.getUserId().equals(verifiedUser.getUserId())) {
-                log.info(Messages.LOG_SAME_USER_VERIFIED, verifiedUser.getEmail());
-                
-                // 세션 갱신을 위해 수동으로 로그아웃 처리
-                Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-                if (auth != null) {
-                    new SecurityContextLogoutHandler().logout(request, null, auth);
-                }
-                
-                redirectAttributes.addFlashAttribute("successMessage", Messages.EMAIL_VERIFIED_NEED_LOGIN);
-                redirectAttributes.addFlashAttribute("autoEmail", verifiedUser.getEmail());
-                return "redirect:/login";
+                return handleSameUserVerification(verifiedUser, currentUser, request, redirectAttributes);
             }
             
             // 다른 사용자거나 비로그인 상태인 경우
-            redirectAttributes.addFlashAttribute("successMessage", 
-                Messages.EMAIL_VERIFIED);
-            redirectAttributes.addFlashAttribute("autoEmail", verifiedUser.getEmail());
-            
-            // 로그인 상태가 아니면 로그인 페이지로, 로그인 상태면 홈으로
-            return currentUser == null ? "redirect:/login" : "redirect:/";
+            return handleDifferentUserVerification(verifiedUser, currentUser, redirectAttributes);
             
         } catch (ResourceNotFoundException e) {
             // 토큰을 찾을 수 없는 경우
@@ -189,11 +158,9 @@ public class AuthController {
     @PostMapping("/resend-verification")
     public String resendVerification(@RequestParam String email, RedirectAttributes redirectAttributes) {
         try {
-            // Rate Limiting 체크
-            rateLimitService.checkEmailRateLimit(email, "resend-verification");
+            // Rate Limiting 체크 및 이메일 발송 처리
+            processEmailResend(email);
             
-            User user = userService.validateUserForEmailResend(email);
-            emailService.sendVerificationEmail(user);
             redirectAttributes.addFlashAttribute("successMessage", Messages.EMAIL_RESENT);
             redirectAttributes.addFlashAttribute("showEmailHelp", true);
             return "redirect:/login";
@@ -224,11 +191,9 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public String forgotPassword(@RequestParam String email, RedirectAttributes redirectAttributes) {
         try {
-            // Rate Limiting 체크
-            rateLimitService.checkEmailRateLimit(email, "password-reset");
+            // Rate Limiting 체크 및 비밀번호 재설정 이메일 발송 처리
+            processPasswordResetRequest(email);
             
-            User user = userService.getUserForPasswordReset(email);
-            emailService.sendPasswordResetEmail(user);
             redirectAttributes.addFlashAttribute("successMessage", Messages.PASSWORD_RESET_EMAIL_SENT);
             redirectAttributes.addFlashAttribute("showEmailHelp", true);
             return "redirect:/login";
@@ -280,13 +245,8 @@ public class AuthController {
                               @RequestParam String confirmPassword,
                               RedirectAttributes redirectAttributes) {
         try {
-            // 비밀번호 일치 확인
-            if (!newPassword.equals(confirmPassword)) {
-                throw new ValidationException(Messages.PASSWORD_NOT_MATCH);
-            }
-            
-            // 비밀번호 복잡성 검증
-            validatePasswordComplexity(newPassword);
+            // 비밀번호 검증 (일치 확인 + 복잡성 검증)
+            validatePasswordReset(newPassword, confirmPassword);
             
             userService.resetPassword(token, newPassword);
             redirectAttributes.addFlashAttribute("successMessage", Messages.PASSWORD_CHANGED);
@@ -341,16 +301,10 @@ public class AuthController {
     public ResponseEntity<?> resendVerificationEmailForAuthenticatedUser(
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         try {
-            // 로그인한 사용자의 정보 확인
-            if (userPrincipal == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", Messages.LOGIN_REQUIRED));
-            }
-            
-            // 이미 인증된 사용자인지 확인
-            if (userPrincipal.isVerified()) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", Messages.EMAIL_ALREADY_VERIFIED));
+            // 사용자 검증
+            ResponseEntity<?> validationError = validateAuthenticatedUserForEmailResend(userPrincipal);
+            if (validationError != null) {
+                return validationError;
             }
             
             String email = userPrincipal.getEmail();
@@ -375,5 +329,131 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", Messages.EMAIL_RESEND_FAILED_API));
         }
+    }
+    
+    /**
+     * 이메일 발송 안전 처리 (회원가입 성공과 무관하게 처리)
+     */
+    private void sendVerificationEmailSafely(UserResponseDto newUser) {
+        try {
+            User user = userService.getUserByEmail(newUser.getEmail()).orElseThrow();
+            emailService.sendVerificationEmail(user);
+        } catch (Exception e) {
+            log.error(Messages.LOG_EMAIL_SEND_FAILED, e);
+            // 이메일 발송 실패해도 회원가입은 성공
+        }
+    }
+    
+    /**
+     * 회원가입 검증 오류 처리
+     */
+    private String handleSignupValidationError(ValidationException e, SignupRequestDto signupDto, 
+                                             BindingResult bindingResult, Model model) {
+        log.error(Messages.LOG_SIGNUP_FAILED, e.getMessage());
+        
+        // TODO: Day 11 - ActivityLogService로 회원가입 실패 로그 기록
+        // activityLogService.logUserActivity(signupDto.getEmail(), "SIGNUP", "FAILED: " + e.getMessage());
+        
+        bindingResult.rejectValue("email", "error.signupForm", e.getMessage());
+        restoreDepartmentSelection(signupDto, model);
+        return "auth/signup";
+    }
+    
+    /**
+     * 회원가입 일반 오류 처리
+     */
+    private String handleSignupGeneralError(Exception e, SignupRequestDto signupDto, 
+                                          BindingResult bindingResult, Model model) {
+        log.error(Messages.LOG_UNEXPECTED_ERROR, e);
+        bindingResult.rejectValue("email", "error.signupForm", Messages.SIGNUP_ERROR);
+        restoreDepartmentSelection(signupDto, model);
+        return "auth/signup";
+    }
+    
+    /**
+     * 동일 사용자 이메일 인증 처리 (세션 갱신 필요)
+     */
+    private String handleSameUserVerification(User verifiedUser, UserPrincipal currentUser, 
+                                            HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        log.info(Messages.LOG_SAME_USER_VERIFIED, verifiedUser.getEmail());
+        
+        // 세션 갱신을 위해 수동으로 로그아웃 처리
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            new SecurityContextLogoutHandler().logout(request, null, auth);
+        }
+        
+        redirectAttributes.addFlashAttribute("successMessage", Messages.EMAIL_VERIFIED_NEED_LOGIN);
+        redirectAttributes.addFlashAttribute("autoEmail", verifiedUser.getEmail());
+        return "redirect:/login";
+    }
+    
+    /**
+     * 다른 사용자 또는 비로그인 사용자 이메일 인증 처리
+     */
+    private String handleDifferentUserVerification(User verifiedUser, UserPrincipal currentUser, 
+                                                 RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("successMessage", Messages.EMAIL_VERIFIED);
+        redirectAttributes.addFlashAttribute("autoEmail", verifiedUser.getEmail());
+        
+        // 로그인 상태가 아니면 로그인 페이지로, 로그인 상태면 홈으로
+        return currentUser == null ? "redirect:/login" : "redirect:/";
+    }
+    
+    /**
+     * 비밀번호 재설정 검증 (일치 확인 + 복잡성 검증)
+     */
+    private void validatePasswordReset(String newPassword, String confirmPassword) {
+        // 비밀번호 일치 확인
+        if (!newPassword.equals(confirmPassword)) {
+            throw new ValidationException(Messages.PASSWORD_NOT_MATCH);
+        }
+        
+        // 비밀번호 복잡성 검증
+        validatePasswordComplexity(newPassword);
+    }
+    
+    /**
+     * 인증된 사용자의 이메일 재발송 요청 검증
+     */
+    private ResponseEntity<?> validateAuthenticatedUserForEmailResend(UserPrincipal userPrincipal) {
+        // 로그인한 사용자의 정보 확인
+        if (userPrincipal == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", Messages.LOGIN_REQUIRED));
+        }
+        
+        // 이미 인증된 사용자인지 확인
+        if (userPrincipal.isVerified()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", Messages.EMAIL_ALREADY_VERIFIED));
+        }
+        
+        // 검증 통과
+        return null;
+    }
+    
+    /**
+     * 이메일 재발송 처리 (Rate Limiting + 사용자 검증 + 이메일 발송)
+     */
+    private void processEmailResend(String email) {
+        // Rate Limiting 체크
+        rateLimitService.checkEmailRateLimit(email, "resend-verification");
+        
+        // 사용자 검증 및 이메일 발송
+        User user = userService.validateUserForEmailResend(email);
+        emailService.sendVerificationEmail(user);
+    }
+    
+    /**
+     * 비밀번호 재설정 요청 처리 (Rate Limiting + 사용자 검증 + 이메일 발송)
+     */
+    private void processPasswordResetRequest(String email) {
+        // Rate Limiting 체크
+        rateLimitService.checkEmailRateLimit(email, "password-reset");
+        
+        // 사용자 검증 및 이메일 발송
+        User user = userService.getUserForPasswordReset(email);
+        emailService.sendPasswordResetEmail(user);
     }
 }

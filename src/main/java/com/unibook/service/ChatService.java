@@ -209,52 +209,80 @@ public class ChatService {
         ChatRoom chatRoom = chatRoomRepository.findByFirebaseRoomId(firebaseRoomId)
             .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
         
-        Long recipientId;
-        String senderName;
+        // 1. 구매자/판매자 판별 및 unreadCount 업데이트
+        RecipientInfo recipientInfo = updateUnreadCountAndDetermineRecipient(chatRoom, currentUserId, firebaseRoomId);
+        if (recipientInfo == null) {
+            // 잘못된 사용자인 경우 early return (로깅은 내부 메서드에서 처리됨)
+            return;
+        }
         
+        // 2. ChatRoom 저장
+        chatRoomRepository.save(chatRoom);
+        
+        // 3. 알림 생성 및 전송
+        sendChatNotification(recipientInfo, currentUserId, currentMessage, chatRoom.getChatRoomId());
+        
+        log.info("상대방 읽지 않은 메시지 수 증가: firebaseRoomId={}, currentUserId={}", 
+                firebaseRoomId, currentUserId);
+    }
+    
+    /**
+     * 구매자/판매자 판별 및 unreadCount 업데이트
+     */
+    private RecipientInfo updateUnreadCountAndDetermineRecipient(ChatRoom chatRoom, Long currentUserId, String firebaseRoomId) {
         // 현재 사용자가 구매자인지 판매자인지 확인
         if (currentUserId.equals(chatRoom.getBuyer().getUserId())) {
             // 현재 사용자가 구매자면 판매자의 unreadCount 증가
             chatRoom.setSellerUnreadCount(chatRoom.getSellerUnreadCount() + 1);
-            recipientId = chatRoom.getSeller().getUserId();
-            senderName = chatRoom.getBuyer().getName();
+            return new RecipientInfo(chatRoom.getSeller().getUserId(), chatRoom.getBuyer().getName());
         } else if (currentUserId.equals(chatRoom.getSeller().getUserId())) {
             // 현재 사용자가 판매자면 구매자의 unreadCount 증가
             chatRoom.setBuyerUnreadCount(chatRoom.getBuyerUnreadCount() + 1);
-            recipientId = chatRoom.getBuyer().getUserId();
-            senderName = chatRoom.getSeller().getName();
+            return new RecipientInfo(chatRoom.getBuyer().getUserId(), chatRoom.getSeller().getName());
         } else {
             log.warn("채팅방에 속하지 않은 사용자: firebaseRoomId={}, userId={}", firebaseRoomId, currentUserId);
-            return;
+            return null;
         }
-        
-        chatRoomRepository.save(chatRoom);
-        
-        // 채팅 알림 생성 (현재 전송된 메시지 내용 사용)
+    }
+    
+    /**
+     * 채팅 알림 생성 및 전송
+     */
+    private void sendChatNotification(RecipientInfo recipientInfo, Long currentUserId, String currentMessage, Long chatRoomId) {
         try {
             String notificationContent = currentMessage != null && !currentMessage.trim().isEmpty() 
                 ? currentMessage.trim() 
                 : "새 메시지";
             
             NotificationDto.CreateRequest request = NotificationDto.CreateRequest.builder()
-                .recipientUserId(recipientId)
+                .recipientUserId(recipientInfo.recipientId)
                 .actorUserId(currentUserId)
                 .type(Notification.NotificationType.NEW_MESSAGE)
-                .title(senderName + "님이 메시지를 보냈습니다")
+                .title(recipientInfo.senderName + "님이 메시지를 보냈습니다")
                 .content(notificationContent)
-                .url("/chat/rooms/" + chatRoom.getChatRoomId())
+                .url("/chat/rooms/" + chatRoomId)
                 .build();
             
             notificationService.createNotificationAsync(request);
             
             log.info("채팅 알림 생성 요청 완료: recipientId={}, senderName={}, message={}", 
-                    recipientId, senderName, notificationContent);
+                    recipientInfo.recipientId, recipientInfo.senderName, notificationContent);
         } catch (Exception e) {
             log.error("채팅 알림 생성 실패: {}", e.getMessage());
         }
+    }
+    
+    /**
+     * 수신자 정보를 담는 내부 클래스
+     */
+    private static class RecipientInfo {
+        final Long recipientId;
+        final String senderName;
         
-        log.info("상대방 읽지 않은 메시지 수 증가: firebaseRoomId={}, currentUserId={}", 
-                firebaseRoomId, currentUserId);
+        RecipientInfo(Long recipientId, String senderName) {
+            this.recipientId = recipientId;
+            this.senderName = senderName;
+        }
     }
     
     /**
@@ -345,43 +373,57 @@ public class ChatService {
     @Transactional
     public void markChatNotificationsAsRead(Long chatRoomId, Long userId) {
         try {
-            // 1. 해당 채팅방의 NEW_MESSAGE 알림들을 모두 읽음 처리
-            // URL로 매칭 (/chat/rooms/{chatRoomId})
-            String chatRoomUrl = "/chat/rooms/" + chatRoomId;
-            List<Notification> unreadNotifications = notificationRepository
-                .findUnreadChatNotificationsByUserAndChatRoom(userId, chatRoomUrl);
+            // 1. Notification 읽음 처리
+            markNotificationsAsRead(chatRoomId, userId);
             
-            log.info("채팅방 진입 - 읽지 않은 알림 조회: chatRoomId={}, userId={}, url={}, found={}", 
-                    chatRoomId, userId, chatRoomUrl, unreadNotifications.size());
-            
-            for (Notification notification : unreadNotifications) {
-                notification.markAsRead();
-            }
-            
-            if (!unreadNotifications.isEmpty()) {
-                notificationRepository.saveAll(unreadNotifications);
-                log.info("채팅방 진입으로 {} 개의 알림을 읽음 처리: chatRoomId={}, userId={}", 
-                        unreadNotifications.size(), chatRoomId, userId);
-            }
-            
-            // 2. ChatRoom의 unreadCount도 0으로 초기화
-            ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
-            
-            // 현재 사용자가 구매자인지 판매자인지 확인하여 읽지 않은 메시지 수 초기화
-            if (userId.equals(chatRoom.getBuyer().getUserId())) {
-                chatRoom.setBuyerUnreadCount(0);
-                log.info("구매자 읽지 않은 메시지 수 초기화: chatRoomId={}", chatRoomId);
-            } else if (userId.equals(chatRoom.getSeller().getUserId())) {
-                chatRoom.setSellerUnreadCount(0);
-                log.info("판매자 읽지 않은 메시지 수 초기화: chatRoomId={}", chatRoomId);
-            }
-            
-            chatRoomRepository.save(chatRoom);
+            // 2. ChatRoom unreadCount 초기화
+            resetChatRoomUnreadCount(chatRoomId, userId);
             
         } catch (Exception e) {
             log.error("채팅방 알림 읽음 처리 중 오류: chatRoomId={}, userId={}", chatRoomId, userId, e);
         }
+    }
+    
+    /**
+     * 해당 채팅방의 NEW_MESSAGE 알림들을 모두 읽음 처리
+     */
+    private void markNotificationsAsRead(Long chatRoomId, Long userId) {
+        // URL로 매칭 (/chat/rooms/{chatRoomId})
+        String chatRoomUrl = "/chat/rooms/" + chatRoomId;
+        List<Notification> unreadNotifications = notificationRepository
+            .findUnreadChatNotificationsByUserAndChatRoom(userId, chatRoomUrl);
+        
+        log.info("채팅방 진입 - 읽지 않은 알림 조회: chatRoomId={}, userId={}, url={}, found={}", 
+                chatRoomId, userId, chatRoomUrl, unreadNotifications.size());
+        
+        for (Notification notification : unreadNotifications) {
+            notification.markAsRead();
+        }
+        
+        if (!unreadNotifications.isEmpty()) {
+            notificationRepository.saveAll(unreadNotifications);
+            log.info("채팅방 진입으로 {} 개의 알림을 읽음 처리: chatRoomId={}, userId={}", 
+                    unreadNotifications.size(), chatRoomId, userId);
+        }
+    }
+    
+    /**
+     * ChatRoom의 unreadCount를 0으로 초기화
+     */
+    private void resetChatRoomUnreadCount(Long chatRoomId, Long userId) {
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+            .orElseThrow(() -> new ResourceNotFoundException("채팅방을 찾을 수 없습니다."));
+        
+        // 현재 사용자가 구매자인지 판매자인지 확인하여 읽지 않은 메시지 수 초기화
+        if (userId.equals(chatRoom.getBuyer().getUserId())) {
+            chatRoom.setBuyerUnreadCount(0);
+            log.info("구매자 읽지 않은 메시지 수 초기화: chatRoomId={}", chatRoomId);
+        } else if (userId.equals(chatRoom.getSeller().getUserId())) {
+            chatRoom.setSellerUnreadCount(0);
+            log.info("판매자 읽지 않은 메시지 수 초기화: chatRoomId={}", chatRoomId);
+        }
+        
+        chatRoomRepository.save(chatRoom);
     }
     
     /**
@@ -399,27 +441,50 @@ public class ChatService {
             throw new ValidationException("삭제된 게시글의 상태는 변경할 수 없습니다.");
         }
         
-        // 3. 판매자 권한 확인
+        // 3. 권한 및 상태 변경 검증
+        validateStatusChangePermissions(post, userId, newStatus);
+        
+        // 4. 상태 업데이트 및 로깅
+        updatePostAndChatRoomStatus(chatRoom, post, newStatus);
+        
+        // 시스템 메시지는 프론트엔드에서 Firebase에 직접 저장
+    }
+    
+    /**
+     * 상태 변경 권한 및 유효성 검증
+     */
+    private void validateStatusChangePermissions(Post post, Long userId, Post.PostStatus newStatus) {
+        // 차단된 게시글은 상태 변경 불가
+        if (post.getStatus() == Post.PostStatus.BLOCKED) {
+            throw new ValidationException("차단된 게시글은 상태를 변경할 수 없습니다.");
+        }
+        
+        // 판매자 권한 확인
         if (!post.getUser().getUserId().equals(userId)) {
             throw new ValidationException("게시글 작성자만 거래 상태를 변경할 수 있습니다.");
         }
         
-        // 4. 현재 상태와 동일한 경우 체크
+        // 현재 상태와 동일한 경우 체크
         if (post.getStatus() == newStatus) {
             throw new ValidationException("이미 " + getStatusDisplayName(newStatus) + " 상태입니다.");
         }
         
-        // 5. 상태 변경 가능 여부 확인 (모든 상태 변경 허용)
+        // 상태 변경 가능 여부 확인 (BLOCKED 제외한 모든 상태 변경 허용)
         // 거래완료 후에도 다시 판매중으로 변경 가능
-        
-        // 6. 게시글 상태 업데이트
+    }
+    
+    /**
+     * 게시글 및 채팅방 상태 업데이트
+     */
+    private void updatePostAndChatRoomStatus(ChatRoom chatRoom, Post post, Post.PostStatus newStatus) {
+        // 게시글 상태 업데이트
         String oldStatusName = getStatusDisplayName(post.getStatus());
         String newStatusName = getStatusDisplayName(newStatus);
         
         post.setStatus(newStatus);
         postRepository.save(post);
         
-        // 7. 채팅방 상태도 업데이트
+        // 채팅방 상태도 업데이트
         if (newStatus == Post.PostStatus.COMPLETED) {
             chatRoom.setStatus(ChatRoom.ChatRoomStatus.COMPLETED);
         } else {
@@ -429,9 +494,7 @@ public class ChatService {
         chatRoomRepository.save(chatRoom);
         
         log.info("채팅방에서 게시글 상태 변경: chatRoomId={}, postId={}, {} -> {}", 
-                chatRoomId, post.getPostId(), oldStatusName, newStatusName);
-        
-        // 8. 시스템 메시지는 프론트엔드에서 Firebase에 직접 저장
+                chatRoom.getChatRoomId(), post.getPostId(), oldStatusName, newStatusName);
     }
     
     /**
