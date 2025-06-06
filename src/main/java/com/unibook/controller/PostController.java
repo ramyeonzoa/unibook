@@ -39,17 +39,16 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
 
-import java.util.List;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import jakarta.servlet.http.HttpSession;
-
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
+
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.http.HttpSession;
 
 @Slf4j
 @Controller
@@ -91,66 +90,26 @@ public class PostController {
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // userId가 있으면 특정 사용자의 게시글만 조회
+        // userId가 있으면 특정 사용자의 게시글만 조회 (관리자 전용)
         if (userId != null) {
-            // 정렬 옵션 설정
-            if (sortBy == null || sortBy.trim().isEmpty()) {
-                sortBy = "NEWEST";
+            // 관리자 권한 체크
+            if (userPrincipal == null || !userPrincipal.getRole().equals(User.UserRole.ADMIN)) {
+                throw new AccessDeniedException("관리자만 접근 가능한 기능입니다.");
             }
-            
-            Sort sort = switch (sortBy) {
-                case "PRICE_ASC" -> Sort.by("price").ascending();
-                case "PRICE_DESC" -> Sort.by("price").descending();
-                case "VIEW_COUNT" -> Sort.by("viewCount").descending();
-                default -> Sort.by("createdAt").descending();
-            };
-            
-            Pageable pageable = PageRequest.of(page, size, sort);
-            
-            // 특정 사용자의 게시글 조회
-            Page<Post> posts = postService.getPostsByUserId(userId, pageable, minPrice, maxPrice);
-            Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
-            
-            // 사용자 정보 조회
-            User targetUser = userService.findById(userId).orElse(null);
-            String userName = targetUser != null ? targetUser.getName() : "사용자";
-            
-            model.addAttribute("posts", postDtos);
-            model.addAttribute("productTypes", Post.ProductType.values());
-            model.addAttribute("statuses", Post.PostStatus.values());
-            model.addAttribute("sortBy", sortBy);
-            model.addAttribute("minPrice", minPrice);
-            model.addAttribute("maxPrice", maxPrice);
-            model.addAttribute("pageTitle", userName + "님의 게시글");
-            model.addAttribute("pageType", "user"); // 페이지 타입 구분용
-            model.addAttribute("targetUserId", userId);
-            model.addAttribute("targetUserName", userName);
-            
-            return "posts/list";
+            return handleUserSpecificPosts(userId, page, size, sortBy, minPrice, maxPrice, model);
         }
         
-        // PostSearchRequest 생성 및 정규화 (기존 로직과 완전 동일)
+        // 검색 요청 처리 및 결과 설정
         PostSearchRequest request = PostSearchRequest.from(page, size, search, productType, status, 
                                                           schoolId, sortBy, minPrice, maxPrice, 
                                                           subjectId, professorId, bookTitle);
         request.normalizeForController();
-        
-        // 로깅 추가 (디버깅용)
         log.debug("검색어: '{}', 정렬: '{}'", request.getSearch(), request.getSortBy());
         
-        // Pageable 생성 (기존 로직과 완전 동일)
-        Pageable pageable = request.toPageable();
-        
-        // 사용자 학교 ID 조회
+        // 헬퍼를 통한 데이터 조회 및 모델 설정
         Long userSchoolId = postControllerHelper.getUserSchoolId(userPrincipal);
-        
-        // 게시글 조회 및 DTO 변환
-        Page<PostResponseDto> postDtos = postControllerHelper.getPostsWithDto(request, pageable);
-        
-        // Model 데이터 설정
+        Page<PostResponseDto> postDtos = postControllerHelper.getPostsWithDto(request, request.toPageable());
         postControllerHelper.enrichModelWithSearchData(model, request, postDtos, userSchoolId);
-        
-        // 페이지 제목 및 설명 설정
         postControllerHelper.setPageTitleAndDescription(model, request);
         
         return "posts/list";
@@ -291,16 +250,7 @@ public class PostController {
         }
         
         if (bindingResult.hasErrors()) {
-            // 새 게시글 작성 시 빈 Post 객체 생성 (템플릿 오류 방지)
-            Post emptyPost = Post.builder()
-                    .postImages(new ArrayList<>()) // 빈 리스트로 초기화
-                    .build();
-            model.addAttribute("post", emptyPost);
-            model.addAttribute("isEdit", false);
-            model.addAttribute("productTypes", Post.ProductType.values());
-            model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-            model.addAttribute("selectedBookJson", "null"); // 새 게시글 작성 시에는 null
-            model.addAttribute("maxImages", MAX_IMAGES);
+            setupNewPostFormError(model);
             return "posts/form";
         }
         
@@ -318,10 +268,7 @@ public class PostController {
         } catch (ValidationException e) {
             log.error("게시글 작성 검증 실패: {}", e.getMessage());
             bindingResult.reject("global", e.getMessage());
-            model.addAttribute("productTypes", Post.ProductType.values());
-            model.addAttribute("transactionMethods", Post.TransactionMethod.values());
-            model.addAttribute("books", bookService.getAllBooks());
-            model.addAttribute("maxImages", MAX_IMAGES);
+            setupNewPostFormError(model);
             return "posts/form";
             
         } catch (Exception e) {
@@ -513,30 +460,12 @@ public class PostController {
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // UserPrincipal null 체크 (보안상 추가 검증)
         if (userPrincipal == null) {
             log.warn("My posts 접근 시 UserPrincipal이 null입니다. 로그인 페이지로 리다이렉트합니다.");
             return "redirect:/login?returnUrl=/posts/my";
         }
         
-        // 페이지 크기 검증
-        if (size > 100) {
-            size = DEFAULT_PAGE_SIZE;
-        }
-        
-        // 정렬 옵션 설정
-        if (sortBy == null || sortBy.trim().isEmpty()) {
-            sortBy = "NEWEST";
-        }
-        
-        Sort sort = switch (sortBy) {
-            case "PRICE_ASC" -> Sort.by("price").ascending();
-            case "PRICE_DESC" -> Sort.by("price").descending();
-            case "VIEW_COUNT" -> Sort.by("viewCount").descending();
-            default -> Sort.by("createdAt").descending();
-        };
-        
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = createUserPostsPageable(page, size, sortBy);
         
         // 내 게시글 조회
         Page<Post> posts = postService.getPostsByUserId(userPrincipal.getUserId(), pageable, minPrice, maxPrice);
@@ -568,30 +497,12 @@ public class PostController {
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // UserPrincipal null 체크 (보안상 추가 검증)
         if (userPrincipal == null) {
             log.warn("Wishlist 접근 시 UserPrincipal이 null입니다. 로그인 페이지로 리다이렉트합니다.");
             return "redirect:/login?returnUrl=/posts/wishlist";
         }
         
-        // 페이지 크기 검증
-        if (size > 100) {
-            size = DEFAULT_PAGE_SIZE;
-        }
-        
-        // 정렬 옵션 설정
-        if (sortBy == null || sortBy.trim().isEmpty()) {
-            sortBy = "NEWEST";
-        }
-        
-        Sort sort = switch (sortBy) {
-            case "PRICE_ASC" -> Sort.by("p.price").ascending();
-            case "PRICE_DESC" -> Sort.by("p.price").descending();
-            case "VIEW_COUNT" -> Sort.by("p.viewCount").descending();
-            default -> Sort.by("w.createdAt").descending(); // 찜한 시간 기준
-        };
-        
-        Pageable pageable = PageRequest.of(page, size, sort);
+        Pageable pageable = createWishlistPageable(page, size, sortBy);
         
         // 찜한 게시글 조회
         Page<Post> posts = wishlistService.getUserWishlistPosts(userPrincipal.getUserId(), pageable, minPrice, maxPrice);
@@ -680,5 +591,92 @@ public class PostController {
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(errorResult);
         }
+    }
+    
+    /**
+     * 특정 사용자의 게시글 목록 조회 (관리자용)
+     */
+    private String handleUserSpecificPosts(Long userId, int page, int size, 
+                                         String sortBy, Integer minPrice, Integer maxPrice, Model model) {
+        Pageable pageable = createUserPostsPageable(page, size, sortBy);
+        
+        // 특정 사용자의 게시글 조회 (가격 필터 포함)
+        Page<Post> posts = postService.getPostsByUserId(userId, pageable, minPrice, maxPrice);
+        Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
+        
+        // 사용자 정보 조회
+        User targetUser = userService.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+        
+        model.addAttribute("posts", postDtos);
+        model.addAttribute("productTypes", Post.ProductType.values());
+        model.addAttribute("statuses", Post.PostStatus.values());
+        model.addAttribute("sortBy", sortBy);
+        model.addAttribute("minPrice", minPrice);
+        model.addAttribute("maxPrice", maxPrice);
+        model.addAttribute("pageTitle", targetUser.getName() + "님의 게시글");
+        model.addAttribute("pageType", "user-specific");
+        model.addAttribute("targetUserId", userId);
+        model.addAttribute("targetUserName", targetUser.getName());
+        
+        return "posts/list";
+    }
+    
+    /**
+     * 사용자 게시글용 Pageable 생성 (공통 로직)
+     */
+    private Pageable createUserPostsPageable(int page, int size, String sortBy) {
+        if (size > 100) {
+            size = DEFAULT_PAGE_SIZE;
+        }
+        
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "NEWEST";
+        }
+        
+        Sort sort = switch (sortBy) {
+            case "PRICE_ASC" -> Sort.by("price").ascending();
+            case "PRICE_DESC" -> Sort.by("price").descending();
+            case "VIEW_COUNT" -> Sort.by("viewCount").descending();
+            default -> Sort.by("createdAt").descending();
+        };
+        
+        return PageRequest.of(page, size, sort);
+    }
+    
+    /**
+     * 찜 목록용 Pageable 생성 (특수한 정렬 옵션 포함)
+     */
+    private Pageable createWishlistPageable(int page, int size, String sortBy) {
+        if (size > 100) {
+            size = DEFAULT_PAGE_SIZE;
+        }
+        
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "NEWEST";
+        }
+        
+        Sort sort = switch (sortBy) {
+            case "PRICE_ASC" -> Sort.by("p.price").ascending();
+            case "PRICE_DESC" -> Sort.by("p.price").descending();
+            case "VIEW_COUNT" -> Sort.by("p.viewCount").descending();
+            default -> Sort.by("w.createdAt").descending(); // 찜한 시간 기준
+        };
+        
+        return PageRequest.of(page, size, sort);
+    }
+    
+    /**
+     * 새 게시글 작성 폼 에러 처리용 모델 설정
+     */
+    private void setupNewPostFormError(Model model) {
+        Post emptyPost = Post.builder()
+                .postImages(new ArrayList<>())
+                .build();
+        model.addAttribute("post", emptyPost);
+        
+        // PostFormDataBuilder 활용으로 일관성 확보
+        postFormDataBuilder.addFormAttributes(model, false);
+        model.addAttribute("selectedBookJson", "null");
     }
 }

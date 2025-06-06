@@ -309,7 +309,7 @@
         /* Enhanced Radio Buttons */
         .transaction-method-group {
             display: flex;
-            gap: 15px;
+            gap: 25px;
             flex-wrap: wrap;
         }
         
@@ -325,16 +325,19 @@
         .transaction-method-item label {
             display: block;
             padding: 15px 20px;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
+            border: none;
+            border-radius: 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
         
         [data-bs-theme="dark"] .transaction-method-item label {
-            border-color: #3a3f45;
+            background-color: var(--bs-body-bg);
+            box-shadow: 0 2px 8px rgba(255, 255, 255, 0.05);
         }
         
         .transaction-method-item input[type="radio"]:checked + label {
@@ -344,8 +347,8 @@
         }
         
         .transaction-method-item label:hover {
-            border-color: #667eea;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
         }
         
         /* Selected Book/Subject Info */
