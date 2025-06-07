@@ -25,7 +25,6 @@ function initializeFirebase() {
     try {
         // 이미 초기화되었는지 확인
         if (app && db) {
-            console.log('Firebase 이미 초기화됨');
             return true;
         }
         
@@ -35,7 +34,6 @@ function initializeFirebase() {
             return false;
         }
         
-        console.log('Firebase 설정:', firebaseConfig);
         
         // Firebase 앱 초기화
         app = firebase.initializeApp(firebaseConfig);
@@ -46,8 +44,6 @@ function initializeFirebase() {
         // Storage 초기화 (이미지 업로드용)
         storage = firebase.storage();
         
-        console.log('Firebase 초기화 완료');
-        console.log('Firestore 연결 상태:', db ? 'OK' : 'FAIL');
         
         return true;
     } catch (error) {

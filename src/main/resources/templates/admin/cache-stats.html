@@ -1,236 +1,367 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org" data-bs-theme="light">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>캐시 성능 모니터링 - Unibook Admin</title>
+    <title>캐시 모니터링 - Unibook Admin</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Status Badge CSS -->
+    <link rel="stylesheet" th:href="@{/css/status-badge.css}">
+    <!-- 공통 스타일 -->
+    <div th:replace="~{fragments/header :: styles}"></div>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    
+    <!-- 사용자 정보 메타 태그 -->
+    <div th:replace="~{fragments/header :: user-meta}"></div>
     
     <style>
-        .stats-card {
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            transition: transform 0.2s ease-in-out;
+        .admin-sidebar {
+            min-height: calc(100vh - 76px);
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
         }
         
-        .stats-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        .admin-nav-link {
+            color: #495057;
+            text-decoration: none;
+            padding: 12px 20px;
+            display: block;
+            border-radius: 8px;
+            margin: 4px 8px;
+            transition: all 0.2s ease;
         }
+        
+        .admin-nav-link:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .admin-nav-link.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+            border: none;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .stat-icon.hit-rate {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .stat-icon.requests {
+            background: #e7f3ff;
+            color: #0066cc;
+        }
+        
+        .stat-icon.cache-size {
+            background: #e2f4fd;
+            color: #0c5460;
+        }
+        
         
         .metric-value {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 700;
+            margin: 0;
         }
         
         .metric-label {
             font-size: 0.875rem;
             color: #6c757d;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin: 0;
         }
         
-        .grade-a { color: #198754; }
-        .grade-b { color: #fd7e14; }
-        .grade-c { color: #ffc107; }
-        .grade-d { color: #dc3545; }
+        
+        .effect-message {
+            font-size: 1.1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 2rem;
+        }
         
         .refresh-button {
             position: fixed;
             bottom: 30px;
             right: 30px;
             z-index: 1000;
+            border-radius: 50px;
+            padding: 12px 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
-        .loading-spinner {
-            display: none;
+        /* 다크모드 지원 */
+        [data-bs-theme="dark"] .admin-sidebar {
+            background: var(--bs-gray-800);
+            border-right-color: var(--bs-gray-700);
         }
         
-        .effect-message {
-            font-size: 1.1rem;
-            padding: 1rem;
-            border-radius: 0.5rem;
+        [data-bs-theme="dark"] .admin-nav-link {
+            color: var(--bs-gray-300);
+        }
+        
+        [data-bs-theme="dark"] .admin-nav-link:hover {
+            background: var(--bs-gray-700);
+            color: var(--bs-gray-100);
+        }
+        
+        [data-bs-theme="dark"] .stat-card {
+            background: var(--bs-gray-800);
+            border-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .stat-icon.hit-rate {
+            background: rgba(52, 140, 76, 0.2);
+            color: #69db7c;
+        }
+        
+        [data-bs-theme="dark"] .stat-icon.requests {
+            background: rgba(0, 102, 204, 0.2);
+            color: #74c0fc;
+        }
+        
+        [data-bs-theme="dark"] .stat-icon.cache-size {
+            background: rgba(12, 84, 96, 0.2);
+            color: #66d9ef;
+        }
+        
+        
+        [data-bs-theme="dark"] .effect-message {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-align: center;
-            margin: 1rem 0;
+        }
+        
+        /* 차트 컨테이너 다크모드 */
+        [data-bs-theme="dark"] .card {
+            background: var(--bs-gray-800);
+            border-color: var(--bs-gray-700);
+        }
+        
+        [data-bs-theme="dark"] .card-header {
+            background: var(--bs-gray-700);
+            border-bottom-color: var(--bs-gray-600);
+        }
+        
+        [data-bs-theme="dark"] .table {
+            --bs-table-bg: transparent;
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <i class="bi bi-speedometer2"></i> Unibook Admin
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="/admin/dashboard">대시보드</a>
-                <a class="nav-link active" href="/admin/cache-stats">캐시 모니터링</a>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <!-- 헤더 -->
-        <div class="row mb-4">
-            <div class="col">
-                <h1><i class="bi bi-lightning-charge text-primary"></i> Department 캐시 성능 모니터링</h1>
-                <p class="text-muted">실시간 캐시 통계와 성능 지표를 확인하세요</p>
-            </div>
-            <div class="col-auto">
-                <button class="btn btn-outline-primary" onclick="refreshStats()">
-                    <i class="bi bi-arrow-clockwise"></i> 새로고침
-                </button>
-            </div>
-        </div>
-
-        <!-- 로딩 스피너 -->
-        <div class="text-center loading-spinner" id="loadingSpinner">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">로딩 중...</span>
-            </div>
-            <p class="mt-2">캐시 통계를 불러오는 중...</p>
-        </div>
-
-        <!-- 통계 카드들 -->
-        <div class="row mb-4" id="statsContainer" style="display: none;">
-            <!-- 히트율 -->
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-bullseye text-success mb-2" style="font-size: 2rem;"></i>
-                        <div class="metric-value text-success" id="hitRate">--%</div>
-                        <div class="metric-label">히트율</div>
-                        <small class="text-muted">캐시에서 바로 응답한 비율</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 총 요청 수 -->
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-graph-up text-primary mb-2" style="font-size: 2rem;"></i>
-                        <div class="metric-value text-primary" id="totalRequests">--</div>
-                        <div class="metric-label">총 요청 수</div>
-                        <small class="text-muted">캐시 도입 후 전체 요청</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 캐시 크기 -->
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-hdd text-info mb-2" style="font-size: 2rem;"></i>
-                        <div class="metric-value text-info" id="cacheSize">--</div>
-                        <div class="metric-label">캐시 크기</div>
-                        <small class="text-muted">현재 저장된 항목 수</small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 성능 등급 -->
-            <div class="col-md-3 mb-3">
-                <div class="card stats-card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-award text-warning mb-2" style="font-size: 2rem;"></i>
-                        <div class="metric-value" id="performanceGrade">--</div>
-                        <div class="metric-label">성능 등급</div>
-                        <small class="text-muted">전체적인 캐시 성능</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 효과 메시지 -->
-        <div id="effectMessage" class="effect-message" style="display: none;">
-            <!-- 동적으로 생성 -->
-        </div>
-
-        <!-- 상세 통계 -->
-        <div class="row mb-4" id="detailsContainer" style="display: none;">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-pie-chart"></i> 캐시 히트/미스 분포</h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="hitMissChart" width="400" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-info-circle"></i> 상세 정보</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-sm">
-                            <tbody>
-                                <tr>
-                                    <td><strong>미스 수:</strong></td>
-                                    <td id="missCount">--</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>평균 로드 시간:</strong></td>
-                                    <td id="averageLoadTime">--</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>메모리 사용량:</strong></td>
-                                    <td id="memoryUsage">--</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>제거(Eviction) 수:</strong></td>
-                                    <td id="evictionCount">--</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>최대 크기:</strong></td>
-                                    <td id="maximumSize">--</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>마지막 업데이트:</strong></td>
-                                    <td id="lastUpdate">--</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 캐시 효과 설명 -->
+    <!-- Header -->
+    <nav th:replace="~{fragments/header :: header}"></nav>
+    
+    <div class="container-fluid">
         <div class="row">
-            <div class="col">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-lightbulb"></i> 캐시 성능 가이드</h5>
+            <!-- 사이드바 -->
+            <div class="col-md-3 col-lg-2 admin-sidebar">
+                <div class="py-4">
+                    <h5 class="px-3 text-muted fw-bold mb-3">관리자 메뉴</h5>
+                    <nav>
+                        <a href="/admin" class="admin-nav-link">
+                            <i class="bi bi-speedometer2 me-2"></i>대시보드
+                        </a>
+                        <a href="/admin/reports" class="admin-nav-link">
+                            <i class="bi bi-exclamation-triangle me-2"></i>신고 관리
+                        </a>
+                        <a href="/admin/users" class="admin-nav-link">
+                            <i class="bi bi-people me-2"></i>사용자 관리
+                        </a>
+                        <a href="/admin/posts" class="admin-nav-link">
+                            <i class="bi bi-file-post me-2"></i>게시글 관리
+                        </a>
+                        <a href="/admin/statistics" class="admin-nav-link">
+                            <i class="bi bi-graph-up me-2"></i>통계
+                        </a>
+                        <a href="/admin/cache-stats" class="admin-nav-link active">
+                            <i class="bi bi-lightning-charge me-2"></i>캐시 모니터링
+                        </a>
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- 메인 컨텐츠 -->
+            <div class="col-md-9 col-lg-10">
+                <div class="p-4">
+                    <!-- 페이지 헤더 -->
+                    <div class="mb-4">
+                        <h2 class="mb-1">
+                            <i class="bi bi-lightning-charge text-primary me-2"></i>
+                            캐시 성능 모니터링
+                        </h2>
+                        <p class="text-muted mb-0">Department 캐시의 실시간 성능 지표를 확인하세요</p>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <h6 class="text-success">✅ 좋은 지표</h6>
-                                <ul>
-                                    <li><strong>히트율 95% 이상:</strong> 탁월한 성능</li>
-                                    <li><strong>평균 로드 시간 낮음:</strong> 빠른 DB 조회</li>
-                                    <li><strong>제거 수 적음:</strong> 캐시 크기 적절</li>
-                                </ul>
+
+                    <!-- 로딩 스피너 -->
+                    <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">로딩 중...</span>
+                        </div>
+                        <p class="mt-2 text-muted">캐시 통계를 불러오는 중...</p>
+                    </div>
+
+                    <div class="row mb-4" id="statsContainer">
+                        <div class="col-md-4 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon hit-rate me-3">
+                                        <i class="bi bi-bullseye"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">히트율</h6>
+                                        <h3 class="mb-0" id="hitRate">--%</h3>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <h6 class="text-warning">⚠️ 주의사항</h6>
-                                <ul>
-                                    <li><strong>히트율 80% 미만:</strong> 캐시 전략 검토 필요</li>
-                                    <li><strong>제거 수 많음:</strong> 캐시 크기 증대 검토</li>
-                                    <li><strong>메모리 사용량 급증:</strong> 모니터링 강화</li>
-                                </ul>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon requests me-3">
+                                        <i class="bi bi-graph-up"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">총 요청 수</h6>
+                                        <h3 class="mb-0" id="totalRequests">--</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="stat-card p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="stat-icon cache-size me-3">
+                                        <i class="bi bi-hdd"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-muted">캐시 크기</h6>
+                                        <h3 class="mb-0" id="cacheSize">--</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 효과 메시지 -->
+                    <div id="effectMessage" class="effect-message" style="display: none;">
+                        <!-- 동적으로 생성 -->
+                    </div>
+
+                    <!-- 상세 통계 -->
+                    <div class="row g-4 mb-4" id="detailsContainer">
+                        <div class="col-lg-6">
+                            <div class="card stat-card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-pie-chart me-2"></i>캐시 히트/미스 분포</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="hitMissChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="card stat-card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>상세 정보</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                <tr>
+                                                    <td><strong>미스 수:</strong></td>
+                                                    <td id="missCount" class="text-end">--</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>평균 로드 시간:</strong></td>
+                                                    <td id="averageLoadTime" class="text-end">--</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>메모리 사용량:</strong></td>
+                                                    <td id="memoryUsage" class="text-end">--</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>제거(Eviction) 수:</strong></td>
+                                                    <td id="evictionCount" class="text-end">--</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>최대 크기:</strong></td>
+                                                    <td id="maximumSize" class="text-end">--</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><strong>마지막 업데이트:</strong></td>
+                                                    <td id="lastUpdate" class="text-end">--</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 캐시 효과 설명 -->
+                    <div class="card stat-card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>캐시 성능 가이드</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-success">✅ 좋은 지표</h6>
+                                    <ul class="mb-0">
+                                        <li><strong>히트율 95% 이상:</strong> 탁월한 성능</li>
+                                        <li><strong>평균 로드 시간 낮음:</strong> 빠른 DB 조회</li>
+                                        <li><strong>제거 수 적음:</strong> 캐시 크기 적절</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-warning">⚠️ 주의사항</h6>
+                                    <ul class="mb-0">
+                                        <li><strong>히트율 80% 미만:</strong> 캐시 전략 검토 필요</li>
+                                        <li><strong>제거 수 많음:</strong> 캐시 크기 증대 검토</li>
+                                        <li><strong>메모리 사용량 급증:</strong> 모니터링 강화</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -240,12 +371,15 @@
     </div>
 
     <!-- 자동 새로고침 버튼 -->
-    <button class="btn btn-primary btn-lg refresh-button" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
-        <i class="bi bi-arrow-repeat"></i> 자동 새로고침 ON
+    <button class="btn btn-primary refresh-button" onclick="toggleAutoRefresh()" id="autoRefreshBtn">
+        <i class="bi bi-arrow-repeat me-1"></i>자동 새로고침 OFF
     </button>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Footer -->
+    <footer th:replace="~{fragments/header :: footer}"></footer>
+    
+    <!-- Scripts -->
+    <div th:replace="~{fragments/header :: scripts}"></div>
 
     <script>
         let hitMissChart = null;
@@ -272,7 +406,18 @@
                 
             } catch (error) {
                 console.error('캐시 통계 조회 오류:', error);
-                alert('캐시 통계를 불러오는 중 오류가 발생했습니다: ' + error.message);
+                
+                // 더 나은 오류 표시
+                const statsContainer = document.getElementById('statsContainer');
+                statsContainer.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            캐시 통계를 불러오는 중 오류가 발생했습니다: ${error.message}
+                        </div>
+                    </div>
+                `;
+                statsContainer.style.display = 'block';
             } finally {
                 showLoading(false);
             }
@@ -284,10 +429,6 @@
             document.getElementById('totalRequests').textContent = (data.totalRequests || 0).toLocaleString();
             document.getElementById('cacheSize').textContent = data.currentSize || '--';
             
-            // 성능 등급 업데이트 (색상 포함)
-            const gradeElement = document.getElementById('performanceGrade');
-            gradeElement.textContent = data.performanceGrade || '--';
-            gradeElement.className = 'metric-value ' + getGradeClass(data.performanceGrade);
             
             // 상세 정보 업데이트
             document.getElementById('missCount').textContent = (data.misses || 0).toLocaleString();
@@ -295,7 +436,7 @@
             document.getElementById('memoryUsage').textContent = data.estimatedMemoryUsageMB || '--';
             document.getElementById('evictionCount').textContent = data.evictionCount || '0';
             document.getElementById('maximumSize').textContent = (data.maximumSize || 0).toLocaleString();
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('ko-KR');
             
             // 효과 메시지 업데이트
             if (data.effectMessage) {
@@ -307,9 +448,7 @@
             // 차트 업데이트
             updateHitMissChart(data.hits || 0, data.misses || 0);
             
-            // 컨테이너 표시
-            document.getElementById('statsContainer').style.display = 'block';
-            document.getElementById('detailsContainer').style.display = 'block';
+            // 컨테이너 표시 (이미 표시됨)
         }
 
         function updateHitMissChart(hits, misses) {
@@ -319,6 +458,11 @@
                 hitMissChart.destroy();
             }
             
+            // 다크모드 감지
+            const isDarkMode = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            const textColor = isDarkMode ? '#e9ecef' : '#495057';
+            const gridColor = isDarkMode ? '#495057' : '#e9ecef';
+            
             hitMissChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
@@ -327,16 +471,28 @@
                         data: [hits, misses],
                         backgroundColor: ['#198754', '#dc3545'],
                         borderWidth: 2,
-                        borderColor: '#fff'
+                        borderColor: isDarkMode ? '#495057' : '#fff'
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                color: textColor,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
                         },
                         tooltip: {
+                            backgroundColor: isDarkMode ? '#343a40' : '#fff',
+                            titleColor: textColor,
+                            bodyColor: textColor,
+                            borderColor: gridColor,
+                            borderWidth: 1,
                             callbacks: {
                                 label: function(context) {
                                     const total = hits + misses;
@@ -350,13 +506,6 @@
             });
         }
 
-        function getGradeClass(grade) {
-            if (!grade) return '';
-            if (grade.startsWith('A')) return 'grade-a';
-            if (grade.startsWith('B')) return 'grade-b';
-            if (grade.startsWith('C')) return 'grade-c';
-            return 'grade-d';
-        }
 
         function showLoading(show) {
             document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
@@ -368,14 +517,14 @@
             if (isAutoRefresh) {
                 // 자동 새로고침 끄기
                 clearInterval(autoRefreshInterval);
-                btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 자동 새로고침 OFF';
+                btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>자동 새로고침 OFF';
                 btn.classList.remove('btn-success');
                 btn.classList.add('btn-primary');
                 isAutoRefresh = false;
             } else {
                 // 자동 새로고침 켜기 (10초마다)
                 autoRefreshInterval = setInterval(refreshStats, 10000);
-                btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> 자동 새로고침 ON';
+                btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>자동 새로고침 ON';
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-success');
                 isAutoRefresh = true;

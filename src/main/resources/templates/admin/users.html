@@ -62,16 +62,19 @@
             overflow: hidden;
         }
         
-        .user-avatar {
+        .admin-user-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
         
         .verification-badge {
@@ -135,6 +138,9 @@
                         </a>
                         <a href="/admin/statistics" class="admin-nav-link">
                             <i class="bi bi-graph-up me-2"></i>통계
+                        </a>
+                        <a href="/admin/cache-stats" class="admin-nav-link">
+                            <i class="bi bi-lightning-charge me-2"></i>캐시 모니터링
                         </a>
                     </nav>
                 </div>
@@ -202,8 +208,8 @@
                                         <tr th:each="user : ${users.content}">
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="user-avatar me-3"
-                                                         th:class="|user-avatar me-3 ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(user.name, user.email)}|">
+                                                    <div class="admin-user-avatar me-3"
+                                                         th:class="|admin-user-avatar me-3 ${T(com.unibook.util.AvatarUtil).getAvatarColorClass(user.name, user.email)}|">
                                                         <span class="avatar-text" th:text="${T(com.unibook.util.AvatarUtil).getAvatarInitials(user.name)}">A</span>
                                                     </div>
                                                     <div>

@@ -67,12 +67,12 @@ public class PostService {
      */
     public Page<Post> getPostsPage(Pageable pageable, String search, 
                                   Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy,
-                                  Integer minPrice, Integer maxPrice, Long subjectId, Long professorId, String bookTitle) {
+                                  Integer minPrice, Integer maxPrice, Long subjectId, Long professorId, String bookTitle, Long bookId) {
         
         String trimmedBookTitle = (bookTitle != null && !bookTitle.trim().isEmpty()) ? bookTitle.trim() : null;
         
         // 로깅을 위한 조건 확인
-        boolean hasSpecificFilters = subjectId != null || professorId != null || trimmedBookTitle != null;
+        boolean hasSpecificFilters = subjectId != null || professorId != null || trimmedBookTitle != null || bookId != null;
         boolean hasSearch = search != null && !search.trim().isEmpty();
         
         if (hasSpecificFilters) {
@@ -82,6 +82,9 @@ public class PostService {
             } else if (professorId != null) {
                 log.info("교수 ID로 검색: professorId={}, search='{}', status={}, productType={}", 
                         professorId, search, status, productType);
+            } else if (bookId != null) {
+                log.info("책 ID로 검색: bookId={}, search='{}', status={}, productType={}", 
+                        bookId, search, status, productType);
             } else {
                 log.info("책 제목으로 검색: bookTitle='{}', search='{}', status={}, productType={}", 
                         trimmedBookTitle, search, status, productType);
@@ -146,10 +149,10 @@ public class PostService {
         }
         
         // 검색어가 없거나 너무 짧은 경우 - 모든 필터링 적용
-        log.info("통합 필터링 조회: subjectId={}, professorId={}, bookTitle='{}', status={}, productType={}", 
-                subjectId, professorId, trimmedBookTitle, status, productType);
+        log.info("통합 필터링 조회: subjectId={}, professorId={}, bookTitle='{}', bookId={}, status={}, productType={}", 
+                subjectId, professorId, trimmedBookTitle, bookId, status, productType);
         return postRepository.findPostsWithOptionalFilters(
-            subjectId, professorId, trimmedBookTitle, 
+            subjectId, professorId, trimmedBookTitle, bookId,
             status, productType, schoolId, minPrice, maxPrice, pageable);
     }
     

@@ -1,0 +1,37 @@
+{
+  "environment" : {
+    "totalMemoryMB" : 177,
+    "availableProcessors" : 18,
+    "maxMemoryMB" : 512,
+    "osVersion" : "10.0",
+    "javaVersion" : "21.0.4",
+    "osArch" : "amd64",
+    "freeMemoryMB" : 122,
+    "javaVendor" : "Oracle Corporation",
+    "osName" : "Windows 11"
+  },
+  "configuration" : {
+    "performanceThreshold" : 100.0,
+    "concurrentThreads" : 20,
+    "measurementIterations" : 100,
+    "warmupIterations" : 20,
+    "testSchoolIds" : [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+  },
+  "testName" : "signup_scenario_baseline",
+  "timestamp" : "2025-06-07_11-41-35",
+  "statistics" : {
+    "operationName" : "회원가입 시나리오 (기준)",
+    "totalSamples" : 50,
+    "filteredSamples" : 46,
+    "mean" : 6.391304347826087,
+    "median" : 6.0,
+    "min" : 5.0,
+    "max" : 8.0,
+    "standardDeviation" : 0.8557845229720237,
+    "variance" : 0.7323671497584542,
+    "p90" : 8.0,
+    "p95" : 8.0,
+    "p99" : 8.0,
+    "outlierCount" : 4
+  }
+}

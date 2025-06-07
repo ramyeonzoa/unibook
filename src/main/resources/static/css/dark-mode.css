@@ -433,16 +433,43 @@
     transition: transform 0.3s ease;
 }
 
-/* 다크모드 전환 애니메이션 (토글 시에만) */
-.theme-transitioning * {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+/* 다크모드 전환 애니메이션 (토글 시에만) - 레이아웃 변경 없는 속성만 */
+.theme-transitioning {
+    /* 컨테이너에만 기본 transition 적용 */
 }
 
-/* 스크롤바 다크모드 스타일 (Webkit 브라우저) */
-[data-bs-theme="dark"] ::-webkit-scrollbar {
+.theme-transitioning *:not(.chat-item):not(.card):not(.btn) {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* 특정 요소들은 더 부드러운 전환 */
+.theme-transitioning .navbar,
+.theme-transitioning .modal-content,
+.theme-transitioning .dropdown-menu,
+.theme-transitioning .form-control {
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+
+/* 스크롤바 공통 스타일 (모드 전환 시 레이아웃 변경 방지) */
+::-webkit-scrollbar {
     width: 8px;
 }
 
+/* 라이트모드 스크롤바 */
+[data-bs-theme="light"] ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+[data-bs-theme="light"] ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+[data-bs-theme="light"] ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 다크모드 스크롤바 */
 [data-bs-theme="dark"] ::-webkit-scrollbar-track {
     background: var(--bs-gray-900);
 }

@@ -317,6 +317,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      * @param subjectId 과목 ID (null이면 과목 필터 무시)
      * @param professorId 교수 ID (null이면 교수 필터 무시)  
      * @param bookTitle 책 제목 (null이면 책제목 필터 무시)
+     * @param bookId 책 ID (null이면 책ID 필터 무시)
      * @param status 게시글 상태 (null이면 상태 필터 무시)
      * @param productType 상품 타입 (null이면 타입 필터 무시)
      * @param schoolId 학교 ID (null이면 학교 필터 무시)
@@ -336,6 +337,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    "AND (:subjectId IS NULL OR s.subjectId = :subjectId) " +
                    "AND (:professorId IS NULL OR s.professor.professorId = :professorId) " +
                    "AND (:bookTitle IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :bookTitle, '%'))) " +
+                   "AND (:bookId IS NULL OR b.bookId = :bookId) " +
                    "AND p.status != 'BLOCKED' " +
                    "AND (:status IS NULL OR p.status = :status) " +
                    "AND (:productType IS NULL OR p.productType = :productType) " +
@@ -352,6 +354,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         "AND (:subjectId IS NULL OR p.subject.subjectId = :subjectId) " +
                         "AND (:professorId IS NULL OR pr.professorId = :professorId) " +
                         "AND (:bookTitle IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :bookTitle, '%'))) " +
+                        "AND (:bookId IS NULL OR b.bookId = :bookId) " +
                         "AND p.status != 'BLOCKED' " +
                         "AND (:status IS NULL OR p.status = :status) " +
                         "AND (:productType IS NULL OR p.productType = :productType) " +
@@ -361,6 +364,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findPostsWithOptionalFilters(@Param("subjectId") Long subjectId,
                                            @Param("professorId") Long professorId,
                                            @Param("bookTitle") String bookTitle,
+                                           @Param("bookId") Long bookId,
                                            @Param("status") Post.PostStatus status,
                                            @Param("productType") Post.ProductType productType,
                                            @Param("schoolId") Long schoolId,

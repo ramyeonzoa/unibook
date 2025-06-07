@@ -1,0 +1,44 @@
+# Benchmark 전용 설정
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/unibook_db
+    username: root
+    password: 1234
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      leak-detection-threshold: 60000
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        generate_statistics: true
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+        
+logging:
+  level:
+    org.hibernate.SQL: WARN
+    org.hibernate.type: WARN
+    com.unibook.benchmark: INFO
+    com.unibook.performance: INFO
+    com.unibook.utils: INFO
+
+benchmark:
+  warmup-iterations: 20
+  measurement-iterations: 100
+  concurrent-threads: 20
+  operations-per-thread: 50
+  test-school-ids: [1,2,3,4,5,6,7,8,9,10]
+  enable-gc-logging: true
+  enable-detailed-logging: false
+  save-results: true
+  result-directory: "benchmark-results"

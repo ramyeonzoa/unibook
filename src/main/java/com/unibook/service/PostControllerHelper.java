@@ -22,6 +22,7 @@ public class PostControllerHelper {
     
     private final PostService postService;
     private final UserService userService;
+    private final BookService bookService;
     
     /**
      * 로그인한 사용자의 학교 ID 조회
@@ -62,7 +63,8 @@ public class PostControllerHelper {
                 request.getMaxPrice(), 
                 request.getSubjectId(), 
                 request.getProfessorId(), 
-                request.getBookTitle()
+                request.getBookTitle(),
+                request.getBookId()
         );
         
         // Post 엔티티를 PostResponseDto로 변환하여 Hibernate proxy 문제 방지
@@ -132,6 +134,22 @@ public class PostControllerHelper {
                 pageDescription = "해당 교수님의 모든 과목 교재와 학습 자료를 확인하세요";
             } catch (Exception e) {
                 log.warn("교수 정보 조회 실패: professorId={}", request.getProfessorId(), e);
+            }
+        } else if (request.getBookId() != null) {
+            // 책 ID로 검색하는 경우
+            try {
+                String bookTitle = bookService.getBookTitleById(request.getBookId());
+                if (bookTitle != null) {
+                    pageTitle = "'" + bookTitle + "' 교재 게시글";
+                    pageDescription = "해당 교재의 판매 및 구매 게시글을 확인하세요";
+                } else {
+                    pageTitle = "교재별 게시글";
+                    pageDescription = "선택하신 교재의 게시글을 확인하세요";
+                }
+            } catch (Exception e) {
+                log.warn("책 정보 조회 실패: bookId={}", request.getBookId(), e);
+                pageTitle = "교재별 게시글";
+                pageDescription = "선택하신 교재의 게시글을 확인하세요";
             }
         } else if (request.getBookTitle() != null && !request.getBookTitle().trim().isEmpty()) {
             pageTitle = "'" + request.getBookTitle() + "' 검색 결과";

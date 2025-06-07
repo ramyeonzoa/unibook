@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 애니메이션 완료 후 클래스 제거
         setTimeout(() => {
             document.body.classList.remove('theme-transitioning');
-        }, 300);
+        }, 200);
     }
     
     // 모든 토글 버튼에 이벤트 추가

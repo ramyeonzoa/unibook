@@ -20,14 +20,6 @@ class FirebaseChatManager {
         this.otherUserName = otherUserName || null;
         this.chatRoomId = chatRoomId || null;
         
-        console.log('FirebaseChatManager 생성자 호출:', {
-            firebaseRoomId: this.firebaseRoomId,
-            currentUserId: this.currentUserId,
-            isBuyer: this.isBuyer,
-            otherUserId: this.otherUserId,
-            otherUserName: this.otherUserName,
-            chatRoomId: this.chatRoomId
-        });
         
         this.initializeChat();
     }
@@ -37,24 +29,16 @@ class FirebaseChatManager {
      */
     async initializeChat() {
         try {
-            console.log('채팅 초기화 시작:', {
-                firebaseRoomId: this.firebaseRoomId,
-                currentUserId: this.currentUserId,
-                currentUserName: this.currentUserName,
-                isBuyer: this.isBuyer
-            });
             
             // Firestore 컬렉션 참조
             this.messagesRef = this.db.collection('chatrooms')
                 .doc(this.firebaseRoomId)
                 .collection('messages');
             
-            console.log('Firestore 참조 생성 완료:', this.messagesRef.path);
             
             // 실시간 메시지 리스너 설정
             this.setupMessageListener();
             
-            console.log('Firebase 채팅 초기화 완료:', this.firebaseRoomId);
         } catch (error) {
             console.error('채팅 초기화 실패:', error);
             alert('채팅을 초기화할 수 없습니다: ' + error.message);
@@ -66,14 +50,12 @@ class FirebaseChatManager {
      * 실시간 메시지 리스너 설정
      */
     setupMessageListener() {
-        console.log('메시지 리스너 설정 시작');
         
         let isFirstLoad = true;
         
         this.unsubscribe = this.messagesRef
             .orderBy('timestamp', 'asc')
             .onSnapshot((snapshot) => {
-                console.log('메시지 스냅샷 수신:', snapshot.size, '개 메시지');
                 
                 const messages = [];
                 const realNewMessages = []; // 실제 새로운 메시지만
@@ -112,16 +94,13 @@ class FirebaseChatManager {
                                     timestamp: timestamp
                                 };
                                 realNewMessages.push(newMessage);
-                                console.log('실제 새 메시지 감지:', newMessage);
                             }
                         }
                     });
                 }
                 
-                console.log('총 메시지 수:', messages.length, '실제 새 메시지 수:', realNewMessages.length);
                 
                 if (messages.length === 0) {
-                    console.log('메시지가 없습니다. 빈 상태 표시');
                     this.displayEmptyState();
                 } else {
                     this.displayMessages(messages);
@@ -135,7 +114,6 @@ class FirebaseChatManager {
                 // 실제 새 메시지가 있으면 채팅 알림 매니저에게 알림
                 if (realNewMessages.length > 0 && typeof window.chatNotificationManager !== 'undefined' && window.chatNotificationManager !== null) {
                     realNewMessages.forEach(message => {
-                        console.log('새 메시지 알림 전송:', message);
                         
                         // 시스템 메시지 처리
                         if (message.type === 'SYSTEM' && message.content) {

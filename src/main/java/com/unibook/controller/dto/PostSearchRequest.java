@@ -41,6 +41,7 @@ public class PostSearchRequest {
     private Long subjectId;
     private Long professorId;
     private String bookTitle;
+    private Long bookId;
     
     /**
      * PostController의 기존 11개 파라미터로부터 PostSearchRequest 생성
@@ -49,7 +50,7 @@ public class PostSearchRequest {
     public static PostSearchRequest from(int page, int size, String search, 
                                        Post.ProductType productType, Post.PostStatus status, 
                                        Long schoolId, String sortBy, Integer minPrice, Integer maxPrice,
-                                       Long subjectId, Long professorId, String bookTitle) {
+                                       Long subjectId, Long professorId, String bookTitle, Long bookId) {
         return PostSearchRequest.builder()
                 .page(page)
                 .size(size)
@@ -63,6 +64,7 @@ public class PostSearchRequest {
                 .subjectId(subjectId)
                 .professorId(professorId)
                 .bookTitle(bookTitle)
+                .bookId(bookId)
                 .build();
     }
     
@@ -96,13 +98,14 @@ public class PostSearchRequest {
     }
     
     /**
-     * 특정 조건 검색인지 확인 (과목, 교수, 책제목)
+     * 특정 조건 검색인지 확인 (과목, 교수, 책제목, 책ID)
      * 
      * @return 특정 조건 검색 여부
      */
     public boolean hasSpecificFilters() {
         return subjectId != null || professorId != null || 
-               (bookTitle != null && !bookTitle.trim().isEmpty());
+               (bookTitle != null && !bookTitle.trim().isEmpty()) ||
+               bookId != null;
     }
     
     /**
@@ -154,6 +157,8 @@ public class PostSearchRequest {
             return "과목별 검색";
         } else if (professorId != null) {
             return "교수별 검색";
+        } else if (bookId != null) {
+            return "교재별 게시글";
         } else if (bookTitle != null && !bookTitle.trim().isEmpty()) {
             return "책 제목 검색: " + bookTitle;
         } else if (hasSearchKeyword()) {

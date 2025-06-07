@@ -406,7 +406,6 @@
                 initializeResponsiveBehavior();
                 initializeAccessibility();
                 
-                console.log('Enhanced header initialized successfully');
             } catch (error) {
                 console.error('Error initializing enhanced header:', error);
             }

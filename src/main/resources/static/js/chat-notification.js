@@ -17,7 +17,6 @@ class ChatNotificationManager {
     }
     
     async init() {
-        console.log('ChatNotificationManager 초기화 시작 (알림 시스템 통합 모드)');
         
         // 현재 채팅방 ID 감지
         this.detectCurrentChatRoom();
@@ -30,7 +29,6 @@ class ChatNotificationManager {
         // 주기적 체크는 비활성화 (알림 시스템에서 처리)
         // this.startPeriodicCheck();
         
-        console.log('ChatNotificationManager 초기화 완료 (배지 업데이트는 알림 시스템에서 처리)');
     }
     
     /**
@@ -42,7 +40,6 @@ class ChatNotificationManager {
         const match = path.match(/\/chat\/rooms\/(\d+)/);
         if (match) {
             this.currentChatRoomId = parseInt(match[1]);
-            console.log('현재 채팅방 ID:', this.currentChatRoomId);
         } else {
             this.currentChatRoomId = null;
         }
@@ -55,13 +52,11 @@ class ChatNotificationManager {
     async loadUnreadChatCount() {
         try {
             const response = await $.get('/api/chat/unread-count');
-            console.log('채팅 읽지 않은 수 응답:', response);
             
             if (response.success) {
                 this.totalUnreadCount = response.data || 0;
                 // 배지 업데이트는 알림 시스템에서 처리
                 // this.updateChatBadge(this.totalUnreadCount);
-                console.log('채팅 읽지 않은 수 로드 완료 (배지 업데이트는 알림 시스템에서 처리):', this.totalUnreadCount);
             }
         } catch (error) {
             console.error('채팅 알림 개수 로드 실패:', error);
@@ -74,7 +69,6 @@ class ChatNotificationManager {
     async loadChatRoomUnreadCounts() {
         try {
             const response = await $.get('/api/chat/rooms');
-            console.log('채팅방 목록 응답:', response);
             
             if (response.success && response.data) {
                 // 각 채팅방의 읽지 않은 메시지 수를 Map에 저장
@@ -106,11 +100,9 @@ class ChatNotificationManager {
      * firebase-chat.js에서 호출되는 새 메시지 처리 (채팅방에서 직접 메시지 수신)
      */
     onNewMessage(senderName, message, chatRoomId = null) {
-        console.log('새 채팅 메시지 수신:', { senderName, message, chatRoomId, currentChatRoomId: this.currentChatRoomId });
         
         // 현재 채팅방에 있으면 알림 표시 안 함 (채팅방 ID 비교)
         if (this.currentChatRoomId && chatRoomId && this.currentChatRoomId === chatRoomId) {
-            console.log('현재 채팅방에서의 메시지, 알림 표시 안 함');
             return;
         }
         
@@ -127,7 +119,6 @@ class ChatNotificationManager {
      * firebase-chat.js에서 호출되는 메시지 읽음 처리
      */
     onMessageRead(firebaseRoomId) {
-        console.log('메시지 읽음 처리:', firebaseRoomId);
         
         // 읽지 않은 채팅 수 감소
         if (this.totalUnreadCount > 0) {
@@ -143,7 +134,6 @@ class ChatNotificationManager {
     async handleNewMessage(senderId, senderName, message, chatRoomId) {
         // 현재 해당 채팅방에 있으면 알림 표시 안 함
         if (this.currentChatRoomId === chatRoomId) {
-            console.log('현재 채팅방에서의 메시지, 알림 표시 안 함');
             return;
         }
         
@@ -204,7 +194,6 @@ class ChatNotificationManager {
         
         // 현재 채팅방에 있으면 토스트 표시 안 함 (추가 체크)
         if (this.currentChatRoomId && chatRoomId && this.currentChatRoomId === chatRoomId) {
-            console.log('현재 채팅방에서의 메시지, 토스트 표시 안 함');
             return;
         }
         
@@ -234,7 +223,6 @@ class ChatNotificationManager {
         const $toast = $(toastHtml);
         $('.chat-toast-container').append($toast);
         
-        console.log('토스트 DOM 추가됨:', $toast.length);
         
         const toast = new bootstrap.Toast($toast[0], {
             delay: 5000,
@@ -242,7 +230,6 @@ class ChatNotificationManager {
         });
         
         toast.show();
-        console.log('토스트 표시 완료');
         
         // 토스트 클릭 시 해당 채팅방으로 이동
         $toast.on('click', function() {
@@ -274,7 +261,6 @@ class ChatNotificationManager {
             this.loadUnreadChatCount();
         }, 5000);
         
-        console.log('주기적 채팅 알림 체크 시작 (5초 간격)');
     }
     
     /**
@@ -284,7 +270,6 @@ class ChatNotificationManager {
         if (this.checkInterval) {
             clearInterval(this.checkInterval);
             this.checkInterval = null;
-            console.log('주기적 채팅 알림 체크 중지');
         }
     }
     
@@ -292,12 +277,10 @@ class ChatNotificationManager {
      * 특정 채팅방의 읽지 않은 메시지 모두 클리어
      */
     async clearChatRoomUnread(chatRoomId) {
-        console.log('채팅방 읽지 않은 메시지 클리어:', chatRoomId);
         
         // 서버에서 해당 채팅방의 읽지 않은 메시지 수 조회
         try {
             const response = await $.get(`/api/chat/rooms/${chatRoomId}/unread-count`);
-            console.log(`채팅방 ${chatRoomId} 읽지 않은 메시지 수 조회:`, response);
             
             let unreadCount = 0;
             if (response.success && response.data) {
@@ -314,7 +297,6 @@ class ChatNotificationManager {
                 // 전체 읽지 않은 수에서 차감
                 this.totalUnreadCount = Math.max(0, this.totalUnreadCount - unreadCount);
                 
-                console.log(`채팅방 ${chatRoomId} 읽지 않은 메시지 ${unreadCount}개 클리어, 전체 남은 수: ${this.totalUnreadCount}`);
                 
                 // 배지 업데이트는 알림 시스템에서 처리됨
             }
@@ -335,7 +317,6 @@ class ChatNotificationManager {
      * 메시지 읽음 처리 (Firebase에서 호출)
      */
     onMessageRead(firebaseRoomId) {
-        console.log('메시지 읽음 처리:', firebaseRoomId);
         // Firebase room ID로는 직접 처리하기 어려우므로, 
         // 채팅방 진입 시 clearChatRoomUnread를 호출하는 것이 더 정확
     }
@@ -357,7 +338,6 @@ let chatNotificationManager = null;
 $(document).ready(function() {
     // 로그인한 사용자만 채팅 알림 시스템 초기화
     if ($('meta[name="user-id"]').length > 0) {
-        console.log('채팅 알림 시스템 초기화 시작');
         chatNotificationManager = new ChatNotificationManager();
         
         // 전역 변수로 설정하여 firebase-chat.js에서 접근 가능하도록 함
@@ -367,7 +347,6 @@ $(document).ready(function() {
     // 페이지 이동 시 현재 채팅방 감지
     $(window).on('popstate', function() {
         if (chatNotificationManager) {
-            console.log('페이지 이동 감지, 채팅방 재감지');
             chatNotificationManager.detectCurrentChatRoom();
         }
     });
@@ -375,7 +354,6 @@ $(document).ready(function() {
     // hashchange 이벤트도 감지 (SPA 방식 대응)
     $(window).on('hashchange', function() {
         if (chatNotificationManager) {
-            console.log('해시 변경 감지, 채팅방 재감지');
             chatNotificationManager.detectCurrentChatRoom();
         }
     });

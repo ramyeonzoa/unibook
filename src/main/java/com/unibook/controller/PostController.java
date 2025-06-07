@@ -86,6 +86,7 @@ public class PostController {
             @RequestParam(required = false) Long subjectId,
             @RequestParam(required = false) Long professorId,
             @RequestParam(required = false) String bookTitle,
+            @RequestParam(required = false) Long bookId,
             @RequestParam(required = false) Long userId,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
@@ -102,7 +103,7 @@ public class PostController {
         // 검색 요청 처리 및 결과 설정
         PostSearchRequest request = PostSearchRequest.from(page, size, search, productType, status, 
                                                           schoolId, sortBy, minPrice, maxPrice, 
-                                                          subjectId, professorId, bookTitle);
+                                                          subjectId, professorId, bookTitle, bookId);
         request.normalizeForController();
         log.debug("검색어: '{}', 정렬: '{}'", request.getSearch(), request.getSortBy());
         

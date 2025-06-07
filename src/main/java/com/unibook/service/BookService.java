@@ -103,4 +103,20 @@ public class BookService {
         
         return savedBook;
     }
+    
+    /**
+     * 책 ID로 제목 조회 (페이지 제목 표시용)
+     * 
+     * @param bookId 책 ID
+     * @return 책 제목 또는 null
+     */
+    public String getBookTitleById(Long bookId) {
+        if (bookId == null) {
+            return null;
+        }
+        
+        return bookRepository.findById(bookId)
+                .map(Book::getTitle)
+                .orElse(null);
+    }
 }

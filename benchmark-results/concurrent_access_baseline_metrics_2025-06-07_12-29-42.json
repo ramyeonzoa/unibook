@@ -1,0 +1,23 @@
+{
+  "environment" : {
+    "totalMemoryMB" : 177,
+    "availableProcessors" : 18,
+    "maxMemoryMB" : 512,
+    "osVersion" : "10.0",
+    "javaVersion" : "21.0.4",
+    "osArch" : "amd64",
+    "freeMemoryMB" : 102,
+    "javaVendor" : "Oracle Corporation",
+    "osName" : "Windows 11"
+  },
+  "metrics" : {
+    "totalExecutionTime" : 106,
+    "successfulOperations" : 1000,
+    "threadCount" : 20,
+    "throughput" : 9433.962264150943,
+    "errorRate" : 0.0,
+    "errorCount" : 0
+  },
+  "testName" : "concurrent_access_baseline",
+  "timestamp" : "2025-06-07_12-29-42"
+}

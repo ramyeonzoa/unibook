@@ -34,7 +34,7 @@ public class AdminController {
     
     private final ReportService reportService;
     private final UserService userService;
-    private final PostService postService;
+private final PostService postService;
     
     /**
      * 관리자 대시보드 메인

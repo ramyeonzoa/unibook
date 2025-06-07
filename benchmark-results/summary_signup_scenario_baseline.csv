@@ -1,0 +1,3 @@
+timestamp,testName,samples,mean,median,min,max,p90,p95,p99,standardDeviation,outliers
+2025-06-07_11-41-35,signup_scenario_baseline,46,6.39,6.00,5.00,8.00,8.00,8.00,8.00,0.86,4
+2025-06-07_12-30-40,signup_scenario_baseline,50,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0
