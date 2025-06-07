@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.5.0'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'me.champeau.jmh' version '0.7.2'
 }
 
 group = 'com.unibook'
@@ -27,6 +28,10 @@ dependencies {
     implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
     implementation 'org.springframework.retry:spring-retry'
     
+    // Caffeine Cache (Department 성능 최적화용)
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
+    
     // Swagger/OpenAPI 3
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0'
     
@@ -39,8 +44,31 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    
+    // 벤치마크 관련 의존성
+    testImplementation 'org.openjdk.jmh:jmh-core:1.37'
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.37'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    
+    // 통계 계산
+    testImplementation 'org.apache.commons:commons-math3:3.6.1'
+    
+    // JSON 처리 (결과 저장용)
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// JMH 설정
+jmh {
+    iterations = 5
+    benchmarkMode = ['avgt']
+    timeUnit = 'ms'
+    fork = 2
+    warmupIterations = 3
+    jvmArgs = ['-Xms2g', '-Xmx4g']
 }

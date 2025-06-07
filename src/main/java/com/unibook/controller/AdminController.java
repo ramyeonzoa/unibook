@@ -237,4 +237,12 @@ public class AdminController {
         return "admin/statistics";
     }
     
+    /**
+     * 캐시 성능 모니터링 페이지
+     */
+    @GetMapping("/cache-stats")
+    public String cacheStats() {
+        return "admin/cache-stats";
+    }
+    
 }
