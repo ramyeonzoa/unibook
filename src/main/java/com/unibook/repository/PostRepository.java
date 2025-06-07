@@ -24,7 +24,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
     String JOIN_BOOK = "LEFT JOIN FETCH p.book ";
     
-    String JOIN_SUBJECT = "LEFT JOIN FETCH p.subject ";
+    String JOIN_SUBJECT = "LEFT JOIN FETCH p.subject s " +
+                      "LEFT JOIN FETCH s.professor prof " +
+                      "LEFT JOIN FETCH prof.department profDept " +
+                      "LEFT JOIN FETCH profDept.school ";
     
     String JOIN_POST_IMAGES = "LEFT JOIN FETCH p.postImages ";
     
@@ -460,4 +463,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
            "AND " + EXCLUDE_BLOCKED +
            "ORDER BY p.createdAt ASC")
     List<Post> findByBookIdForPriceTrend(@Param("bookId") Long bookId);
+    
+    /**
+     * 게시글 소유자 확인 (WishlistService 최적화용)
+     * 전체 Entity 로드 없이 소유권만 체크
+     */
+    boolean existsByPostIdAndUser_UserId(Long postId, Long userId);
+    
+    /**
+     * 게시글 상태 및 존재 여부 확인 (WishlistService 최적화용)
+     */
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END " +
+           "FROM Post p WHERE p.postId = :postId AND p.status != 'BLOCKED'")
+    boolean existsByPostIdAndNotBlocked(@Param("postId") Long postId);
 }
