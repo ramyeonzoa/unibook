@@ -515,6 +515,17 @@
         font-size: 0.9rem;
     }
     
+    /* 가로 스크롤 방지 */
+    .navbar .container {
+        overflow-x: hidden;
+        max-width: 100%;
+    }
+    
+    .header-right-group {
+        flex-shrink: 1;
+        min-width: 0;
+    }
+    
     
     .header-search {
         position: relative;
