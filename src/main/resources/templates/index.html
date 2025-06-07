@@ -478,11 +478,25 @@
             
             .quick-links {
                 gap: 8px;
+                justify-content: flex-start;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                padding: 2px 0;
+            }
+            
+            .quick-links::-webkit-scrollbar {
+                display: none;
             }
             
             .quick-link {
                 font-size: 0.85rem;
                 padding: 6px 16px;
+                flex-shrink: 0;
+                white-space: nowrap;
             }
             
             .posts-carousel {
@@ -712,7 +726,7 @@
             <h2 class="section-title mb-4">📚 교재 둘러보기</h2>
             <div class="row" th:if="${!popularBooks.isEmpty()}">
                 <div class="col-md-3 mb-4" th:each="book : ${popularBooks}">
-                    <a class="book-card" href="/posts" th:href="@{/posts(search=${book.title})}">
+                    <a class="book-card" href="/posts" th:href="@{/posts(bookId=${book.bookId})}">
                         <div class="card-img-container">
                             <img th:if="${book.imageUrl != null and !book.imageUrl.isEmpty()}" 
                                  th:src="${book.imageUrl}" 
