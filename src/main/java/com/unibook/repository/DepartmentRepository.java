@@ -38,6 +38,17 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     @EntityGraph(attributePaths = {"school"})
     @Cacheable(value = "departments", key = "#school.schoolId")
     List<Department> findBySchool(School school);
+    
+    /**
+     * ID로 학과 조회 (캐싱 적용)
+     * 
+     * 사용처: 회원가입, Professor 생성 시 학과 검증
+     * 캐시 키: departmentId (개별 학과 캐싱)
+     */
+    @EntityGraph(attributePaths = {"school"})
+    @Cacheable(value = "departments", key = "'dept_' + #id")
+    Optional<Department> findById(Long id);
+    
     Optional<Department> findBySchoolAndDepartmentName(School school, String departmentName);
     
     // 교양학부 존재 확인용 (ID 기반으로 프록시 로딩 없이 체크)

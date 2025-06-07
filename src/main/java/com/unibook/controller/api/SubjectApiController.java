@@ -203,7 +203,7 @@ public class SubjectApiController {
         
         // 전공과목인데 departmentId가 없으면 사용자의 소속 학과 사용
         if (departmentId == null && request.getSubjectType() != Subject.SubjectType.GENERAL) {
-            com.unibook.domain.entity.User user = userService.findById(userId)
+            com.unibook.domain.entity.User user = userService.findByIdWithDepartmentAndSchool(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다"));
             departmentId = user.getDepartment().getDepartmentId();
         }

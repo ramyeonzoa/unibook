@@ -44,7 +44,7 @@ public class UserApiController {
         Long userId = userPrincipal.getUserId();
         
         // 사용자 정보 조회 (학과, 학교 정보 포함)
-        User user = userService.findById(userId)
+        User user = userService.findByIdWithDepartmentAndSchool(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다"));
         
         Map<String, Object> result = new HashMap<>();

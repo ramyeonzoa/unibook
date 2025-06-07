@@ -52,11 +52,12 @@ public class CacheConfig {
             .recordStats()
         );
         
-        // 초기 캐시 등록
+        // 캐시 등록: departments만 (효과적인 캐시만 유지)
         cacheManager.setCacheNames(java.util.Arrays.asList("departments"));
+        cacheManager.setAllowNullValues(false);  // null 값 캐싱 방지
         
-        log.info("✅ Caffeine Cache 설정 완료 - Department 성능 최적화 활성화");
-        log.info("📊 캐시 설정: MaxSize=1,000, TTL=24h");
+        log.info("✅ Caffeine Cache 설정 완료 - Department 성능 최적화 활성화 (BookSearch 캐시 제거함)");
+        log.info("📊 캐시 설정: MaxSize=1,000, TTL=24h, 효과적인 캐시=[departments]");
         
         return cacheManager;
     }

@@ -6,7 +6,6 @@ import com.unibook.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
@@ -38,7 +37,6 @@ public class BookSearchService {
     @Value("${naver.api.book-search-url}")
     private String bookSearchUrl;
     
-    @Cacheable(value = "bookSearch", key = "#query + '_' + #page + '_' + #size")
     @Retryable(
             value = {ResourceAccessException.class, HttpServerErrorException.class},
             maxAttempts = AppConstants.NAVER_API_MAX_RETRY_ATTEMPTS,
