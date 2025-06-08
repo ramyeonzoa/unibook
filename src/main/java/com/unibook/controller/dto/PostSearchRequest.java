@@ -42,6 +42,7 @@ public class PostSearchRequest {
     private Long professorId;
     private String bookTitle;
     private Long bookId;
+    private Long departmentId;
     
     /**
      * PostController의 기존 11개 파라미터로부터 PostSearchRequest 생성
@@ -50,7 +51,7 @@ public class PostSearchRequest {
     public static PostSearchRequest from(int page, int size, String search, 
                                        Post.ProductType productType, Post.PostStatus status, 
                                        Long schoolId, String sortBy, Integer minPrice, Integer maxPrice,
-                                       Long subjectId, Long professorId, String bookTitle, Long bookId) {
+                                       Long subjectId, Long professorId, String bookTitle, Long bookId, Long departmentId) {
         return PostSearchRequest.builder()
                 .page(page)
                 .size(size)
@@ -65,6 +66,7 @@ public class PostSearchRequest {
                 .professorId(professorId)
                 .bookTitle(bookTitle)
                 .bookId(bookId)
+                .departmentId(departmentId)
                 .build();
     }
     

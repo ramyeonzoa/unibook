@@ -102,8 +102,7 @@ public class PostController {
         // 검색 요청 처리 및 결과 설정
         PostSearchRequest request = PostSearchRequest.from(page, size, search, productType, status, 
                                                           schoolId, sortBy, minPrice, maxPrice, 
-                                                          subjectId, professorId, bookTitle, bookId);
-        request.setDepartmentId(departmentId);  // 학과 검색 추가
+                                                          subjectId, professorId, bookTitle, bookId, departmentId);
         request.normalizeForController();
         log.info("PostController - 학과 검색 요청: departmentId={}, search='{}', 정렬: '{}'", departmentId, request.getSearch(), request.getSortBy());
         log.debug("PostController - 전체 요청 파라미터: {}", request);

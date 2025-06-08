@@ -1338,9 +1338,11 @@
                 <div th:each="relatedPost : ${relatedPosts}" class="swiper-slide">
                     <a th:href="@{/posts/{id}(id=${relatedPost.postId})}" class="text-decoration-none">
                         <div class="related-card">
-                            <!-- 상태 배지 -->
-                            <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
-                                <span class="badge status-badge"
+                            
+                            <!-- 이미지 -->
+                            <div class="related-card-image">
+                                <!-- 상태 배지 -->
+                                <span class="status-badge"
                                       th:classappend="${relatedPost.status.toString() == 'AVAILABLE' ? 'available' : 
                                                       (relatedPost.status.toString() == 'RESERVED' ? 'reserved' : 
                                                       (relatedPost.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
@@ -1351,10 +1353,6 @@
                                                    (relatedPost.status.toString() == 'RESERVED' ? '예약중' : 
                                                    (relatedPost.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
                                 </span>
-                            </div>
-                            
-                            <!-- 이미지 -->
-                            <div class="related-card-image">
                                 <img th:if="${relatedPost.postImages != null and !relatedPost.postImages.isEmpty()}" 
                                      th:src="${relatedPost.postImages[0].imageUrl}" 
                                      th:alt="${relatedPost.title}">
@@ -1439,9 +1437,11 @@
                 <div th:each="relatedPost : ${subjectRelatedPosts}" class="swiper-slide">
                     <a th:href="@{/posts/{id}(id=${relatedPost.postId})}" class="text-decoration-none">
                         <div class="related-card">
-                            <!-- 상태 배지 -->
-                            <div class="position-absolute top-0 end-0 m-3" style="z-index: 10;">
-                                <span class="badge status-badge"
+                            
+                            <!-- 이미지 -->
+                            <div class="related-card-image">
+                                <!-- 상태 배지 -->
+                                <span class="status-badge"
                                       th:classappend="${relatedPost.status.toString() == 'AVAILABLE' ? 'available' : 
                                                       (relatedPost.status.toString() == 'RESERVED' ? 'reserved' : 
                                                       (relatedPost.status.toString() == 'BLOCKED' ? 'blocked' : 'completed'))}">
@@ -1452,10 +1452,6 @@
                                                    (relatedPost.status.toString() == 'RESERVED' ? '예약중' : 
                                                    (relatedPost.status.toString() == 'BLOCKED' ? '차단됨' : '거래완료'))}"></span>
                                 </span>
-                            </div>
-                            
-                            <!-- 이미지 -->
-                            <div class="related-card-image">
                                 <img th:if="${relatedPost.postImages != null and !relatedPost.postImages.isEmpty()}" 
                                      th:src="${relatedPost.postImages[0].imageUrl}" 
                                      th:alt="${relatedPost.title}">
