@@ -87,25 +87,26 @@ public class PostController {
             @RequestParam(required = false) Long professorId,
             @RequestParam(required = false) String bookTitle,
             @RequestParam(required = false) Long bookId,
+            @RequestParam(required = false) Long departmentId,
             @RequestParam(required = false) Long userId,
             Model model,
             @AuthenticationPrincipal UserPrincipal userPrincipal) {
         
-        // userId가 있으면 특정 사용자의 게시글만 조회 (관리자 전용)
+        // userId가 있으면 특정 사용자의 게시글만 조회
         if (userId != null) {
-            // 관리자 권한 체크
-            if (userPrincipal == null || !userPrincipal.getRole().equals(User.UserRole.ADMIN)) {
-                throw new AccessDeniedException("관리자만 접근 가능한 기능입니다.");
-            }
-            return handleUserSpecificPosts(userId, page, size, sortBy, minPrice, maxPrice, model);
+            // 관리자가 아닌 경우 BLOCKED 게시글 제외
+            boolean isAdmin = userPrincipal != null && userPrincipal.getRole().equals(User.UserRole.ADMIN);
+            return handleUserSpecificPosts(userId, page, size, sortBy, minPrice, maxPrice, isAdmin, model);
         }
         
         // 검색 요청 처리 및 결과 설정
         PostSearchRequest request = PostSearchRequest.from(page, size, search, productType, status, 
                                                           schoolId, sortBy, minPrice, maxPrice, 
                                                           subjectId, professorId, bookTitle, bookId);
+        request.setDepartmentId(departmentId);  // 학과 검색 추가
         request.normalizeForController();
-        log.debug("검색어: '{}', 정렬: '{}'", request.getSearch(), request.getSortBy());
+        log.info("PostController - 학과 검색 요청: departmentId={}, search='{}', 정렬: '{}'", departmentId, request.getSearch(), request.getSortBy());
+        log.debug("PostController - 전체 요청 파라미터: {}", request);
         
         // 헬퍼를 통한 데이터 조회 및 모델 설정
         Long userSchoolId = postControllerHelper.getUserSchoolId(userPrincipal);
@@ -598,12 +599,39 @@ public class PostController {
      * 특정 사용자의 게시글 목록 조회 (관리자용)
      */
     private String handleUserSpecificPosts(Long userId, int page, int size, 
-                                         String sortBy, Integer minPrice, Integer maxPrice, Model model) {
+                                         String sortBy, Integer minPrice, Integer maxPrice, boolean isAdmin, Model model) {
         Pageable pageable = createUserPostsPageable(page, size, sortBy);
         
         // 특정 사용자의 게시글 조회 (가격 필터 포함)
         Page<Post> posts = postService.getPostsByUserId(userId, pageable, minPrice, maxPrice);
-        Page<PostResponseDto> postDtos = posts.map(PostResponseDto::listFrom);
+        
+        // 관리자가 아닌 경우 BLOCKED 게시글 제외
+        Page<PostResponseDto> postDtos;
+        if (!isAdmin) {
+            // BLOCKED 상태가 아닌 게시글만 필터링
+            postDtos = posts.map(post -> {
+                if (post.getStatus() == Post.PostStatus.BLOCKED) {
+                    return null; // BLOCKED 게시글은 null 반환
+                }
+                return PostResponseDto.listFrom(post);
+            }).map(dto -> dto); // null 제거를 위해 한번 더 변환
+            
+            // 실제로는 Stream을 사용하여 BLOCKED 게시글 완전 제거
+            List<PostResponseDto> filteredContent = posts.getContent().stream()
+                    .filter(post -> post.getStatus() != Post.PostStatus.BLOCKED)
+                    .map(PostResponseDto::listFrom)
+                    .toList();
+            
+            // 새로운 Page 객체 생성 (페이징 정보 유지)
+            postDtos = new org.springframework.data.domain.PageImpl<>(
+                    filteredContent, 
+                    pageable, 
+                    posts.getTotalElements() // 총 개수는 원래대로 유지 (페이징 일관성을 위해)
+            );
+        } else {
+            // 관리자인 경우 모든 게시글 포함
+            postDtos = posts.map(PostResponseDto::listFrom);
+        }
         
         // 사용자 정보 조회
         User targetUser = userService.findById(userId)

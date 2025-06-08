@@ -332,10 +332,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                    "LEFT JOIN FETCH d.school " +
                    "LEFT JOIN FETCH p.book b " +
                    "LEFT JOIN FETCH p.subject s " +
-                   "LEFT JOIN FETCH s.professor " +
+                   "LEFT JOIN FETCH s.professor pr " +
+                   "LEFT JOIN FETCH pr.department dept " +
                    "WHERE 1=1 " +
                    "AND (:subjectId IS NULL OR s.subjectId = :subjectId) " +
-                   "AND (:professorId IS NULL OR s.professor.professorId = :professorId) " +
+                   "AND (:professorId IS NULL OR pr.professorId = :professorId) " +
+                   "AND (:departmentId IS NULL OR dept.departmentId = :departmentId) " +
                    "AND (:bookTitle IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :bookTitle, '%'))) " +
                    "AND (:bookId IS NULL OR b.bookId = :bookId) " +
                    "AND p.status != 'BLOCKED' " +
@@ -349,10 +351,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         "LEFT JOIN u.department d " +
                         "LEFT JOIN p.subject s " +
                         "LEFT JOIN s.professor pr " +
+                        "LEFT JOIN pr.department dept " +
                         "LEFT JOIN p.book b " +
                         "WHERE 1=1 " +
                         "AND (:subjectId IS NULL OR p.subject.subjectId = :subjectId) " +
                         "AND (:professorId IS NULL OR pr.professorId = :professorId) " +
+                        "AND (:departmentId IS NULL OR dept.departmentId = :departmentId) " +
                         "AND (:bookTitle IS NULL OR LOWER(b.title) LIKE LOWER(CONCAT('%', :bookTitle, '%'))) " +
                         "AND (:bookId IS NULL OR b.bookId = :bookId) " +
                         "AND p.status != 'BLOCKED' " +
@@ -363,6 +367,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                         "AND (:maxPrice IS NULL OR p.price <= :maxPrice)")
     Page<Post> findPostsWithOptionalFilters(@Param("subjectId") Long subjectId,
                                            @Param("professorId") Long professorId,
+                                           @Param("departmentId") Long departmentId,
                                            @Param("bookTitle") String bookTitle,
                                            @Param("bookId") Long bookId,
                                            @Param("status") Post.PostStatus status,
@@ -456,6 +461,19 @@ public interface PostRepository extends JpaRepository<Post, Long> {
      */
     @Query("SELECT pr.professorName FROM Professor pr WHERE pr.professorId = :professorId")
     Optional<String> findProfessorNameById(@Param("professorId") Long professorId);
+    
+    /**
+     * 학과 ID로 학교명과 학과명 조회 (페이지 제목용)
+     */
+    @Query("SELECT CONCAT(s.schoolName, ' ', d.departmentName) FROM Department d " +
+           "LEFT JOIN d.school s WHERE d.departmentId = :departmentId")
+    Optional<String> findDepartmentInfoById(@Param("departmentId") Long departmentId);
+    
+    /**
+     * 학교 ID로 학교명 조회 (페이지 제목용)
+     */
+    @Query("SELECT s.schoolName FROM School s WHERE s.schoolId = :schoolId")
+    Optional<String> findSchoolNameById(@Param("schoolId") Long schoolId);
     
     /**
      * 동일한 책의 모든 게시글 조회 (시세 그래프용)

@@ -859,12 +859,12 @@
         }
         
         /* 클릭 가능한 메타 정보 링크 스타일 */
-        .post-subject-name, .post-professor-name, .post-book-title, .post-school-name {
+        .post-subject-name, .post-professor-name, .post-book-title, .post-school-name, .post-department-name {
             color: #667eea;
             transition: color 0.2s ease;
         }
         
-        .post-subject-name:hover, .post-professor-name:hover, .post-book-title:hover, .post-school-name:hover {
+        .post-subject-name:hover, .post-professor-name:hover, .post-book-title:hover, .post-school-name:hover, .post-department-name:hover {
             color: #5a6fd8;
             text-decoration: underline !important;
         }
@@ -872,14 +872,16 @@
         [data-bs-theme="dark"] .post-subject-name, 
         [data-bs-theme="dark"] .post-professor-name,
         [data-bs-theme="dark"] .post-book-title,
-        [data-bs-theme="dark"] .post-school-name {
+        [data-bs-theme="dark"] .post-school-name,
+        [data-bs-theme="dark"] .post-department-name {
             color: #8b9bff;
         }
         
         [data-bs-theme="dark"] .post-subject-name:hover, 
         [data-bs-theme="dark"] .post-professor-name:hover,
         [data-bs-theme="dark"] .post-book-title:hover,
-        [data-bs-theme="dark"] .post-school-name:hover {
+        [data-bs-theme="dark"] .post-school-name:hover,
+        [data-bs-theme="dark"] .post-department-name:hover {
             color: #a3b1ff;
         }
     </style>
@@ -1259,7 +1261,13 @@
                             </div>
                             <div class="col-6">
                                 <small class="text-muted d-block">학과</small>
-                                <span class="fw-medium" th:text="${post.subject.professor.department.departmentName}"></span>
+                                <a th:if="${post.subject != null and post.subject.professor != null and post.subject.professor.department != null}" 
+                                   th:href="@{/posts(departmentId=${post.subject.professor.department.departmentId})}"
+                                   class="post-department-name text-decoration-none fw-medium"
+                                   th:text="${post.subject.professor.department.departmentName}"
+                                   title="이 학과의 다른 게시글 보기"></a>
+                                <span th:unless="${post.subject != null and post.subject.professor != null and post.subject.professor.department != null}" 
+                                      class="fw-medium">학과 정보 없음</span>
                             </div>
                             <div class="col-6" th:if="${post.takenYear != null and post.takenSemester != null}">
                                 <small class="text-muted d-block">수강 시기</small>
@@ -1280,11 +1288,18 @@
                             <div class="seller-avatar" th:text="${#strings.substring(post.user.name, 0, 1)}">이</div>
                             <h6 class="mb-2">판매자 정보</h6>
                             <p class="mb-1 fw-medium" th:text="${post.user.name}">이름</p>
-                            <p class="mb-0 opacity-75">
+                            <p class="mb-2 opacity-75">
                                 <i class="bi bi-building"></i>
                                 <span th:text="${post.user.school?.schoolName ?: '학교 정보 없음'}">학교명</span>
                                 <i th:if="${post.user.verified}" class="bi bi-patch-check-fill ms-2" 
                                    style="color: rgba(255, 255, 255, 0.9); filter: brightness(1.2);" title="이메일 인증 완료"></i>
+                            </p>
+                            <p th:if="${!isOwner}" class="mb-0 small">
+                                <a th:href="@{/posts(userId=${post.user.userId})}" 
+                                   class="text-decoration-none opacity-75"
+                                   style="color: rgba(255, 255, 255, 0.8);">
+                                    <i class="bi bi-box-seam me-1"></i>이 판매자의 다른 상품 보기
+                                </a>
                             </p>
                         </div>
                     </div>

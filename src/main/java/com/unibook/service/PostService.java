@@ -67,12 +67,12 @@ public class PostService {
      */
     public Page<Post> getPostsPage(Pageable pageable, String search, 
                                   Post.ProductType productType, Post.PostStatus status, Long schoolId, String sortBy,
-                                  Integer minPrice, Integer maxPrice, Long subjectId, Long professorId, String bookTitle, Long bookId) {
+                                  Integer minPrice, Integer maxPrice, Long subjectId, Long professorId, String bookTitle, Long bookId, Long departmentId) {
         
         String trimmedBookTitle = (bookTitle != null && !bookTitle.trim().isEmpty()) ? bookTitle.trim() : null;
         
         // 로깅을 위한 조건 확인
-        boolean hasSpecificFilters = subjectId != null || professorId != null || trimmedBookTitle != null || bookId != null;
+        boolean hasSpecificFilters = subjectId != null || professorId != null || trimmedBookTitle != null || bookId != null || departmentId != null;
         boolean hasSearch = search != null && !search.trim().isEmpty();
         
         if (hasSpecificFilters) {
@@ -82,6 +82,9 @@ public class PostService {
             } else if (professorId != null) {
                 log.info("교수 ID로 검색: professorId={}, search='{}', status={}, productType={}", 
                         professorId, search, status, productType);
+            } else if (departmentId != null) {
+                log.info("학과 ID로 검색: departmentId={}, search='{}', status={}, productType={}", 
+                        departmentId, search, status, productType);
             } else if (bookId != null) {
                 log.info("책 ID로 검색: bookId={}, search='{}', status={}, productType={}", 
                         bookId, search, status, productType);
@@ -122,8 +125,8 @@ public class PostService {
                     // ID로 Post 엔티티들을 조회 (Fetch Join)
                     List<Post> posts = postRepository.findAllByIdInWithDetails(postIds);
                     
-                    // 추가 필터링 적용 (subjectId, professorId, bookTitle)
-                    List<Post> filteredPosts = applyAdditionalFilters(posts, subjectId, professorId, trimmedBookTitle);
+                    // 추가 필터링 적용 (subjectId, professorId, bookTitle, departmentId)
+                    List<Post> filteredPosts = applyAdditionalFilters(posts, subjectId, professorId, trimmedBookTitle, departmentId);
                     
                     // 정렬 적용
                     List<Post> orderedPosts = applySorting(filteredPosts, postIds, sortBy);
@@ -149,17 +152,17 @@ public class PostService {
         }
         
         // 검색어가 없거나 너무 짧은 경우 - 모든 필터링 적용
-        log.info("통합 필터링 조회: subjectId={}, professorId={}, bookTitle='{}', bookId={}, status={}, productType={}", 
-                subjectId, professorId, trimmedBookTitle, bookId, status, productType);
+        log.info("통합 필터링 조회: subjectId={}, professorId={}, departmentId={}, bookTitle='{}', bookId={}, status={}, productType={}", 
+                subjectId, professorId, departmentId, trimmedBookTitle, bookId, status, productType);
         return postRepository.findPostsWithOptionalFilters(
-            subjectId, professorId, trimmedBookTitle, bookId,
+            subjectId, professorId, departmentId, trimmedBookTitle, bookId,
             status, productType, schoolId, minPrice, maxPrice, pageable);
     }
     
     /**
      * Full-text 검색 결과에 추가 필터 적용
      */
-    private List<Post> applyAdditionalFilters(List<Post> posts, Long subjectId, Long professorId, String bookTitle) {
+    private List<Post> applyAdditionalFilters(List<Post> posts, Long subjectId, Long professorId, String bookTitle, Long departmentId) {
         return posts.stream()
                 .filter(post -> {
                     // 과목 필터
@@ -172,6 +175,14 @@ public class PostService {
                         return post.getSubject() != null && 
                                post.getSubject().getProfessor() != null && 
                                professorId.equals(post.getSubject().getProfessor().getProfessorId());
+                    }
+                    
+                    // 학과 필터
+                    if (departmentId != null) {
+                        return post.getSubject() != null && 
+                               post.getSubject().getProfessor() != null &&
+                               post.getSubject().getProfessor().getDepartment() != null && 
+                               departmentId.equals(post.getSubject().getProfessor().getDepartment().getDepartmentId());
                     }
                     
                     // 책 제목 필터
@@ -307,6 +318,22 @@ public class PostService {
         return postRepository.findProfessorNameById(professorId)
                 .map(name -> name + " 교수님")
                 .orElse("교수님");
+    }
+    
+    /**
+     * 학과 정보를 조회해서 페이지 제목용 문자열 반환 (학교명 + 학과명)
+     */
+    public String getDepartmentInfoForTitle(Long departmentId) {
+        return postRepository.findDepartmentInfoById(departmentId)
+                .orElse("학과");
+    }
+    
+    /**
+     * 학교 정보를 조회해서 페이지 제목용 문자열 반환
+     */
+    public String getSchoolInfoForTitle(Long schoolId) {
+        return postRepository.findSchoolNameById(schoolId)
+                .orElse("학교");
     }
     
     /**

@@ -52,6 +52,7 @@ public class PostControllerHelper {
      * @return 변환된 게시글 페이지
      */
     public Page<PostResponseDto> getPostsWithDto(PostSearchRequest request, Pageable pageable) {
+        log.info("PostControllerHelper - 학과 검색 전달: departmentId={}", request.getDepartmentId());
         Page<Post> posts = postService.getPostsPage(
                 pageable, 
                 request.getSearch(), 
@@ -64,7 +65,8 @@ public class PostControllerHelper {
                 request.getSubjectId(), 
                 request.getProfessorId(), 
                 request.getBookTitle(),
-                request.getBookId()
+                request.getBookId(),
+                request.getDepartmentId()
         );
         
         // Post 엔티티를 PostResponseDto로 변환하여 Hibernate proxy 문제 방지
@@ -135,6 +137,15 @@ public class PostControllerHelper {
             } catch (Exception e) {
                 log.warn("교수 정보 조회 실패: professorId={}", request.getProfessorId(), e);
             }
+        } else if (request.getDepartmentId() != null) {
+            // 학과 ID로 검색하는 경우
+            try {
+                String departmentInfo = postService.getDepartmentInfoForTitle(request.getDepartmentId());
+                pageTitle = departmentInfo + " 관련 게시글";
+                pageDescription = "해당 학과의 교재와 학습 자료를 확인하세요";
+            } catch (Exception e) {
+                log.warn("학과 정보 조회 실패: departmentId={}", request.getDepartmentId(), e);
+            }
         } else if (request.getBookId() != null) {
             // 책 ID로 검색하는 경우
             try {
@@ -150,6 +161,15 @@ public class PostControllerHelper {
                 log.warn("책 정보 조회 실패: bookId={}", request.getBookId(), e);
                 pageTitle = "교재별 게시글";
                 pageDescription = "선택하신 교재의 게시글을 확인하세요";
+            }
+        } else if (request.getSchoolId() != null) {
+            // 학교 ID로 검색하는 경우
+            try {
+                String schoolInfo = postService.getSchoolInfoForTitle(request.getSchoolId());
+                pageTitle = schoolInfo + " 관련 게시글";
+                pageDescription = "해당 학교의 교재와 학습 자료를 확인하세요";
+            } catch (Exception e) {
+                log.warn("학교 정보 조회 실패: schoolId={}", request.getSchoolId(), e);
             }
         } else if (request.getBookTitle() != null && !request.getBookTitle().trim().isEmpty()) {
             pageTitle = "'" + request.getBookTitle() + "' 검색 결과";
