@@ -258,11 +258,11 @@ public class PostService {
     
     /**
      * 관련 게시글 조회 (같은 책, 현재 게시글 제외)
+     * Fetch Join 사용으로 N+1 쿼리 문제 해결
      */
     public List<Post> getRelatedPosts(Long bookId, Long excludePostId, int limit) {
-        return postRepository.findByBook_BookIdAndStatusNot(bookId, Post.PostStatus.BLOCKED).stream()
-                .filter(post -> !post.getPostId().equals(excludePostId))
-                .filter(post -> post.getStatus() == Post.PostStatus.AVAILABLE)
+        List<Post> relatedPosts = postRepository.findRelatedPostsByBookWithDetails(bookId, excludePostId);
+        return relatedPosts.stream()
                 .limit(limit)
                 .collect(Collectors.toList());
     }

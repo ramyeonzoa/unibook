@@ -498,4 +498,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END " +
            "FROM Post p WHERE p.postId = :postId AND p.status != 'BLOCKED'")
     boolean existsByPostIdAndNotBlocked(@Param("postId") Long postId);
+    
+    /**
+     * 동일한 책의 관련 게시글 조회 (상세 페이지용, Fetch Join으로 N+1 해결)
+     * AVAILABLE 상태만 조회, 현재 게시글 제외
+     */
+    @Query("SELECT p FROM Post p " +
+           JOIN_ALL_DETAILS +
+           "WHERE p.book.bookId = :bookId " +
+           "AND p.postId != :excludePostId " +
+           "AND p.status = 'AVAILABLE' " +
+           "ORDER BY p.createdAt DESC")
+    List<Post> findRelatedPostsByBookWithDetails(@Param("bookId") Long bookId, 
+                                               @Param("excludePostId") Long excludePostId);
 }

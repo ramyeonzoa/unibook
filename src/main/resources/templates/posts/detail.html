@@ -813,6 +813,11 @@
         
         [data-bs-theme="dark"] .related-card {
             background: var(--bs-dark);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        [data-bs-theme="dark"] .related-card:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
         }
         
         [data-bs-theme="dark"] .related-card .meta-info {
@@ -883,6 +888,47 @@
         [data-bs-theme="dark"] .post-school-name:hover,
         [data-bs-theme="dark"] .post-department-name:hover {
             color: #a3b1ff;
+        }
+        
+        /* 관련 게시글 섹션의 메타 정보 아이콘 색상 통일 */
+        .related-card .meta-info i {
+            color: #6c757d !important;
+        }
+        
+        /* 관련 게시글 섹션의 메타 정보 링크 색상 */
+        .related-card .post-subject-name, 
+        .related-card .post-professor-name, 
+        .related-card .post-book-title, 
+        .related-card .post-school-name {
+            color: #667eea !important;
+            transition: color 0.2s ease;
+        }
+        
+        .related-card .post-subject-name:hover, 
+        .related-card .post-professor-name:hover, 
+        .related-card .post-book-title:hover, 
+        .related-card .post-school-name:hover {
+            color: #5a6fd8 !important;
+            text-decoration: underline !important;
+        }
+        
+        /* 다크 모드 대응 */
+        [data-bs-theme="dark"] .related-card .meta-info i {
+            color: var(--bs-gray-400) !important;
+        }
+        
+        [data-bs-theme="dark"] .related-card .post-subject-name, 
+        [data-bs-theme="dark"] .related-card .post-professor-name,
+        [data-bs-theme="dark"] .related-card .post-book-title,
+        [data-bs-theme="dark"] .related-card .post-school-name {
+            color: #8b9bff !important;
+        }
+        
+        [data-bs-theme="dark"] .related-card .post-subject-name:hover, 
+        [data-bs-theme="dark"] .related-card .post-professor-name:hover,
+        [data-bs-theme="dark"] .related-card .post-book-title:hover,
+        [data-bs-theme="dark"] .related-card .post-school-name:hover {
+            color: #a3b1ff !important;
         }
     </style>
 </head>
@@ -1373,22 +1419,46 @@
                                     <!-- 과목/교수 정보 -->
                                     <div th:if="${relatedPost.subject != null}" class="mb-1">
                                         <i class="bi bi-book-fill"></i>
-                                        <span class="post-subject-name" th:text="${relatedPost.subject.subjectName}">과목명</span>
+                                        <a th:if="${relatedPost.subject.subjectId != null}" 
+                                           th:href="@{/posts(subjectId=${relatedPost.subject.subjectId})}"
+                                           class="post-subject-name text-decoration-none"
+                                           th:text="${relatedPost.subject.subjectName}"
+                                           onclick="event.stopPropagation();"
+                                           title="이 과목의 다른 게시글 보기">과목명</a>
+                                        <span th:unless="${relatedPost.subject.subjectId != null}" 
+                                              class="post-subject-name" 
+                                              th:text="${relatedPost.subject.subjectName}">과목명</span>
                                         <span th:if="${relatedPost.subject.professor != null}">
-                                            · <span class="post-professor-name" th:text="${relatedPost.subject.professor.professorName}">교수명</span>
+                                            · <a th:if="${relatedPost.subject.professor.professorId != null}"
+                                                 th:href="@{/posts(professorId=${relatedPost.subject.professor.professorId})}"
+                                                 class="post-professor-name text-decoration-none"
+                                                 th:text="${relatedPost.subject.professor.professorName}"
+                                                 onclick="event.stopPropagation();"
+                                                 title="이 교수님의 다른 게시글 보기">교수명</a>
+                                            <span th:unless="${relatedPost.subject.professor.professorId != null}"
+                                                  class="post-professor-name"
+                                                  th:text="${relatedPost.subject.professor.professorName}">교수명</span>
                                         </span>
                                     </div>
                                     
                                     <!-- 책 정보 -->
                                     <div th:if="${relatedPost.book != null}" class="mb-1">
                                         <i class="bi bi-journal-bookmark-fill"></i>
-                                        <span class="post-book-title" th:text="${relatedPost.book.title}">책 제목</span>
+                                        <a th:href="@{/posts(bookTitle=${relatedPost.book.title})}"
+                                           class="post-book-title text-decoration-none"
+                                           th:text="${relatedPost.book.title}"
+                                           onclick="event.stopPropagation();"
+                                           title="이 책의 다른 게시글 보기">책 제목</a>
                                     </div>
                                     
-                                    <!-- 작성자 정보 -->
-                                    <div class="mb-1">
-                                        <i class="bi bi-person-fill"></i>
-                                        <span th:text="${relatedPost.user.name}">작성자</span>
+                                    <!-- 학교 정보 -->
+                                    <div th:if="${relatedPost.user.department != null and relatedPost.user.department.school != null}" class="mb-1">
+                                        <i class="bi bi-building-fill"></i>
+                                        <a th:href="@{/posts(schoolId=${relatedPost.user.department.school.schoolId})}"
+                                           class="post-school-name text-decoration-none"
+                                           th:text="${relatedPost.user.department.school.schoolName}"
+                                           onclick="event.stopPropagation();"
+                                           title="이 학교의 다른 게시글 보기">학교명</a>
                                     </div>
                                 </div>
                                 
@@ -1472,22 +1542,46 @@
                                     <!-- 과목/교수 정보 -->
                                     <div th:if="${relatedPost.subject != null}" class="mb-1">
                                         <i class="bi bi-book-fill"></i>
-                                        <span class="post-subject-name" th:text="${relatedPost.subject.subjectName}">과목명</span>
+                                        <a th:if="${relatedPost.subject.subjectId != null}" 
+                                           th:href="@{/posts(subjectId=${relatedPost.subject.subjectId})}"
+                                           class="post-subject-name text-decoration-none"
+                                           th:text="${relatedPost.subject.subjectName}"
+                                           onclick="event.stopPropagation();"
+                                           title="이 과목의 다른 게시글 보기">과목명</a>
+                                        <span th:unless="${relatedPost.subject.subjectId != null}" 
+                                              class="post-subject-name" 
+                                              th:text="${relatedPost.subject.subjectName}">과목명</span>
                                         <span th:if="${relatedPost.subject.professor != null}">
-                                            · <span class="post-professor-name" th:text="${relatedPost.subject.professor.professorName}">교수명</span>
+                                            · <a th:if="${relatedPost.subject.professor.professorId != null}"
+                                                 th:href="@{/posts(professorId=${relatedPost.subject.professor.professorId})}"
+                                                 class="post-professor-name text-decoration-none"
+                                                 th:text="${relatedPost.subject.professor.professorName}"
+                                                 onclick="event.stopPropagation();"
+                                                 title="이 교수님의 다른 게시글 보기">교수명</a>
+                                            <span th:unless="${relatedPost.subject.professor.professorId != null}"
+                                                  class="post-professor-name"
+                                                  th:text="${relatedPost.subject.professor.professorName}">교수명</span>
                                         </span>
                                     </div>
                                     
                                     <!-- 책 정보 -->
                                     <div th:if="${relatedPost.book != null}" class="mb-1">
                                         <i class="bi bi-journal-bookmark-fill"></i>
-                                        <span class="post-book-title" th:text="${relatedPost.book.title}">책 제목</span>
+                                        <a th:href="@{/posts(bookTitle=${relatedPost.book.title})}"
+                                           class="post-book-title text-decoration-none"
+                                           th:text="${relatedPost.book.title}"
+                                           onclick="event.stopPropagation();"
+                                           title="이 책의 다른 게시글 보기">책 제목</a>
                                     </div>
                                     
-                                    <!-- 작성자 정보 -->
-                                    <div class="mb-1">
-                                        <i class="bi bi-person-fill"></i>
-                                        <span th:text="${relatedPost.user.name}">작성자</span>
+                                    <!-- 학교 정보 -->
+                                    <div th:if="${relatedPost.user.department != null and relatedPost.user.department.school != null}" class="mb-1">
+                                        <i class="bi bi-building-fill"></i>
+                                        <a th:href="@{/posts(schoolId=${relatedPost.user.department.school.schoolId})}"
+                                           class="post-school-name text-decoration-none"
+                                           th:text="${relatedPost.user.department.school.schoolName}"
+                                           onclick="event.stopPropagation();"
+                                           title="이 학교의 다른 게시글 보기">학교명</a>
                                     </div>
                                 </div>
                                 
