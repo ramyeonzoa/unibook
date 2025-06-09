@@ -3,6 +3,9 @@ spring:
     name: unibook
   profiles:
     active: local  # Default to local profile
+  threads:
+    virtual:
+      enabled: true
   datasource:
     url: jdbc:mysql://localhost:3306/unibook_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
