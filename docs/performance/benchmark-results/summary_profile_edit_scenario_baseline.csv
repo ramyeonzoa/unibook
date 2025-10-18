@@ -1,3 +1,5 @@
 timestamp,testName,samples,mean,median,min,max,p90,p95,p99,standardDeviation,outliers
 2025-06-07_11-41-35,profile_edit_scenario_baseline,39,7.36,7.00,6.00,9.00,8.00,8.00,9.00,0.71,1
 2025-06-07_12-30-40,profile_edit_scenario_baseline,40,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0
+2025-06-11_11-58-10,profile_edit_scenario_baseline,33,0.257,0.253,0.222,0.325,0.283,0.305,0.325,0.021,256742,252900,221500,325100,7
+2025-06-11_12-27-52,profile_edit_scenario_baseline,40,0.310,0.275,0.232,0.475,0.423,0.460,0.475,0.076,309580,274850,231500,474900,0

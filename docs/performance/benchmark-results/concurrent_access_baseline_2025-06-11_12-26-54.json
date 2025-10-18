@@ -1,0 +1,37 @@
+{
+  "environment" : {
+    "totalMemoryMB" : 177,
+    "availableProcessors" : 18,
+    "maxMemoryMB" : 512,
+    "osVersion" : "10.0",
+    "javaVersion" : "21.0.4",
+    "osArch" : "amd64",
+    "freeMemoryMB" : 108,
+    "javaVendor" : "Oracle Corporation",
+    "osName" : "Windows 11"
+  },
+  "configuration" : {
+    "performanceThreshold" : 100.0,
+    "concurrentThreads" : 20,
+    "measurementIterations" : 100,
+    "warmupIterations" : 20,
+    "testSchoolIds" : [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+  },
+  "testName" : "concurrent_access_baseline",
+  "timestamp" : "2025-06-11_12-26-54",
+  "statistics" : {
+    "operationName" : "동시 접근 (기준)",
+    "totalSamples" : 1000,
+    "filteredSamples" : 907,
+    "mean" : 39522.82249173096,
+    "median" : 30200.0,
+    "min" : 4600.0,
+    "max" : 144100.0,
+    "standardDeviation" : 30358.28106317681,
+    "variance" : 9.216252291108397E8,
+    "p90" : 85260.00000000001,
+    "p95" : 105699.99999999987,
+    "p99" : 131092.0,
+    "outlierCount" : 93
+  }
+}

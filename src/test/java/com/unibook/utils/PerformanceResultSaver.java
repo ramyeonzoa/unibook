@@ -137,15 +137,18 @@ public class PerformanceResultSaver {
             
             // 헤더 추가 (새 파일인 경우)
             if (isNewFile) {
-                csvContent.append("timestamp,testName,samples,mean,median,min,max,p90,p95,p99,standardDeviation,outliers\n");
+                csvContent.append("timestamp,testName,samples,mean_ms,median_ms,min_ms,max_ms,p90_ms,p95_ms,p99_ms,stdDev_ms,mean_ns,median_ns,min_ns,max_ns,outliers\n");
             }
             
-            // 데이터 추가
-            csvContent.append(String.format("%s,%s,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d\n",
+            // 데이터 추가 (밀리초와 나노초 모두 저장)
+            csvContent.append(String.format("%s,%s,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.0f,%.0f,%.0f,%.0f,%d\n",
                     timestamp, testName, stats.getFilteredSamples(),
+                    stats.getMean() / 1_000_000, stats.getMedian() / 1_000_000, 
+                    stats.getMin() / 1_000_000, stats.getMax() / 1_000_000,
+                    stats.getP90() / 1_000_000, stats.getP95() / 1_000_000, 
+                    stats.getP99() / 1_000_000, stats.getStandardDeviation() / 1_000_000,
                     stats.getMean(), stats.getMedian(), stats.getMin(), stats.getMax(),
-                    stats.getP90(), stats.getP95(), stats.getP99(),
-                    stats.getStandardDeviation(), stats.getOutlierCount()));
+                    stats.getOutlierCount()));
             
             // 파일에 쓰기 (append 모드)
             java.nio.file.Files.write(csvFile.toPath(), csvContent.toString().getBytes(),

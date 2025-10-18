@@ -1,3 +1,0 @@
-timestamp,testName,samples,mean,median,min,max,p90,p95,p99,standardDeviation,outliers
-2025-06-07_11-30-03,cold_start_query_baseline,20,17.00,16.50,14.00,23.00,21.80,22.95,23.00,2.58,0
-2025-06-07_12-18-30,cold_start_query_baseline,16,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,4

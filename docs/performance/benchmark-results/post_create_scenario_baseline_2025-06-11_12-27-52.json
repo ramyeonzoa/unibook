@@ -1,0 +1,37 @@
+{
+  "environment" : {
+    "totalMemoryMB" : 177,
+    "availableProcessors" : 18,
+    "maxMemoryMB" : 512,
+    "osVersion" : "10.0",
+    "javaVersion" : "21.0.4",
+    "osArch" : "amd64",
+    "freeMemoryMB" : 123,
+    "javaVendor" : "Oracle Corporation",
+    "osName" : "Windows 11"
+  },
+  "configuration" : {
+    "performanceThreshold" : 100.0,
+    "concurrentThreads" : 20,
+    "measurementIterations" : 100,
+    "warmupIterations" : 20,
+    "testSchoolIds" : [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+  },
+  "testName" : "post_create_scenario_baseline",
+  "timestamp" : "2025-06-11_12-27-52",
+  "statistics" : {
+    "operationName" : "게시글 작성 시나리오 (기준)",
+    "totalSamples" : 50,
+    "filteredSamples" : 50,
+    "mean" : 297994.0,
+    "median" : 253000.0,
+    "min" : 220900.0,
+    "max" : 512400.0,
+    "standardDeviation" : 82663.10879166136,
+    "variance" : 6.833189555102041E9,
+    "p90" : 427630.0,
+    "p95" : 478609.99999999994,
+    "p99" : 512400.0,
+    "outlierCount" : 0
+  }
+}

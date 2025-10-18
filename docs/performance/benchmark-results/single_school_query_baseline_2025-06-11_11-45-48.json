@@ -1,0 +1,37 @@
+{
+  "environment" : {
+    "totalMemoryMB" : 200,
+    "availableProcessors" : 18,
+    "maxMemoryMB" : 512,
+    "osVersion" : "10.0",
+    "javaVersion" : "21.0.4",
+    "osArch" : "amd64",
+    "freeMemoryMB" : 139,
+    "javaVendor" : "Oracle Corporation",
+    "osName" : "Windows 11"
+  },
+  "configuration" : {
+    "performanceThreshold" : 100.0,
+    "concurrentThreads" : 20,
+    "measurementIterations" : 100,
+    "warmupIterations" : 20,
+    "testSchoolIds" : [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+  },
+  "testName" : "single_school_query_baseline",
+  "timestamp" : "2025-06-11_11-45-48",
+  "statistics" : {
+    "operationName" : "단일 학교 조회 (기준)",
+    "totalSamples" : 100,
+    "filteredSamples" : 96,
+    "mean" : 788828.125,
+    "median" : 756750.0,
+    "min" : 529100.0,
+    "max" : 1288400.0,
+    "standardDeviation" : 197906.34611410732,
+    "variance" : 3.916692183223684E10,
+    "p90" : 1082080.0,
+    "p95" : 1173995.0,
+    "p99" : 1288400.0,
+    "outlierCount" : 4
+  }
+}

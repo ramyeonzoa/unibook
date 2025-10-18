@@ -114,17 +114,17 @@ public class StatisticsCalculator {
             
             System.out.printf("📈 기본 통계:\n");
             System.out.printf("   • 총 샘플 수: %,d개 (아웃라이어 제거 후: %,d개)\n", totalSamples, filteredSamples);
-            System.out.printf("   • 평균 실행 시간: %.2f ms\n", mean);
-            System.out.printf("   • 중앙값: %.2f ms\n", median);
-            System.out.printf("   • 표준편차: %.2f ms\n", standardDeviation);
+            System.out.printf("   • 평균 실행 시간: %.2f ms (%.0f ns)\n", mean / 1_000_000, mean);
+            System.out.printf("   • 중앙값: %.2f ms (%.0f ns)\n", median / 1_000_000, median);
+            System.out.printf("   • 표준편차: %.2f ms (%.0f ns)\n", standardDeviation / 1_000_000, standardDeviation);
             System.out.printf("   • 분산: %.2f\n", variance);
             
             System.out.printf("\n🎯 성능 지표:\n");
-            System.out.printf("   • 최고 성능: %.2f ms\n", min);
-            System.out.printf("   • 최저 성능: %.2f ms\n", max);
-            System.out.printf("   • 90퍼센타일: %.2f ms\n", p90);
-            System.out.printf("   • 95퍼센타일: %.2f ms\n", p95);
-            System.out.printf("   • 99퍼센타일: %.2f ms\n", p99);
+            System.out.printf("   • 최고 성능: %.2f ms (%.0f ns)\n", min / 1_000_000, min);
+            System.out.printf("   • 최저 성능: %.2f ms (%.0f ns)\n", max / 1_000_000, max);
+            System.out.printf("   • 90퍼센타일: %.2f ms (%.0f ns)\n", p90 / 1_000_000, p90);
+            System.out.printf("   • 95퍼센타일: %.2f ms (%.0f ns)\n", p95 / 1_000_000, p95);
+            System.out.printf("   • 99퍼센타일: %.2f ms (%.0f ns)\n", p99 / 1_000_000, p99);
             
             System.out.printf("\n🚨 품질 지표:\n");
             System.out.printf("   • 아웃라이어 비율: %.1f%% (%,d개)\n", 
@@ -140,7 +140,7 @@ public class StatisticsCalculator {
          */
         public void printSummary() {
             System.out.printf("%-40s | 평균: %6.2f ms | 중앙값: %6.2f ms | P95: %6.2f ms | 샘플: %,d개\n", 
-                    operationName, mean, median, p95, filteredSamples);
+                    operationName, mean / 1_000_000, median / 1_000_000, p95 / 1_000_000, filteredSamples);
         }
         
         /**
@@ -158,11 +158,12 @@ public class StatisticsCalculator {
          * 전체 성능 등급 평가
          */
         private String getPerformanceGrade() {
-            if (mean < 5) return "A+ (매우 빠름)";
-            if (mean < 15) return "A (빠름)";
-            if (mean < 30) return "B+ (양호)";
-            if (mean < 50) return "B (보통)";
-            if (mean < 100) return "C (느림)";
+            double meanMs = mean / 1_000_000;
+            if (meanMs < 5) return "A+ (매우 빠름)";
+            if (meanMs < 15) return "A (빠름)";
+            if (meanMs < 30) return "B+ (양호)";
+            if (meanMs < 50) return "B (보통)";
+            if (meanMs < 100) return "C (느림)";
             return "D (매우 느림)";
         }
     }
@@ -193,11 +194,11 @@ public class StatisticsCalculator {
             System.out.println("-".repeat(80));
             
             System.out.printf("평균 실행 시간: %.2f ms → %.2f ms (%.2fx 개선)\n", 
-                    baselineStats.getMean(), improvedStats.getMean(), meanImprovementRatio);
+                    baselineStats.getMean() / 1_000_000, improvedStats.getMean() / 1_000_000, meanImprovementRatio);
             System.out.printf("중앙값: %.2f ms → %.2f ms (%.2fx 개선)\n", 
-                    baselineStats.getMedian(), improvedStats.getMedian(), medianImprovementRatio);
+                    baselineStats.getMedian() / 1_000_000, improvedStats.getMedian() / 1_000_000, medianImprovementRatio);
             System.out.printf("95퍼센타일: %.2f ms → %.2f ms (%.2fx 개선)\n", 
-                    baselineStats.getP95(), improvedStats.getP95(), p95ImprovementRatio);
+                    baselineStats.getP95() / 1_000_000, improvedStats.getP95() / 1_000_000, p95ImprovementRatio);
             
             System.out.printf("\n종합 개선 효과: %s\n", getOverallImprovementRating());
             System.out.println("=".repeat(80));

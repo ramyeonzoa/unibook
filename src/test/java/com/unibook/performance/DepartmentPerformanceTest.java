@@ -113,7 +113,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
             }
             
             long endTime = System.nanoTime();
-            long executionTime = (endTime - startTime) / 1_000_000; // ms 변환
+            long executionTime = endTime - startTime; // 나노초 그대로
             
             executionTimes.add(executionTime);
             
@@ -184,7 +184,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
             }
             
             long endTime = System.nanoTime();
-            coldStartTimes.add((endTime - startTime) / 1_000_000);
+            coldStartTimes.add(endTime - startTime); // 나노초 그대로 저장
         }
         
         // 연속 조회 (웜 스타트) 측정 - 캐시 있는 상태에서의 연속 조회
@@ -227,7 +227,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
             }
             
             long endTime = System.nanoTime();
-            warmStartTimes.add((endTime - startTime) / 1_000_000);
+            warmStartTimes.add(endTime - startTime); // 나노초 그대로 저장
         }
         
         // 통계 계산
@@ -311,7 +311,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
                 }
                 
                 long endTime = System.nanoTime();
-                long executionTime = (endTime - startTime) / 1_000_000;
+                long executionTime = endTime - startTime; // 나노초
                 
                 executionTimes.add(executionTime);
                 allExecutionTimes.add(executionTime);
@@ -428,7 +428,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
                         }
                         
                         long endTime = System.nanoTime();
-                        allExecutionTimes.add((endTime - startTime) / 1_000_000);
+                        allExecutionTimes.add(endTime - startTime); // 나노초
                         
                         // 실제 사용자 행동 패턴 시뮬레이션 (빠른 연속 클릭 방지)
                         if (i % 5 == 0) {
@@ -571,7 +571,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
             }
             
             long endTime = System.nanoTime();
-            signupScenarioTimes.add((endTime - startTime) / 1_000_000);
+            signupScenarioTimes.add(endTime - startTime); // 나노초
         }
         
         // 시나리오 2: 게시글 작성 (사용자 정보 기반 학과 조회 + 교수 정보)
@@ -618,7 +618,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
             }
             
             long endTime = System.nanoTime();
-            postCreateScenarioTimes.add((endTime - startTime) / 1_000_000);
+            postCreateScenarioTimes.add(endTime - startTime); // 나노초
         }
         
         // 시나리오 3: 프로필 수정 (학교/학과 변경 - 복잡한 탐색)
@@ -680,7 +680,7 @@ class DepartmentPerformanceTest extends PerformanceTestBase {
             }
             
             long endTime = System.nanoTime();
-            profileEditScenarioTimes.add((endTime - startTime) / 1_000_000);
+            profileEditScenarioTimes.add(endTime - startTime); // 나노초
         }
         
         // 결과 분석
