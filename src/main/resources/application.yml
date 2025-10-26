@@ -62,7 +62,7 @@ server:
 
 logging:
   level:
-    com.unibook: WARN # INFO  # 기본값은 INFO
+    com.unibook: DEBUG # WARN # INFO  # 기본값은 INFO
     org.springframework.web: WARN # INFO
 
 # Application specific settings
@@ -93,3 +93,12 @@ naver:
     client-id: ${NAVER_CLIENT_ID:your-client-id}  # application-local.yml에 실제 값 설정
     client-secret: ${NAVER_CLIENT_SECRET:your-client-secret}  # application-local.yml에 실제 값 설정
     book-search-url: https://openapi.naver.com/v1/search/book.json
+
+# OpenAI API configuration (RAG Chatbot)
+openai:
+  api:
+    key: ${OPENAI_API_KEY:your-openai-api-key}  # application-local.yml에 실제 값 설정
+    model: gpt-5-nano  # GPT-5-nano 모델 사용
+    embedding-model: text-embedding-3-small  # 임베딩 모델
+    max-tokens: 4096  # 최대 응답 길이
+    timeout: 30  # API 타임아웃 (초)
