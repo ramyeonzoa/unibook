@@ -102,3 +102,10 @@ openai:
     embedding-model: text-embedding-3-small  # 임베딩 모델
     max-tokens: 4096  # 최대 응답 길이
     timeout: 30  # API 타임아웃 (초)
+
+# Chatbot configuration
+chatbot:
+  embedding:
+    cache:
+      enabled: true  # 임베딩 캐시 활성화
+      file-path: data/embeddings-cache.json  # 캐시 파일 경로

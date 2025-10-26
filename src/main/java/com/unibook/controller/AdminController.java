@@ -4,9 +4,11 @@ import com.unibook.domain.entity.Post;
 import com.unibook.domain.entity.Report;
 import com.unibook.domain.entity.User;
 import com.unibook.domain.dto.PostResponseDto;
+import com.unibook.domain.dto.EmbeddingMetricsSummary;
 import com.unibook.service.PostService;
 import com.unibook.service.ReportService;
 import com.unibook.service.UserService;
+import com.unibook.service.EmbeddingMetricsLogger;
 import com.unibook.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +33,11 @@ import java.util.Map;
 @PreAuthorize("hasRole('ADMIN')")
 @RequiredArgsConstructor
 public class AdminController {
-    
+
     private final ReportService reportService;
     private final UserService userService;
-private final PostService postService;
+    private final PostService postService;
+    private final EmbeddingMetricsLogger metricsLogger;
     
     /**
      * 관리자 대시보드 메인
@@ -244,5 +247,49 @@ private final PostService postService;
     public String cacheStats() {
         return "admin/cache-stats";
     }
-    
+
+    /**
+     * 임베딩 메트릭 요약 통계 조회 (API)
+     */
+    @GetMapping("/api/embedding-metrics/summary")
+    @ResponseBody
+    public ResponseEntity<EmbeddingMetricsSummary> getEmbeddingMetricsSummary() {
+        try {
+            EmbeddingMetricsSummary summary = metricsLogger.getSummary();
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            log.error("임베딩 메트릭 요약 조회 실패", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 임베딩 메트릭 CSV 다운로드 (API)
+     */
+    @GetMapping("/api/embedding-metrics/export")
+    public ResponseEntity<?> exportEmbeddingMetrics() {
+        try {
+            java.nio.file.Path csvPath = java.nio.file.Paths.get("data/embedding-metrics.csv");
+
+            if (!java.nio.file.Files.exists(csvPath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            org.springframework.core.io.Resource resource =
+                new org.springframework.core.io.FileSystemResource(csvPath);
+
+            return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                    "attachment; filename=embedding-metrics.csv")
+                .header(org.springframework.http.HttpHeaders.CONTENT_TYPE,
+                    "text/csv; charset=UTF-8")
+                .body(resource);
+
+        } catch (Exception e) {
+            log.error("임베딩 메트릭 CSV 다운로드 실패", e);
+            return ResponseEntity.internalServerError()
+                .body(Map.of("error", "CSV 다운로드 실패: " + e.getMessage()));
+        }
+    }
+
 }
