@@ -54,6 +54,12 @@ public class EvaluationResult {
   private double keywordCoverage;
 
   /**
+   * MRR (Mean Reciprocal Rank) - 정답 FAQ의 평균 순위 역수 (0.0 ~ 1.0)
+   * 1.0에 가까울수록 정답이 상위에 위치
+   */
+  private double mrr;
+
+  /**
    * 난이도별 정확도
    */
   private Map<String, Double> accuracyByDifficulty;

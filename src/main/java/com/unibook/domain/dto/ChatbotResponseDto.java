@@ -53,6 +53,7 @@ public class ChatbotResponseDto {
   @NoArgsConstructor
   @AllArgsConstructor
   public static class SourceInfo {
+    private String faqId;    // FAQ ID (MRR 계산용)
     private String category;
     private String question;
     private String anchor;  // 관련 페이지 링크 (예: /faq#serviceAccordion)

@@ -79,7 +79,7 @@ public class ChatbotService {
 
     try {
       // Step 1: 유사한 FAQ 검색 (상위 10개 후보 가져오기)
-      double similarityThreshold = 0.6; // 유사도 임계값 조정 (김치찌개 차단 & 정상 질문 통과)
+      double similarityThreshold = 0.625; // 유사도 임계값 조정 (RAG 강화 후 재조정)
       List<EmbeddingMatch<TextSegment>> relevantDocs =
           embeddingService.findRelevant(userQuestion, 10, 0.0)
               .stream()
@@ -201,6 +201,7 @@ public class ChatbotService {
           }
 
           return ChatbotResponseDto.SourceInfo.builder()
+              .faqId(match.embedded().metadata().getString("id"))
               .category(match.embedded().metadata().getString("category"))
               .question(match.embedded().metadata().getString("question"))
               .anchor(firstAnchor)

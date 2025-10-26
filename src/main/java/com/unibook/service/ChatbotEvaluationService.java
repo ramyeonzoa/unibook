@@ -51,6 +51,13 @@ public class ChatbotEvaluationService {
    * 챗봇 평가 실행
    */
   public EvaluationResult evaluate() throws IOException {
+    return evaluate(null);
+  }
+
+  /**
+   * 챗봇 평가 실행 (description 포함)
+   */
+  public EvaluationResult evaluate(String description) throws IOException {
     log.info("챗봇 평가 시작");
 
     List<EvaluationQuestion> dataset = loadEvaluationDataset();
@@ -61,6 +68,8 @@ public class ChatbotEvaluationService {
     int totalKeywords = 0;
     int foundKeywords = 0;
     long totalResponseTime = 0;
+    double totalReciprocalRank = 0.0; // MRR 계산용
+    int mrrQuestionCount = 0; // MRR 계산 대상 질문 수
 
     // 난이도별 통계
     Map<String, Integer> correctByDifficulty = new HashMap<>();
@@ -103,6 +112,34 @@ public class ChatbotEvaluationService {
           }
         }
 
+        // MRR 계산 (shouldMatch가 true인 질문에 대해서만)
+        if (question.isShouldMatch() && question.getRelevantFaqIds() != null && !question.getRelevantFaqIds().isEmpty()) {
+          mrrQuestionCount++;
+
+          // 응답에서 반환된 FAQ ID 목록 추출
+          if (response.getSources() != null && !response.getSources().isEmpty()) {
+            List<String> returnedFaqIds = response.getSources().stream()
+              .map(ChatbotResponseDto.SourceInfo::getFaqId)
+              .toList();
+
+            // 정답 FAQ가 몇 번째에 있는지 찾기
+            int rank = -1;
+            for (int i = 0; i < returnedFaqIds.size(); i++) {
+              if (question.getRelevantFaqIds().contains(returnedFaqIds.get(i))) {
+                rank = i + 1; // 1-based index
+                break;
+              }
+            }
+
+            // Reciprocal Rank 계산 (정답을 찾은 경우)
+            if (rank > 0) {
+              totalReciprocalRank += 1.0 / rank;
+            }
+            // 정답을 못 찾은 경우 0 (이미 totalReciprocalRank에 더하지 않음)
+          }
+          // 매칭 결과가 없으면 0 (이미 totalReciprocalRank에 더하지 않음)
+        }
+
         // 개별 결과 저장
         EvaluationResult.QuestionResult qResult = EvaluationResult.QuestionResult.builder()
           .questionId(question.getId())
@@ -141,22 +178,26 @@ public class ChatbotEvaluationService {
       accuracyByDifficulty.put(difficulty, (double) correct / total);
     }
 
+    // MRR 계산
+    double mrr = mrrQuestionCount > 0 ? totalReciprocalRank / mrrQuestionCount : 0.0;
+
     // 전체 결과 생성
     EvaluationResult result = EvaluationResult.builder()
       .timestamp(LocalDateTime.now())
       .faqCount(embeddingService.getFaqCount())
-      .threshold(0.6)
+      .threshold(0.625)
       .totalQuestions(dataset.size())
       .correctAnswers(correctCount)
       .accuracy((double) correctCount / dataset.size())
       .keywordCoverage(totalKeywords > 0 ? (double) foundKeywords / totalKeywords : 0.0)
+      .mrr(mrr)
       .accuracyByDifficulty(accuracyByDifficulty)
       .avgResponseTimeMs((double) totalResponseTime / dataset.size())
       .questionResults(questionResults)
       .build();
 
     // 결과 저장
-    saveResult(result);
+    saveResult(result, description);
 
     log.info("═══════════════════════════════════════════");
     log.info("📊 챗봇 평가 결과");
@@ -165,6 +206,7 @@ public class ChatbotEvaluationService {
     log.info("  정답: {}개", result.getCorrectAnswers());
     log.info("  정확도: {}", String.format("%.1f%%", result.getAccuracy() * 100));
     log.info("  키워드 커버리지: {}", String.format("%.1f%%", result.getKeywordCoverage() * 100));
+    log.info("  MRR (Mean Reciprocal Rank): {}", String.format("%.4f", result.getMrr()));
     log.info("  평균 응답 시간: {} ms", String.format("%.0f", result.getAvgResponseTimeMs()));
     log.info("  난이도별 정확도:");
     accuracyByDifficulty.forEach((difficulty, accuracy) ->
@@ -178,7 +220,7 @@ public class ChatbotEvaluationService {
   /**
    * 평가 결과 저장
    */
-  private void saveResult(EvaluationResult result) {
+  private void saveResult(EvaluationResult result, String description) {
     try {
       // data 디렉터리 확인
       Path dataDir = Paths.get("data");
@@ -198,7 +240,7 @@ public class ChatbotEvaluationService {
       log.info("평가 결과 저장 완료: {}", jsonPath.toAbsolutePath());
 
       // CSV 요약본도 저장
-      saveSummaryToCsv(result);
+      saveSummaryToCsv(result, description);
 
     } catch (Exception e) {
       log.error("평가 결과 저장 실패", e);
@@ -208,17 +250,17 @@ public class ChatbotEvaluationService {
   /**
    * CSV 요약 저장
    */
-  private void saveSummaryToCsv(EvaluationResult result) throws IOException {
+  private void saveSummaryToCsv(EvaluationResult result, String description) throws IOException {
     Path csvPath = Paths.get("data/evaluation-summary.csv");
 
     // 헤더 생성 (파일이 없을 경우)
     if (!Files.exists(csvPath)) {
-      String header = "timestamp,faq_count,threshold,total_questions,correct_answers,accuracy,keyword_coverage,avg_response_ms\n";
+      String header = "timestamp,faq_count,threshold,total_questions,correct_answers,accuracy,keyword_coverage,mrr,avg_response_ms,description\n";
       Files.writeString(csvPath, header);
     }
 
     // 데이터 추가
-    String line = String.format("%s,%d,%.2f,%d,%d,%.4f,%.4f,%.2f\n",
+    String line = String.format("%s,%d,%.2f,%d,%d,%.4f,%.4f,%.4f,%.2f,%s\n",
       result.getTimestamp().toString(),
       result.getFaqCount(),
       result.getThreshold(),
@@ -226,7 +268,9 @@ public class ChatbotEvaluationService {
       result.getCorrectAnswers(),
       result.getAccuracy(),
       result.getKeywordCoverage(),
-      result.getAvgResponseTimeMs()
+      result.getMrr(),
+      result.getAvgResponseTimeMs(),
+      description != null ? description : ""
     );
 
     Files.writeString(csvPath, line, StandardOpenOption.APPEND);
