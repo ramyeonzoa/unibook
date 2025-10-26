@@ -298,7 +298,8 @@ public class EmbeddingService {
         // 메타데이터 재구성
         Metadata metadata = Metadata.from("id", cached.getId())
           .put("category", cached.getMetadata().getCategory())
-          .put("question", cached.getMetadata().getQuestion());
+          .put("question", cached.getMetadata().getQuestion())
+          .put("answer", cached.getMetadata().getAnswer());
 
         if (cached.getMetadata().getAnchors() != null) {
           metadata.put("anchors", cached.getMetadata().getAnchors());
@@ -343,6 +344,7 @@ public class EmbeddingService {
         EmbeddingCacheDto.Metadata metadata = EmbeddingCacheDto.Metadata.builder()
           .category(faq.getCategory())
           .question(faq.getQuestion())
+          .answer(faq.getAnswer())
           .anchors(faq.getAnchors() != null ? String.join(",", faq.getAnchors()) : null)
           .build();
 
@@ -444,5 +446,12 @@ public class EmbeddingService {
         embeddingModelName,
         embeddingCount
     );
+  }
+
+  /**
+   * FAQ 개수 조회 (평가용)
+   */
+  public int getFaqCount() {
+    return embeddingCount;
   }
 }

@@ -5,10 +5,12 @@ import com.unibook.domain.entity.Report;
 import com.unibook.domain.entity.User;
 import com.unibook.domain.dto.PostResponseDto;
 import com.unibook.domain.dto.EmbeddingMetricsSummary;
+import com.unibook.domain.dto.EvaluationResult;
 import com.unibook.service.PostService;
 import com.unibook.service.ReportService;
 import com.unibook.service.UserService;
 import com.unibook.service.EmbeddingMetricsLogger;
+import com.unibook.service.ChatbotEvaluationService;
 import com.unibook.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +40,7 @@ public class AdminController {
     private final UserService userService;
     private final PostService postService;
     private final EmbeddingMetricsLogger metricsLogger;
+    private final ChatbotEvaluationService chatbotEvaluationService;
     
     /**
      * 관리자 대시보드 메인
@@ -289,6 +292,25 @@ public class AdminController {
             log.error("임베딩 메트릭 CSV 다운로드 실패", e);
             return ResponseEntity.internalServerError()
                 .body(Map.of("error", "CSV 다운로드 실패: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 챗봇 평가 실행 (API)
+     */
+    @GetMapping("/api/chatbot/evaluate")
+    @ResponseBody
+    public ResponseEntity<EvaluationResult> evaluateChatbot() {
+        try {
+            log.info("챗봇 평가 시작 (관리자 요청)");
+            EvaluationResult result = chatbotEvaluationService.evaluate();
+            log.info("챗봇 평가 완료: 정확도={}%, 키워드 커버리지={}%",
+                String.format("%.1f", result.getAccuracy() * 100),
+                String.format("%.1f", result.getKeywordCoverage() * 100));
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("챗봇 평가 실패", e);
+            return ResponseEntity.internalServerError().build();
         }
     }
 

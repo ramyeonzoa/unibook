@@ -78,11 +78,27 @@ public class ChatbotService {
     log.info("사용자 질문: {}", userQuestion);
 
     try {
-      // Step 1: 유사한 FAQ 검색 (상위 3개, 유사도 0.5 이상)
+      // Step 1: 유사한 FAQ 검색 (상위 10개 후보 가져오기)
+      double similarityThreshold = 0.6; // 유사도 임계값 조정 (김치찌개 차단 & 정상 질문 통과)
       List<EmbeddingMatch<TextSegment>> relevantDocs =
-          embeddingService.findRelevant(userQuestion, 3, 0.5);
+          embeddingService.findRelevant(userQuestion, 10, 0.0)
+              .stream()
+              .filter(match -> match.score() >= similarityThreshold)
+              .limit(3)
+              .collect(Collectors.toList());
 
       log.info("검색된 FAQ 개수: {}", relevantDocs.size());
+
+      // 유사도 점수 로깅 (디버깅/튜닝용)
+      for (int i = 0; i < relevantDocs.size(); i++) {
+        EmbeddingMatch<TextSegment> match = relevantDocs.get(i);
+        String faqId = match.embedded().metadata().getString("id");
+        String question = match.embedded().metadata().getString("question");
+        double score = match.score();
+        log.info("  [{}] FAQ: {} | 질문: {} | 유사도: {}",
+          i + 1, faqId, question.substring(0, Math.min(30, question.length())),
+          String.format("%.4f", score));
+      }
 
       // Step 2: 검색 결과 없으면 기본 응답
       if (relevantDocs.isEmpty()) {
@@ -159,6 +175,7 @@ public class ChatbotService {
         - 친절하고 자연스러운 말투로 답변하세요
         - FAQ 정보에 있는 내용만 답변하세요
         - FAQ 정보에 없는 내용은 추측하지 마세요
+        - 교재 거래와 무관한 질문(요리, 날씨, 일반 상식 등)은 정중히 거절하세요
         - 필요한 경우 관련 페이지 링크를 안내하세요 (예: /faq, /guide)
         - 답변은 2-3문장으로 간결하게 작성하세요
         """, context, userQuestion);

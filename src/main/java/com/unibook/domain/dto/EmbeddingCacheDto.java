@@ -100,6 +100,11 @@ public class EmbeddingCacheDto {
     private String question;
 
     /**
+     * 답변
+     */
+    private String answer;
+
+    /**
      * 앵커 링크
      */
     private String anchors;

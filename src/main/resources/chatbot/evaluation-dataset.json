@@ -1,0 +1,202 @@
+[
+  {
+    "id": "eval-001",
+    "question": "Unibook이 뭔가요?",
+    "category": "플랫폼 소개",
+    "difficulty": "easy",
+    "expectedAnswer": "교재 거래 플랫폼",
+    "mustIncludeKeywords": ["교재", "거래", "플랫폼"],
+    "relevantFaqIds": ["platform.what_is_unibook", "platform.why_unibook"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-002",
+    "question": "회원가입은 어떻게 하나요?",
+    "category": "회원가입",
+    "difficulty": "easy",
+    "expectedAnswer": "이메일 인증",
+    "mustIncludeKeywords": ["이메일", "인증"],
+    "relevantFaqIds": ["guide.signup_verification"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-003",
+    "question": "책 검색은 어떻게 해요?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "검색창 이용",
+    "mustIncludeKeywords": ["검색"],
+    "relevantFaqIds": ["guide.search_basics"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-004",
+    "question": "책을 팔고 싶어요",
+    "category": "판매",
+    "difficulty": "medium",
+    "expectedAnswer": "게시글 작성",
+    "mustIncludeKeywords": ["게시글", "작성"],
+    "relevantFaqIds": ["guide.create_post"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-005",
+    "question": "찜 기능이 뭐예요?",
+    "category": "기능",
+    "difficulty": "easy",
+    "expectedAnswer": "찜 설명",
+    "mustIncludeKeywords": ["찜", "저장"],
+    "relevantFaqIds": ["faq.wishlist", "guide.wishlist"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-006",
+    "question": "채팅은 어떻게 해요?",
+    "category": "채팅",
+    "difficulty": "easy",
+    "expectedAnswer": "실시간 채팅",
+    "mustIncludeKeywords": ["채팅"],
+    "relevantFaqIds": ["guide.chat"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-007",
+    "question": "안전하게 거래하는 방법은?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "안전거래 팁",
+    "mustIncludeKeywords": ["안전", "거래"],
+    "relevantFaqIds": ["faq.safety"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-008",
+    "question": "비밀번호를 잊어버렸어요",
+    "category": "계정",
+    "difficulty": "easy",
+    "expectedAnswer": "비밀번호 재설정",
+    "mustIncludeKeywords": ["비밀번호"],
+    "relevantFaqIds": ["guide.password_reset"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-009",
+    "question": "학과별로 책을 찾을 수 있나요?",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "학과 필터",
+    "mustIncludeKeywords": ["학과", "필터"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-010",
+    "question": "교수님 이름으로 검색되나요?",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "교수명 검색 가능",
+    "mustIncludeKeywords": ["교수"],
+    "relevantFaqIds": ["guide.search_basics"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-011",
+    "question": "김치찌개 레시피 알려주세요",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-012",
+    "question": "오늘 날씨 어때요?",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-013",
+    "question": "파이썬 코딩 배우고 싶어요",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-014",
+    "question": "게시글 수정은 어떻게 하나요?",
+    "category": "게시글 관리",
+    "difficulty": "medium",
+    "expectedAnswer": "게시글 수정 방법",
+    "mustIncludeKeywords": ["수정"],
+    "relevantFaqIds": ["guide.edit_post"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-015",
+    "question": "거래 완료 처리는요?",
+    "category": "거래",
+    "difficulty": "medium",
+    "expectedAnswer": "상태 변경",
+    "mustIncludeKeywords": ["거래완료", "상태"],
+    "relevantFaqIds": ["guide.transaction_status"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-016",
+    "question": "컴퓨터공학과 전공책 찾아요",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "학과 필터 사용",
+    "mustIncludeKeywords": ["학과", "검색"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-017",
+    "question": "책값 얼마에 팔면 좋을까요?",
+    "category": "가격",
+    "difficulty": "hard",
+    "expectedAnswer": "가격 시세 참고",
+    "mustIncludeKeywords": ["가격"],
+    "relevantFaqIds": ["faq.pricing"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-018",
+    "question": "사진은 몇 장까지 올릴 수 있어요?",
+    "category": "게시글 작성",
+    "difficulty": "medium",
+    "expectedAnswer": "최대 5장",
+    "mustIncludeKeywords": ["사진", "이미지"],
+    "relevantFaqIds": ["guide.create_post"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-019",
+    "question": "신고 기능은 어떻게 써요?",
+    "category": "안전",
+    "difficulty": "medium",
+    "expectedAnswer": "신고 방법",
+    "mustIncludeKeywords": ["신고"],
+    "relevantFaqIds": ["faq.report"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-020",
+    "question": "알림은 어디서 확인하나요?",
+    "category": "알림",
+    "difficulty": "easy",
+    "expectedAnswer": "알림 기능",
+    "mustIncludeKeywords": ["알림"],
+    "relevantFaqIds": ["guide.notifications"],
+    "shouldMatch": true
+  }
+]
