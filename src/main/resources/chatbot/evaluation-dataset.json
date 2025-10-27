@@ -164,9 +164,9 @@
     "question": "책값 얼마에 팔면 좋을까요?",
     "category": "가격",
     "difficulty": "hard",
-    "expectedAnswer": "가격 입력",
-    "mustIncludeKeywords": ["가격"],
-    "relevantFaqIds": ["guide.post_creation"],
+    "expectedAnswer": "시세 참고 방법",
+    "mustIncludeKeywords": ["검색", "가격"],
+    "relevantFaqIds": ["guide.search_filters"],
     "shouldMatch": true
   },
   {
@@ -514,9 +514,9 @@
     "question": "족보 거래도 되나요?",
     "category": "판매",
     "difficulty": "easy",
-    "expectedAnswer": "족보/기출 카테고리",
-    "mustIncludeKeywords": ["족보"],
-    "relevantFaqIds": ["guide.post_creation"],
+    "expectedAnswer": "거래 가능 품목 안내",
+    "mustIncludeKeywords": ["족보", "거래"],
+    "relevantFaqIds": ["faq.tradeable_items"],
     "shouldMatch": true
   },
   {

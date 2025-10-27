@@ -1155,5 +1155,34 @@
       "guide.safe_meetup",
       "faq.trade_methods"
     ]
+  },
+  {
+    "id": "faq.tradeable_items",
+    "category": "FAQ",
+    "question": "어떤 것들을 거래할 수 있나요?",
+    "answer": "Unibook에서는 전공교재, 자격증 교재, 필기노트, 족보/기출, 기타 학습 자료를 거래할 수 있습니다. 판매글 작성 시 상품 유형을 선택할 수 있으며, 대학 생활에 필요한 다양한 학습 자료를 자유롭게 사고팔 수 있습니다.",
+    "source_path": "src/main/resources/templates/posts/form.html",
+    "anchors": [
+      "/posts/new"
+    ],
+    "keywords": [
+      "거래",
+      "판매",
+      "상품",
+      "족보",
+      "필기노트",
+      "교재"
+    ],
+    "variations": [
+      "족보 거래도 되나요",
+      "필기노트 팔 수 있나요",
+      "무엇을 팔 수 있나요",
+      "어떤 상품을 올릴 수 있나요",
+      "판매 가능한 상품"
+    ],
+    "related_questions": [
+      "guide.post_creation",
+      "guide.quick_start"
+    ]
   }
 ]
