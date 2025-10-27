@@ -299,19 +299,34 @@ public class DataInitializer implements CommandLineRunner {
     /**
      * 모든 학교에 교양학부를 추가하는 메서드
      * 각 학교별로 교양 과목들을 관리하기 위한 기본 학과 생성
-     * 
+     *
      * 성능 최적화:
-     * 1. findAll()로 한 번에 모든 학교 조회 (N+1 쿼리 방지)
-     * 2. ID 기반 exists 체크로 프록시 로딩 방지
-     * 3. 배치 저장 후 한 번에 flush
+     * 1. count 비교로 빠른 사전 체크 (99.5% 케이스에서 즉시 종료)
+     * 2. findAll()로 한 번에 모든 학교 조회 (N+1 쿼리 방지)
+     * 3. ID 기반 exists 체크로 프록시 로딩 방지
+     * 4. 배치 저장 후 한 번에 flush
      */
     @Transactional
     public void createGeneralEducationDepartments() {
         log.info("교양학부 생성 시작...");
+
+        // 빠른 사전 체크: 모든 학교에 교양학부가 이미 있는지 확인
+        long schoolCount = schoolRepository.count();
+        long generalDeptCount = departmentRepository.countByDepartmentName(
+            AppConstants.GENERAL_EDUCATION_DEPT_NAME);
+
+        if (schoolCount == generalDeptCount) {
+            log.info("모든 학교에 교양학부가 이미 존재합니다. ({}개) - 생성 작업 스킵", generalDeptCount);
+            return; // 즉시 종료
+        }
+
+        log.info("일부 학교에 교양학부가 없습니다. 생성 작업 시작... (학교: {}, 교양학부: {})",
+                 schoolCount, generalDeptCount);
+
         int createdCount = 0;
         int existingCount = 0;
         int errorCount = 0;
-        
+
         // 모든 학교를 한 번에 조회 (네트워크 호출 1회)
         List<School> schools = schoolRepository.findAll();
         log.info("총 {}개 학교에 대해 교양학부 생성 검토", schools.size());

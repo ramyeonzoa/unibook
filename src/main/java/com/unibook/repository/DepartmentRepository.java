@@ -56,7 +56,10 @@ public interface DepartmentRepository extends JpaRepository<Department, Long> {
     
     // 학교 ID와 학과명으로 학과 조회 (교양학부 조회 등에 사용)
     Optional<Department> findBySchool_SchoolIdAndDepartmentName(Long schoolId, String departmentName);
-    
+
     // 학교별 학과 수 조회 (벤치마크용)
     long countBySchool_SchoolId(Long schoolId);
+
+    // 특정 학과명의 전체 개수 조회 (교양학부 초기화 최적화용)
+    long countByDepartmentName(String departmentName);
 }

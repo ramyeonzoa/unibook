@@ -33,3 +33,5 @@ timestamp,cache_hit,loading_time_ms,api_calls,total_tokens,estimated_cost_usd,em
 2025-10-27T19:11:10.994851200,true,174,0,0,0.00000000,44,text-embedding-3-small
 2025-10-28T01:09:51.419700100,true,196,0,0,0.00000000,44,text-embedding-3-small
 2025-10-28T01:44:17.579003400,false,93008,45,1996,0.00003992,45,text-embedding-3-small
+2025-10-28T02:04:44.112836300,true,148,0,0,0.00000000,45,text-embedding-3-small
+2025-10-28T02:17:10.554392400,true,193,0,0,0.00000000,45,text-embedding-3-small
