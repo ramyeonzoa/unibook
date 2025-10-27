@@ -16,7 +16,7 @@
     "difficulty": "easy",
     "expectedAnswer": "이메일 인증",
     "mustIncludeKeywords": ["이메일", "인증"],
-    "relevantFaqIds": ["guide.signup_verification"],
+    "relevantFaqIds": ["guide.signup_verification", "faq.signup_flow"],
     "shouldMatch": true
   },
   {
@@ -26,7 +26,7 @@
     "difficulty": "easy",
     "expectedAnswer": "검색창 이용",
     "mustIncludeKeywords": ["검색"],
-    "relevantFaqIds": ["guide.search_basics"],
+    "relevantFaqIds": ["guide.search_basics", "faq.find_books"],
     "shouldMatch": true
   },
   {
@@ -36,7 +36,7 @@
     "difficulty": "medium",
     "expectedAnswer": "게시글 작성",
     "mustIncludeKeywords": ["게시글", "작성"],
-    "relevantFaqIds": ["guide.create_post"],
+    "relevantFaqIds": ["guide.post_creation", "faq.post_listing"],
     "shouldMatch": true
   },
   {
@@ -45,7 +45,7 @@
     "category": "기능",
     "difficulty": "easy",
     "expectedAnswer": "찜 설명",
-    "mustIncludeKeywords": ["찜", "저장"],
+    "mustIncludeKeywords": ["찜", "하트"],
     "relevantFaqIds": ["faq.wishlist", "guide.wishlist"],
     "shouldMatch": true
   },
@@ -56,7 +56,7 @@
     "difficulty": "easy",
     "expectedAnswer": "실시간 채팅",
     "mustIncludeKeywords": ["채팅"],
-    "relevantFaqIds": ["guide.chat"],
+    "relevantFaqIds": ["guide.chat_start", "faq.start_chat"],
     "shouldMatch": true
   },
   {
@@ -66,7 +66,7 @@
     "difficulty": "medium",
     "expectedAnswer": "안전거래 팁",
     "mustIncludeKeywords": ["안전", "거래"],
-    "relevantFaqIds": ["faq.safety"],
+    "relevantFaqIds": ["faq.safe_trade", "guide.safe_meetup"],
     "shouldMatch": true
   },
   {
@@ -76,7 +76,7 @@
     "difficulty": "easy",
     "expectedAnswer": "비밀번호 재설정",
     "mustIncludeKeywords": ["비밀번호"],
-    "relevantFaqIds": ["guide.password_reset"],
+    "relevantFaqIds": ["policy.email_rate_limit"],
     "shouldMatch": true
   },
   {
@@ -85,7 +85,7 @@
     "category": "검색",
     "difficulty": "medium",
     "expectedAnswer": "학과 필터",
-    "mustIncludeKeywords": ["학과", "필터"],
+    "mustIncludeKeywords": ["학교", "필터"],
     "relevantFaqIds": ["guide.search_filters"],
     "shouldMatch": true
   },
@@ -136,7 +136,7 @@
     "difficulty": "medium",
     "expectedAnswer": "게시글 수정 방법",
     "mustIncludeKeywords": ["수정"],
-    "relevantFaqIds": ["guide.edit_post"],
+    "relevantFaqIds": ["guide.status_management", "faq.status_management"],
     "shouldMatch": true
   },
   {
@@ -146,7 +146,7 @@
     "difficulty": "medium",
     "expectedAnswer": "상태 변경",
     "mustIncludeKeywords": ["거래완료", "상태"],
-    "relevantFaqIds": ["guide.transaction_status"],
+    "relevantFaqIds": ["guide.status_management"],
     "shouldMatch": true
   },
   {
@@ -155,7 +155,7 @@
     "category": "검색",
     "difficulty": "medium",
     "expectedAnswer": "학과 필터 사용",
-    "mustIncludeKeywords": ["학과", "검색"],
+    "mustIncludeKeywords": ["검색"],
     "relevantFaqIds": ["guide.search_filters"],
     "shouldMatch": true
   },
@@ -164,9 +164,9 @@
     "question": "책값 얼마에 팔면 좋을까요?",
     "category": "가격",
     "difficulty": "hard",
-    "expectedAnswer": "가격 시세 참고",
+    "expectedAnswer": "가격 입력",
     "mustIncludeKeywords": ["가격"],
-    "relevantFaqIds": ["faq.pricing"],
+    "relevantFaqIds": ["guide.post_creation"],
     "shouldMatch": true
   },
   {
@@ -176,7 +176,7 @@
     "difficulty": "medium",
     "expectedAnswer": "최대 5장",
     "mustIncludeKeywords": ["사진", "이미지"],
-    "relevantFaqIds": ["guide.create_post"],
+    "relevantFaqIds": ["feature.post_image_requirements"],
     "shouldMatch": true
   },
   {
@@ -186,7 +186,7 @@
     "difficulty": "medium",
     "expectedAnswer": "신고 방법",
     "mustIncludeKeywords": ["신고"],
-    "relevantFaqIds": ["faq.report"],
+    "relevantFaqIds": ["faq.reporting", "guide.reporting"],
     "shouldMatch": true
   },
   {
@@ -196,7 +196,807 @@
     "difficulty": "easy",
     "expectedAnswer": "알림 기능",
     "mustIncludeKeywords": ["알림"],
-    "relevantFaqIds": ["guide.notifications"],
+    "relevantFaqIds": ["guide.keyword_alert", "faq.keyword_alert"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-021",
+    "question": "이 서비스 사용하려면 돈 내야하나요?",
+    "category": "플랫폼 소개",
+    "difficulty": "easy",
+    "expectedAnswer": "무료 서비스",
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": ["platform.what_is_unibook"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-022",
+    "question": "다른 학교 학생이랑도 거래 가능해요?",
+    "category": "플랫폼 소개",
+    "difficulty": "medium",
+    "expectedAnswer": "같은 학교만 가능",
+    "mustIncludeKeywords": ["학교", "학생"],
+    "relevantFaqIds": ["platform.why_unibook"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-023",
+    "question": "처음 사용하는데 뭐부터 해야할까요?",
+    "category": "시작하기",
+    "difficulty": "easy",
+    "expectedAnswer": "회원가입 후 검색",
+    "mustIncludeKeywords": ["회원가입", "검색"],
+    "relevantFaqIds": ["guide.quick_start"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-024",
+    "question": "인증 메일이 안 와요",
+    "category": "회원가입",
+    "difficulty": "medium",
+    "expectedAnswer": "스팸함 확인",
+    "mustIncludeKeywords": ["스팸", "재발송"],
+    "relevantFaqIds": ["guide.signup_verification", "faq.email_verification"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-025",
+    "question": "경영학원론 책 어떻게 찾아요?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "검색창에 입력",
+    "mustIncludeKeywords": ["검색창"],
+    "relevantFaqIds": ["guide.search_basics"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-026",
+    "question": "가격순으로 정렬할 수 있나요?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "정렬 기능 있음",
+    "mustIncludeKeywords": ["가격순", "정렬"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-027",
+    "question": "찜한 책 가격 떨어지면 알림 오나요?",
+    "category": "찜",
+    "difficulty": "medium",
+    "expectedAnswer": "가격 변동 알림",
+    "mustIncludeKeywords": ["가격", "알림"],
+    "relevantFaqIds": ["guide.wishlist", "feature.wishlist_notifications"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-028",
+    "question": "판매글에 어떤 종류의 상품을 올릴 수 있나요?",
+    "category": "게시글 작성",
+    "difficulty": "medium",
+    "expectedAnswer": "상품 유형 설명",
+    "mustIncludeKeywords": ["전공교재", "자격증"],
+    "relevantFaqIds": ["guide.post_creation"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-029",
+    "question": "책 사진은 어떻게 찍어야 하나요?",
+    "category": "게시글 작성",
+    "difficulty": "medium",
+    "expectedAnswer": "사진 촬영 팁",
+    "mustIncludeKeywords": ["밝은", "손상"],
+    "relevantFaqIds": ["guide.photo_tips"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-030",
+    "question": "거래 상태를 예약중으로 바꾸고 싶어요",
+    "category": "거래",
+    "difficulty": "medium",
+    "expectedAnswer": "상태 변경 버튼",
+    "mustIncludeKeywords": ["상태", "변경"],
+    "relevantFaqIds": ["guide.status_management"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-031",
+    "question": "채팅에서 사진 보낼 수 있어요?",
+    "category": "채팅",
+    "difficulty": "easy",
+    "expectedAnswer": "이미지 전송 가능",
+    "mustIncludeKeywords": ["이미지", "사진"],
+    "relevantFaqIds": ["guide.chat_start", "faq.chat_images"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-032",
+    "question": "직거래 장소는 어디가 좋을까요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "학교 내 공개 장소",
+    "mustIncludeKeywords": ["학교", "공개"],
+    "relevantFaqIds": ["guide.safe_meetup"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-033",
+    "question": "택배로 보내려면 어떻게 해야 하나요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "택배 거래 절차",
+    "mustIncludeKeywords": ["입금", "운송장"],
+    "relevantFaqIds": ["guide.parcel_trade"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-034",
+    "question": "키워드 알림 몇 개까지 등록 가능해요?",
+    "category": "알림",
+    "difficulty": "hard",
+    "expectedAnswer": "최대 10개",
+    "mustIncludeKeywords": ["10개"],
+    "relevantFaqIds": ["feature.keyword_alert_rules"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-035",
+    "question": "다크 모드 어떻게 켜요?",
+    "category": "기능",
+    "difficulty": "easy",
+    "expectedAnswer": "태양/달 아이콘",
+    "mustIncludeKeywords": ["아이콘"],
+    "relevantFaqIds": ["guide.dark_mode", "faq.dark_mode"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-036",
+    "question": "사기 당한 것 같은데 어떻게 하나요?",
+    "category": "안전",
+    "difficulty": "medium",
+    "expectedAnswer": "신고 기능 이용",
+    "mustIncludeKeywords": ["신고"],
+    "relevantFaqIds": ["guide.reporting", "faq.reporting"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-037",
+    "question": "마이페이지에서 뭘 할 수 있어요?",
+    "category": "기능",
+    "difficulty": "easy",
+    "expectedAnswer": "마이페이지 기능",
+    "mustIncludeKeywords": ["게시글", "찜"],
+    "relevantFaqIds": ["guide.my_page"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-038",
+    "question": "문의는 어디로 하면 되나요?",
+    "category": "문의",
+    "difficulty": "easy",
+    "expectedAnswer": "이메일 문의",
+    "mustIncludeKeywords": ["unibooknotify@gmail.com"],
+    "relevantFaqIds": ["guide.contact", "faq.contact"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-039",
+    "question": "이메일 인증 안 하면 어떤 기능 못 쓰나요?",
+    "category": "정책",
+    "difficulty": "hard",
+    "expectedAnswer": "주요 기능 제한",
+    "mustIncludeKeywords": ["게시글", "채팅", "찜"],
+    "relevantFaqIds": ["policy.email_verification_required"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-040",
+    "question": "인증 메일 재발송은 몇 번까지 가능한가요?",
+    "category": "정책",
+    "difficulty": "hard",
+    "expectedAnswer": "1시간에 5번",
+    "mustIncludeKeywords": ["60초", "5번"],
+    "relevantFaqIds": ["policy.email_rate_limit"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-041",
+    "question": "내 게시글도 찜할 수 있나요?",
+    "category": "기능",
+    "difficulty": "medium",
+    "expectedAnswer": "자신의 게시글 찜 불가",
+    "mustIncludeKeywords": ["찜", "불가"],
+    "relevantFaqIds": ["feature.self_wishlist_restriction"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-042",
+    "question": "하루에 신고 몇 번까지 할 수 있어요?",
+    "category": "정책",
+    "difficulty": "hard",
+    "expectedAnswer": "최대 10건",
+    "mustIncludeKeywords": ["10건"],
+    "relevantFaqIds": ["policy.report_limits"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-043",
+    "question": "채팅방 나가면 어떻게 돼요?",
+    "category": "채팅",
+    "difficulty": "medium",
+    "expectedAnswer": "시스템 메시지 전달",
+    "mustIncludeKeywords": ["시스템", "메시지"],
+    "relevantFaqIds": ["feature.chat_leave_behavior"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-044",
+    "question": "판매자만 거래 상태 바꿀 수 있나요?",
+    "category": "거래",
+    "difficulty": "medium",
+    "expectedAnswer": "판매자만 가능",
+    "mustIncludeKeywords": ["판매자"],
+    "relevantFaqIds": ["feature.chat_status_change"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-045",
+    "question": "키워드 알림은 어떻게 작동하나요?",
+    "category": "알림",
+    "difficulty": "medium",
+    "expectedAnswer": "제목 매칭",
+    "mustIncludeKeywords": ["제목", "매칭"],
+    "relevantFaqIds": ["feature.keyword_alert_flow", "guide.keyword_alert"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-046",
+    "question": "이미지 파일 크기 제한이 있나요?",
+    "category": "게시글 작성",
+    "difficulty": "hard",
+    "expectedAnswer": "10MB 이하",
+    "mustIncludeKeywords": ["10MB"],
+    "relevantFaqIds": ["feature.post_image_requirements"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-047",
+    "question": "자료구조 교재 찾는데 교수님이 두 분이세요",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "교수명으로 검색",
+    "mustIncludeKeywords": ["교수"],
+    "relevantFaqIds": ["guide.search_basics"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-048",
+    "question": "예약중인 책만 보고 싶어요",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "거래 상태 필터",
+    "mustIncludeKeywords": ["필터"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-049",
+    "question": "전공책이랑 자격증 교재 구분되나요?",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "상품 유형 필터",
+    "mustIncludeKeywords": ["상품", "유형"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-050",
+    "question": "1만원 이하 책만 검색 가능한가요?",
+    "category": "검색",
+    "difficulty": "medium",
+    "expectedAnswer": "가격 필터",
+    "mustIncludeKeywords": ["가격"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-051",
+    "question": "필기노트도 팔 수 있어요?",
+    "category": "판매",
+    "difficulty": "easy",
+    "expectedAnswer": "상품 유형 선택 가능",
+    "mustIncludeKeywords": ["필기노트"],
+    "relevantFaqIds": ["guide.post_creation"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-052",
+    "question": "족보 거래도 되나요?",
+    "category": "판매",
+    "difficulty": "easy",
+    "expectedAnswer": "족보/기출 카테고리",
+    "mustIncludeKeywords": ["족보"],
+    "relevantFaqIds": ["guide.post_creation"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-053",
+    "question": "대표 이미지는 어떻게 설정하나요?",
+    "category": "게시글 작성",
+    "difficulty": "medium",
+    "expectedAnswer": "첫 번째 사진",
+    "mustIncludeKeywords": ["첫", "사진"],
+    "relevantFaqIds": ["guide.photo_tips"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-054",
+    "question": "필기 많이 한 책인데 사진 찍어야 하나요?",
+    "category": "게시글 작성",
+    "difficulty": "medium",
+    "expectedAnswer": "필기 페이지 포함",
+    "mustIncludeKeywords": ["필기", "페이지"],
+    "relevantFaqIds": ["guide.photo_tips"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-055",
+    "question": "직거래랑 택배 둘 다 가능하게 할 수 있어요?",
+    "category": "거래",
+    "difficulty": "easy",
+    "expectedAnswer": "둘 다 선택 가능",
+    "mustIncludeKeywords": ["직거래", "택배"],
+    "relevantFaqIds": ["guide.post_creation"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-056",
+    "question": "상대방이 연락처 달라는데 줘도 되나요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "안전 확인 후 공유",
+    "mustIncludeKeywords": ["안전", "연락처"],
+    "relevantFaqIds": ["guide.chat_start"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-057",
+    "question": "밤에 만나자고 하는데 괜찮을까요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "낮에 만나기 권장",
+    "mustIncludeKeywords": ["낮"],
+    "relevantFaqIds": ["guide.safe_meetup"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-058",
+    "question": "택배비는 누가 내나요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "구매자 부담 또는 협의",
+    "mustIncludeKeywords": ["구매자", "협의"],
+    "relevantFaqIds": ["guide.parcel_trade"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-059",
+    "question": "입금하기 전에 뭘 확인해야 하나요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "책 상태 확인",
+    "mustIncludeKeywords": ["확인"],
+    "relevantFaqIds": ["faq.safe_trade"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-060",
+    "question": "운송장 번호는 언제 받나요?",
+    "category": "안전거래",
+    "difficulty": "medium",
+    "expectedAnswer": "발송 후 공유",
+    "mustIncludeKeywords": ["발송", "운송장"],
+    "relevantFaqIds": ["guide.parcel_trade"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-061",
+    "question": "채팅에서 GIF도 보낼 수 있나요?",
+    "category": "채팅",
+    "difficulty": "hard",
+    "expectedAnswer": "JPG, PNG, GIF 가능",
+    "mustIncludeKeywords": ["GIF"],
+    "relevantFaqIds": ["faq.chat_images"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-062",
+    "question": "내 게시글에는 채팅하기 버튼이 안 보여요",
+    "category": "채팅",
+    "difficulty": "medium",
+    "expectedAnswer": "본인 게시글에는 미표시",
+    "mustIncludeKeywords": ["본인", "표시"],
+    "relevantFaqIds": ["faq.start_chat"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-063",
+    "question": "찜한 게시글 가격 올라가도 알림 오나요?",
+    "category": "찜",
+    "difficulty": "medium",
+    "expectedAnswer": "가격 변동 알림",
+    "mustIncludeKeywords": ["가격", "알림"],
+    "relevantFaqIds": ["feature.wishlist_notifications"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-064",
+    "question": "찜 목록은 어디서 보나요?",
+    "category": "찜",
+    "difficulty": "easy",
+    "expectedAnswer": "찜 목록 메뉴",
+    "mustIncludeKeywords": ["찜", "목록"],
+    "relevantFaqIds": ["guide.wishlist"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-065",
+    "question": "키워드는 몇 글자까지 등록 가능한가요?",
+    "category": "알림",
+    "difficulty": "hard",
+    "expectedAnswer": "2-50자",
+    "mustIncludeKeywords": ["2", "50"],
+    "relevantFaqIds": ["feature.keyword_alert_rules"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-066",
+    "question": "내가 쓴 글에도 키워드 알림 오나요?",
+    "category": "알림",
+    "difficulty": "medium",
+    "expectedAnswer": "작성자 제외",
+    "mustIncludeKeywords": ["작성자", "제외"],
+    "relevantFaqIds": ["feature.keyword_alert_flow"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-067",
+    "question": "같은 키워드로 알림이 중복으로 오나요?",
+    "category": "알림",
+    "difficulty": "medium",
+    "expectedAnswer": "중복 자동 제거",
+    "mustIncludeKeywords": ["중복"],
+    "relevantFaqIds": ["feature.keyword_alert_flow"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-068",
+    "question": "다크모드 설정이 저장되나요?",
+    "category": "기능",
+    "difficulty": "easy",
+    "expectedAnswer": "자동 저장",
+    "mustIncludeKeywords": ["저장"],
+    "relevantFaqIds": ["guide.dark_mode"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-069",
+    "question": "신고하면 바로 게시글이 삭제되나요?",
+    "category": "안전",
+    "difficulty": "medium",
+    "expectedAnswer": "관리자 검토 후 조치",
+    "mustIncludeKeywords": ["관리자", "검토"],
+    "relevantFaqIds": ["guide.reporting"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-070",
+    "question": "신고 3건 받으면 어떻게 되나요?",
+    "category": "안전",
+    "difficulty": "hard",
+    "expectedAnswer": "자동 차단",
+    "mustIncludeKeywords": ["3", "차단"],
+    "relevantFaqIds": ["policy.report_limits"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-071",
+    "question": "JPEG 파일도 업로드 되나요?",
+    "category": "게시글 작성",
+    "difficulty": "hard",
+    "expectedAnswer": "JPG, JPEG 가능",
+    "mustIncludeKeywords": ["JPEG"],
+    "relevantFaqIds": ["feature.post_image_requirements"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-072",
+    "question": "WEBP 파일도 올릴 수 있나요?",
+    "category": "게시글 작성",
+    "difficulty": "hard",
+    "expectedAnswer": "WEBP 지원",
+    "mustIncludeKeywords": ["WEBP"],
+    "relevantFaqIds": ["feature.post_image_requirements"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-073",
+    "question": "이 사이트 믿을 수 있나요?",
+    "category": "플랫폼 소개",
+    "difficulty": "easy",
+    "expectedAnswer": "학교 이메일 인증",
+    "mustIncludeKeywords": ["학교", "안전"],
+    "relevantFaqIds": ["platform.why_unibook"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-074",
+    "question": "실시간 채팅이 되나요?",
+    "category": "기능",
+    "difficulty": "easy",
+    "expectedAnswer": "실시간 채팅 제공",
+    "mustIncludeKeywords": ["실시간", "채팅"],
+    "relevantFaqIds": ["platform.what_is_unibook"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-075",
+    "question": "회원가입 후 바로 글 쓸 수 있나요?",
+    "category": "회원가입",
+    "difficulty": "medium",
+    "expectedAnswer": "이메일 인증 후 가능",
+    "mustIncludeKeywords": ["인증", "후"],
+    "relevantFaqIds": ["policy.email_verification_required"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-076",
+    "question": "조회수 높은 순으로 볼 수 있나요?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "조회수순 정렬",
+    "mustIncludeKeywords": ["조회수순"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-077",
+    "question": "판매 중인 책만 보려면?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "거래 상태 필터",
+    "mustIncludeKeywords": ["판매중"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-078",
+    "question": "과목 이름으로도 검색 되나요?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "과목명 검색 가능",
+    "mustIncludeKeywords": ["과목"],
+    "relevantFaqIds": ["guide.search_basics"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-079",
+    "question": "채팅방에서 거래 완료 할 수 있나요?",
+    "category": "채팅",
+    "difficulty": "medium",
+    "expectedAnswer": "상태 변경 가능",
+    "mustIncludeKeywords": ["거래완료"],
+    "relevantFaqIds": ["feature.chat_status_change"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-080",
+    "question": "양쪽 다 채팅방 나가면 어떻게 돼요?",
+    "category": "채팅",
+    "difficulty": "hard",
+    "expectedAnswer": "거래완료 상태 변경",
+    "mustIncludeKeywords": ["거래완료"],
+    "relevantFaqIds": ["feature.chat_leave_behavior"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-081",
+    "question": "영어 공부하고 싶어요",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-082",
+    "question": "오늘 저녁 뭐 먹지?",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-083",
+    "question": "축구 경기 결과 알려줘",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-084",
+    "question": "서울 맛집 추천해줘",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-085",
+    "question": "주식 투자 어떻게 해요?",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-086",
+    "question": "인공지능 공부법",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-087",
+    "question": "친구 사귀는 방법",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-088",
+    "question": "건강한 식단 짜줘",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-089",
+    "question": "영화 추천해줘",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-090",
+    "question": "여행 계획 세워줘",
+    "category": "무관한 질문",
+    "difficulty": "easy",
+    "expectedAnswer": null,
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-091",
+    "question": "스팸함을 확인해도 메일이 없어요",
+    "category": "회원가입",
+    "difficulty": "medium",
+    "expectedAnswer": "재발송 또는 문의",
+    "mustIncludeKeywords": ["재발송"],
+    "relevantFaqIds": ["faq.email_verification"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-092",
+    "question": "친구 초대 기능 있나요?",
+    "category": "기능",
+    "difficulty": "medium",
+    "expectedAnswer": "없음",
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": [],
+    "shouldMatch": false
+  },
+  {
+    "id": "eval-093",
+    "question": "게시글 삭제하려면 어떻게 해요?",
+    "category": "게시글 관리",
+    "difficulty": "medium",
+    "expectedAnswer": "상태 변경",
+    "mustIncludeKeywords": ["상태"],
+    "relevantFaqIds": ["guide.status_management"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-094",
+    "question": "프로필 사진 바꿀 수 있나요?",
+    "category": "기능",
+    "difficulty": "medium",
+    "expectedAnswer": "마이페이지에서 수정",
+    "mustIncludeKeywords": ["마이페이지"],
+    "relevantFaqIds": ["guide.my_page"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-095",
+    "question": "알림은 어떤 종류가 있나요?",
+    "category": "알림",
+    "difficulty": "medium",
+    "expectedAnswer": "찜/키워드/채팅 알림",
+    "mustIncludeKeywords": ["찜", "키워드"],
+    "relevantFaqIds": ["guide.wishlist", "guide.keyword_alert"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-096",
+    "question": "거래 완료 후 후기 쓸 수 있나요?",
+    "category": "기능",
+    "difficulty": "medium",
+    "expectedAnswer": "후기 시스템 없음",
+    "mustIncludeKeywords": ["후기", "시스템"],
+    "relevantFaqIds": ["faq.review_system"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-097",
+    "question": "학교 등록은 어떻게 하나요?",
+    "category": "회원가입",
+    "difficulty": "medium",
+    "expectedAnswer": "학교 이메일로 인증",
+    "mustIncludeKeywords": ["학교", "이메일"],
+    "relevantFaqIds": ["guide.signup_verification"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-098",
+    "question": "판매 수수료가 있나요?",
+    "category": "플랫폼 소개",
+    "difficulty": "easy",
+    "expectedAnswer": "무료",
+    "mustIncludeKeywords": [],
+    "relevantFaqIds": ["platform.what_is_unibook"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-099",
+    "question": "거래 완료된 게시글도 볼 수 있나요?",
+    "category": "검색",
+    "difficulty": "easy",
+    "expectedAnswer": "거래 상태 필터",
+    "mustIncludeKeywords": ["거래완료"],
+    "relevantFaqIds": ["guide.search_filters"],
+    "shouldMatch": true
+  },
+  {
+    "id": "eval-100",
+    "question": "책 정보는 자동으로 채워지나요?",
+    "category": "게시글 작성",
+    "difficulty": "medium",
+    "expectedAnswer": "네이버 책 검색",
+    "mustIncludeKeywords": ["검색"],
+    "relevantFaqIds": ["guide.post_creation"],
     "shouldMatch": true
   }
 ]

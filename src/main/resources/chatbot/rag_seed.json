@@ -1076,5 +1076,84 @@
     "related_questions": [
       "faq.keyword_alert"
     ]
+  },
+  {
+    "id": "guide.post_deletion",
+    "category": "Guide",
+    "question": "게시글은 어떻게 삭제하나요?",
+    "answer": "게시글 상세 페이지에서 '삭제' 버튼을 클릭하면 삭제할 수 있습니다. 단, 진행 중인 채팅이 있거나 거래가 진행 중인 경우 삭제가 제한될 수 있으니 주의하세요. 삭제된 게시글은 복구할 수 없습니다.",
+    "source_path": "src/main/resources/templates/guide.html",
+    "anchors": [
+      "/guide#post-management"
+    ],
+    "keywords": [
+      "게시글",
+      "삭제",
+      "글 삭제",
+      "게시물 삭제"
+    ],
+    "variations": [
+      "글 삭제하려면",
+      "게시물 지우는 법",
+      "등록한 글 삭제",
+      "올린 글 삭제하기"
+    ],
+    "related_questions": [
+      "guide.post_creation",
+      "guide.post_edit"
+    ]
+  },
+  {
+    "id": "guide.profile_settings",
+    "category": "Guide",
+    "question": "프로필은 어떻게 수정하나요?",
+    "answer": "마이페이지에서 프로필 정보를 수정할 수 있습니다. 현재는 이름과 학교 정보를 변경할 수 있으며, 프로필 사진 기능은 추후 업데이트 예정입니다. 학교 변경 시 이메일 재인증이 필요할 수 있습니다.",
+    "source_path": "src/main/resources/templates/guide.html",
+    "anchors": [
+      "/guide#profile"
+    ],
+    "keywords": [
+      "프로필",
+      "수정",
+      "프로필 사진",
+      "정보 변경",
+      "마이페이지"
+    ],
+    "variations": [
+      "프로필 사진 바꾸기",
+      "프로필 사진 변경",
+      "내 정보 수정",
+      "회원정보 변경"
+    ],
+    "related_questions": [
+      "faq.mypage"
+    ]
+  },
+  {
+    "id": "faq.review_system",
+    "category": "FAQ",
+    "question": "거래 후기나 평점 시스템이 있나요?",
+    "answer": "현재 Unibook은 거래 후기나 평점 시스템을 제공하지 않습니다. 안전한 거래를 위해서는 직거래 시 학교 내 공개된 장소에서 만나고, 책 상태를 직접 확인하는 것을 권장합니다. 후기 시스템은 향후 업데이트를 검토 중입니다.",
+    "source_path": "src/main/resources/templates/faq.html",
+    "anchors": [
+      "/faq#safety"
+    ],
+    "keywords": [
+      "후기",
+      "리뷰",
+      "평점",
+      "거래 후기",
+      "평가"
+    ],
+    "variations": [
+      "거래 완료 후 후기",
+      "판매자 평점",
+      "리뷰 쓸 수 있나요",
+      "후기 남기기"
+    ],
+    "related_questions": [
+      "guide.safe_meetup",
+      "faq.trade_methods"
+    ]
   }
 ]

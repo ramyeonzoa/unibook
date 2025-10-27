@@ -79,7 +79,7 @@ public class ChatbotService {
 
     try {
       // Step 1: 유사한 FAQ 검색 (상위 10개 후보 가져오기)
-      double similarityThreshold = 0.625; // 유사도 임계값 조정 (RAG 강화 후 재조정)
+      double similarityThreshold = 0.625; // 유사도 임계값 (GPT 거부 패턴 감지와 최적 균형점)
       List<EmbeddingMatch<TextSegment>> relevantDocs =
           embeddingService.findRelevant(userQuestion, 10, 0.0)
               .stream()
@@ -130,7 +130,24 @@ public class ChatbotService {
       log.info("답변 생성 완료 (길이: {}자)", answer == null ? "null" : answer.length());
       log.info("GPT 응답: [{}]", answer);
 
-      // Step 6: 응답 DTO 생성
+      // Step 6: GPT 거부 패턴 감지
+      if (isRejectionResponse(answer)) {
+        log.warn("GPT 거부 응답 감지 - NO_MATCH로 전환. 질문: '{}', 매칭된 FAQ 수: {}",
+          userQuestion, relevantDocs.size());
+
+        // 거부된 매칭 상세 로그 (디버깅용)
+        for (int i = 0; i < relevantDocs.size(); i++) {
+          EmbeddingMatch<TextSegment> match = relevantDocs.get(i);
+          log.warn("  거부된 매칭 [{}]: FAQ={}, 유사도={}",
+            i + 1,
+            match.embedded().metadata().getString("id"),
+            String.format("%.4f", match.score()));
+        }
+
+        return createNoMatchResponse();
+      }
+
+      // Step 7: 정상 응답 DTO 생성
       return buildResponse(answer, relevantDocs);
 
     } catch (Exception e) {
@@ -179,6 +196,42 @@ public class ChatbotService {
         - 필요한 경우 관련 페이지 링크를 안내하세요 (예: /faq, /guide)
         - 답변은 2-3문장으로 간결하게 작성하세요
         """, context, userQuestion);
+  }
+
+  /**
+   * GPT 응답에서 거부 패턴 감지 (보수적 패턴)
+   *
+   * @param answer GPT가 생성한 답변
+   * @return 거부 응답이면 true, 정상 응답이면 false
+   */
+  private boolean isRejectionResponse(String answer) {
+    if (answer == null || answer.trim().isEmpty()) {
+      return true; // 빈 응답은 거부로 간주
+    }
+
+    // 거부 패턴 (GPT의 실제 응답 표현 기반)
+    String[] rejectionPatterns = {
+      "교재 거래와 무관한",        // "교재 거래와 무관한 질문/내용"
+      "교재 거래 플랫폼과 무관한",  // "교재 거래 플랫폼과 무관한 내용"
+      "교재 거래와 관련된 내용이 아니라", // "교재 거래와 관련된 내용이 아니라"
+      "서비스의 범위를 벗어나",    // "서비스의 범위를 벗어나"
+      "FAQ에 포함되어 있지 않아",  // "FAQ에 포함되어 있지 않아"
+      "FAQ에 안내되어 있지 않아",  // "FAQ에 안내되어 있지 않아"
+      "도움드리기 어렵습니다",      // "도와드리기 어렵습니다"
+      "도와드리기 어렵습니다",      // "도와드리기 어렵습니다"
+      "도움 드리기 어렵습니다"      // "도움 드리기 어렵습니다" (띄어쓰기 변형)
+    };
+
+    String lowerAnswer = answer.toLowerCase();
+
+    for (String pattern : rejectionPatterns) {
+      if (lowerAnswer.contains(pattern.toLowerCase())) {
+        log.info("거부 패턴 감지: '{}' 포함됨", pattern);
+        return true;
+      }
+    }
+
+    return false;
   }
 
   /**
