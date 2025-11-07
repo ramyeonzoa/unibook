@@ -16,6 +16,7 @@ import com.unibook.service.AuthorizationService;
 import com.unibook.service.BookService;
 import com.unibook.service.PostControllerHelper;
 import com.unibook.service.PostService;
+import com.unibook.service.PostViewService;
 import com.unibook.service.UserService;
 import com.unibook.service.WishlistService;
 import com.unibook.util.PostFormDataBuilder;
@@ -65,6 +66,7 @@ public class PostController {
     private final AuthorizationService authorizationService;
     private final PostFormDataBuilder postFormDataBuilder;
     private final PostControllerHelper postControllerHelper;
+    private final PostViewService postViewService;
     
     private static final int DEFAULT_PAGE_SIZE = 12;
     private static final int MAX_IMAGES = 5;
@@ -150,6 +152,10 @@ public class PostController {
                 postService.incrementViewCount(id);
                 viewedPosts.add(id);
                 session.setAttribute("viewedPosts", viewedPosts);
+
+                // 추천 시스템용 조회 기록 (비동기)
+                Long userId = userPrincipal != null ? userPrincipal.getUserId() : null;
+                postViewService.recordView(id, userId);
             }
             
             // 작성자 여부 확인

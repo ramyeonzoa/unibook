@@ -1,0 +1,27 @@
+/**
+ * 추천 시스템 스타일
+ * 기존 UI와 완벽히 통합되도록 최소한의 스타일만 정의
+ */
+
+/* 추천 섹션 - 기존 pattern-bg와 동일한 스타일 사용 */
+.recommendations-section {
+  padding: 60px 0;
+}
+
+/* 로딩 상태 */
+.spinner-border {
+  animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .recommendations-section {
+    padding: 40px 0;
+  }
+}

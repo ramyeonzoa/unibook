@@ -19,7 +19,10 @@
     
     <!-- Status Badge CSS -->
     <link th:href="@{/css/status-badge.css}" rel="stylesheet">
-    
+
+    <!-- Recommendation CSS -->
+    <link th:href="@{/css/recommendation.css}" rel="stylesheet">
+
     <!-- 공통 스타일 (알림 등) -->
     <div th:replace="~{fragments/header :: styles}"></div>
     
@@ -1608,6 +1611,42 @@
     </div>
 </section>
 
+<!-- AI 기반 비슷한 게시글 추천 -->
+<section class="related-section bg-white">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">
+                <i class="bi bi-stars me-2" style="color: #ffd700;"></i>비슷한 책 추천
+            </h2>
+            <div class="swiper-navigation">
+                <button class="swiper-btn similar-prev">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button class="swiper-btn similar-next">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="swiper similar-swiper">
+            <div class="swiper-wrapper" id="similar-posts-container">
+                <!-- recommendation.js가 자동으로 채움 -->
+                <div class="swiper-slide">
+                    <div class="text-center py-5">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">로딩 중...</span>
+                        </div>
+                        <p class="mt-3 text-muted">추천 게시글을 불러오는 중...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 현재 게시글 ID (JS에서 사용) -->
+<input type="hidden" id="current-post-id" th:value="${post.postId}">
+
 <!-- 공통 Footer 포함 -->
 <footer th:replace="~{fragments/header :: footer}"></footer>
 
@@ -1770,7 +1809,10 @@ $(document).ready(function() {
             }
         });
     }
-    
+
+    // Swiper 초기화 - AI 추천 캐러셀
+    // recommendation.js에서 동적으로 초기화하므로 여기서는 제거
+
     // 찜하기 초기 상태 로드
     loadWishlistStatus();
     
@@ -2377,6 +2419,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 /*]]>*/
 </script>
+
+<!-- Recommendation System JS -->
+<script th:src="@{/js/recommendation.js}"></script>
 
 </body>
 </html>
