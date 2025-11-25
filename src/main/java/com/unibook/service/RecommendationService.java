@@ -2,11 +2,15 @@ package com.unibook.service;
 
 import com.unibook.domain.dto.PostResponseDto;
 import com.unibook.domain.dto.RecommendationWeights;
+import com.unibook.domain.dto.UserInteractionHistory;
 import com.unibook.domain.entity.Book;
 import com.unibook.domain.entity.Post;
 import com.unibook.domain.entity.Subject;
+import com.unibook.domain.enums.InteractionWeight;
 import com.unibook.repository.PostRepository;
 import com.unibook.repository.PostViewRepository;
+import com.unibook.repository.RecommendationClickRepository;
+import com.unibook.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +36,8 @@ public class RecommendationService {
     private final PostRepository postRepository;
     private final PostViewRepository postViewRepository;
     private final PostViewService postViewService;
+    private final RecommendationClickRepository recommendationClickRepository;
+    private final WishlistRepository wishlistRepository;
 
     // 적응형 가중치 임계값
     private static final long MIN_USER_VIEWS_FOR_COLLABORATIVE = 10;
@@ -42,8 +48,18 @@ public class RecommendationService {
     // 최신성 계산 기준 (일)
     private static final long MAX_DAYS_FOR_RECENCY = 30;
 
+    // 다중 행동 추천 시스템 설정
+    private static final int MAX_CLICKS_TO_FETCH = 20;      // 클릭 최대 조회 수
+    private static final int MAX_WISHLISTS_TO_FETCH = 15;   // 찜 최대 조회 수
+    private static final int MAX_VIEWS_TO_FETCH = 30;       // 조회 최대 조회 수
+
+    // 시간 감쇠 설정
+    private static final double TIME_DECAY_LAMBDA = 0.1;    // 시간 감쇠 상수 (λ)
+    private static final int TIME_DECAY_THRESHOLD_DAYS = 7; // 감쇠 시작 임계값 (7일)
+
     /**
      * 사용자 맞춤 추천 (메인 페이지용)
+     * 성능 최적화: 사용자 상호작용 이력 1회 조회 + Post 일괄 조회
      *
      * @param userId 사용자 ID (비로그인 시 null)
      * @param limit  추천 개수
@@ -72,18 +88,27 @@ public class RecommendationService {
                 return Collections.emptyList();
             }
 
-            // 3. 사용자가 최근 본 게시글들 (참고용)
-            List<Long> recentViewedPostIds = new ArrayList<>();
-            if (userId != null) {
-                recentViewedPostIds = postViewRepository.findRecentViewedPostIdsByUser_UserId(
-                        userId, PageRequest.of(0, 10)
-                );
+            // 3. [최적화] 사용자 상호작용 이력 1회 조회
+            UserInteractionHistory history = getUserInteractionHistory(userId);
+
+            // 4. [최적화] 상호작용한 모든 게시글 ID 수집
+            Set<Long> interactionPostIds = new HashSet<>();
+            history.getClicks().forEach(r -> interactionPostIds.add(r.getPostId()));
+            history.getWishlists().forEach(r -> interactionPostIds.add(r.getPostId()));
+            history.getViews().forEach(r -> interactionPostIds.add(r.getPostId()));
+
+            // 5. [최적화] 게시글 일괄 조회 (IN 쿼리 1회)
+            Map<Long, Post> interactionPostMap = new HashMap<>();
+            if (!interactionPostIds.isEmpty()) {
+                List<Post> interactionPosts = postRepository.findAllById(interactionPostIds);
+                interactionPostMap = interactionPosts.stream()
+                        .collect(Collectors.toMap(Post::getPostId, p -> p));
             }
 
-            // 4. 각 게시글에 대한 점수 계산
+            // 6. 각 게시글에 대한 점수 계산
             Map<Long, Double> scores = new HashMap<>();
             for (Post post : candidates) {
-                double contentScore = calculateContentBasedScore(post, userId, recentViewedPostIds);
+                double contentScore = calculateContentBasedScore(post, history, interactionPostMap);
                 double collaborativeScore = calculateCollaborativeScore(post, userId);
 
                 double finalScore = contentScore * weights.getContent()
@@ -92,14 +117,14 @@ public class RecommendationService {
                 scores.put(post.getPostId(), finalScore);
             }
 
-            // 5. 점수 순으로 정렬하여 상위 N개 반환
+            // 7. 점수 순으로 정렬하여 상위 N개 반환
             List<Long> topPostIds = scores.entrySet().stream()
                     .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                     .limit(limit)
                     .map(Map.Entry::getKey)
                     .collect(Collectors.toList());
 
-            // 6. DTO 변환 (순서 유지)
+            // 8. DTO 변환 (순서 유지)
             return candidates.stream()
                     .filter(p -> topPostIds.contains(p.getPostId()))
                     .sorted(Comparator.comparingInt(p -> topPostIds.indexOf(p.getPostId())))
@@ -190,33 +215,67 @@ public class RecommendationService {
 
     /**
      * Content-based 점수 계산 (0.0 ~ 1.0로 정규화)
+     * 다중 행동 추천 시스템: 클릭, 찜, 조회 이력을 차등 가중치로 활용
+     * [최적화] 이력 1회 조회 + Post Map에서 O(1) 조회
      *
      * 가중치:
+     * - 클릭 (1.0) > 찜 (0.7) > 조회 (0.3)
+     * - 시간 감쇠: 7일 이후 지수 감소 (λ=0.1)
      * - 같은 책 (ISBN): 50%
      * - 같은 과목: 25%
      * - 같은 학과: 15%
      * - 최신성: 10%
      */
-    private double calculateContentBasedScore(Post post, Long userId, List<Long> recentViewedPostIds) {
-        double score = 0.0;
-
-        // 사용자가 최근 본 게시글이 있다면, 그것들과의 유사도 계산
-        if (!recentViewedPostIds.isEmpty()) {
-            double maxSimilarity = 0.0;
-            for (Long viewedPostId : recentViewedPostIds) {
-                Optional<Post> viewedPostOpt = postRepository.findByIdWithDetails(viewedPostId);
-                if (viewedPostOpt.isPresent()) {
-                    double similarity = calculateSimilarityScore(viewedPostOpt.get(), post);
-                    maxSimilarity = Math.max(maxSimilarity, similarity);
-                }
-            }
-            score = maxSimilarity;
-        } else {
-            // 최근 본 게시글이 없으면 기본 점수
-            score = 0.5; // 중립 점수
+    private double calculateContentBasedScore(Post post, UserInteractionHistory history, Map<Long, Post> interactionPostMap) {
+        if (history.getTotalCount() == 0) {
+            return 0.5; // 이력 없으면 중립 점수
         }
 
-        // 최신성 보정 (0.0 ~ 0.1 추가)
+        // 1. 모든 상호작용에 대한 가중 유사도 계산
+        double totalScore = 0.0;
+        double totalWeight = 0.0;
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1-1. 클릭 이력 처리 (가중치 1.0, 시간 감쇠 적용)
+        for (UserInteractionHistory.InteractionRecord click : history.getClicks()) {
+            Post clickedPost = interactionPostMap.get(click.getPostId());
+            if (clickedPost != null) {
+                double similarity = calculateSimilarityScore(clickedPost, post);
+                double decayedWeight = click.getDecayedWeight(TIME_DECAY_LAMBDA, TIME_DECAY_THRESHOLD_DAYS, now);
+
+                totalScore += similarity * decayedWeight;
+                totalWeight += decayedWeight;
+            }
+        }
+
+        // 1-2. 찜 이력 처리 (가중치 0.7, 감쇠 없음)
+        for (UserInteractionHistory.InteractionRecord wishlist : history.getWishlists()) {
+            Post wishlistPost = interactionPostMap.get(wishlist.getPostId());
+            if (wishlistPost != null) {
+                double similarity = calculateSimilarityScore(wishlistPost, post);
+                double weight = wishlist.getBaseWeight();
+
+                totalScore += similarity * weight;
+                totalWeight += weight;
+            }
+        }
+
+        // 1-3. 조회 이력 처리 (가중치 0.3, 감쇠 없음)
+        for (UserInteractionHistory.InteractionRecord view : history.getViews()) {
+            Post viewedPost = interactionPostMap.get(view.getPostId());
+            if (viewedPost != null) {
+                double similarity = calculateSimilarityScore(viewedPost, post);
+                double weight = view.getBaseWeight();
+
+                totalScore += similarity * weight;
+                totalWeight += weight;
+            }
+        }
+
+        // 2. 가중 평균 계산
+        double score = totalWeight > 0 ? totalScore / totalWeight : 0.5;
+
+        // 3. 최신성 보정 (0.0 ~ 0.1 추가)
         double recencyScore = calculateRecencyScore(post);
         score += recencyScore * 0.1;
 
@@ -370,5 +429,79 @@ public class RecommendationService {
 
         // 선형 감소
         return 1.0 - ((double) daysOld / MAX_DAYS_FOR_RECENCY);
+    }
+
+    /**
+     * 사용자의 모든 상호작용 이력 조회
+     * 다중 행동 추천 시스템용
+     *
+     * @param userId 사용자 ID
+     * @return 사용자 상호작용 이력 (클릭, 찜, 조회)
+     */
+    private UserInteractionHistory getUserInteractionHistory(Long userId) {
+        if (userId == null) {
+            return UserInteractionHistory.builder().build();
+        }
+
+        List<UserInteractionHistory.InteractionRecord> clicks = new ArrayList<>();
+        List<UserInteractionHistory.InteractionRecord> wishlists = new ArrayList<>();
+        List<UserInteractionHistory.InteractionRecord> views = new ArrayList<>();
+
+        try {
+            // 1. 클릭 이력 조회 (가중치 1.0)
+            List<Object[]> clickResults = recommendationClickRepository
+                    .findRecentClicksWithTimestampByUserId(userId, PageRequest.of(0, MAX_CLICKS_TO_FETCH));
+
+            for (Object[] row : clickResults) {
+                Long postId = (Long) row[0];
+                LocalDateTime timestamp = (LocalDateTime) row[1];
+
+                clicks.add(UserInteractionHistory.InteractionRecord.builder()
+                        .postId(postId)
+                        .timestamp(timestamp)
+                        .weight(InteractionWeight.CLICK)
+                        .build());
+            }
+
+            // 2. 찜 이력 조회 (가중치 0.7)
+            List<Long> wishlistPostIds = wishlistRepository.findPostIdsByUserId(userId);
+            int wishlistCount = 0;
+            for (Long postId : wishlistPostIds) {
+                if (wishlistCount >= MAX_WISHLISTS_TO_FETCH) {
+                    break;
+                }
+
+                // 찜은 timestamp가 없으므로 현재 시각 사용 (감쇠 없음)
+                wishlists.add(UserInteractionHistory.InteractionRecord.builder()
+                        .postId(postId)
+                        .timestamp(LocalDateTime.now())
+                        .weight(InteractionWeight.WISHLIST)
+                        .build());
+
+                wishlistCount++;
+            }
+
+            // 3. 조회 이력 조회 (가중치 0.3)
+            List<Long> viewedPostIds = postViewRepository
+                    .findRecentViewedPostIdsByUser_UserId(userId, PageRequest.of(0, MAX_VIEWS_TO_FETCH));
+
+            for (Long postId : viewedPostIds) {
+                // 조회는 timestamp가 없으므로 현재 시각 사용 (감쇠 없음)
+                views.add(UserInteractionHistory.InteractionRecord.builder()
+                        .postId(postId)
+                        .timestamp(LocalDateTime.now())
+                        .weight(InteractionWeight.VIEW)
+                        .build());
+            }
+
+        } catch (Exception e) {
+            log.warn("사용자 상호작용 이력 조회 실패: userId={}", userId, e);
+        }
+
+        return UserInteractionHistory.builder()
+                .clicks(clicks)
+                .wishlists(wishlists)
+                .views(views)
+                .build();
     }
 }

@@ -48,4 +48,11 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
            "JOIN FETCH w.user u " +
            "WHERE w.post.postId = :postId")
     List<Wishlist> findByPostIdWithUser(@Param("postId") Long postId);
+
+    /**
+     * 특정 사용자가 찜한 게시글 ID 목록 조회
+     * 다중 행동 추천 시스템용
+     */
+    @Query("SELECT w.post.postId FROM Wishlist w WHERE w.user.userId = :userId")
+    List<Long> findPostIdsByUserId(@Param("userId") Long userId);
 }
