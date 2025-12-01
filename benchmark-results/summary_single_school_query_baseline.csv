@@ -1,0 +1,2 @@
+timestamp,testName,samples,mean_ms,median_ms,min_ms,max_ms,p90_ms,p95_ms,p99_ms,stdDev_ms,mean_ns,median_ns,min_ns,max_ns,outliers
+2025-11-24_18-41-25,single_school_query_baseline,91,0.723,0.676,0.535,1.154,0.987,1.022,1.154,0.146,723398,675500,535100,1154200,9

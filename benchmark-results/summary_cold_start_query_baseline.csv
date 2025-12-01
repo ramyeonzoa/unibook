@@ -1,0 +1,2 @@
+timestamp,testName,samples,mean_ms,median_ms,min_ms,max_ms,p90_ms,p95_ms,p99_ms,stdDev_ms,mean_ns,median_ns,min_ns,max_ns,outliers
+2025-11-24_18-41-36,cold_start_query_baseline,19,0.704,0.644,0.529,1.175,0.954,1.175,1.175,0.176,703632,644300,529400,1174800,1

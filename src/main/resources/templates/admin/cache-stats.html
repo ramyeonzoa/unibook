@@ -22,34 +22,11 @@
     
     <!-- 사용자 정보 메타 태그 -->
     <div th:replace="~{fragments/header :: user-meta}"></div>
+
+    <!-- Admin 사이드바 스타일 -->
+    <style th:replace="~{fragments/admin-sidebar :: styles}"></style>
     
     <style>
-        .admin-sidebar {
-            min-height: calc(100vh - 76px);
-            background: #f8f9fa;
-            border-right: 1px solid #dee2e6;
-        }
-        
-        .admin-nav-link {
-            color: #495057;
-            text-decoration: none;
-            padding: 12px 20px;
-            display: block;
-            border-radius: 8px;
-            margin: 4px 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .admin-nav-link:hover {
-            background: #e9ecef;
-            color: #495057;
-        }
-        
-        .admin-nav-link.active {
-            background: #667eea;
-            color: white;
-        }
-        
         .stat-card {
             background: white;
             border-radius: 12px;
@@ -128,20 +105,6 @@
         }
         
         /* 다크모드 지원 */
-        [data-bs-theme="dark"] .admin-sidebar {
-            background: var(--bs-gray-800);
-            border-right-color: var(--bs-gray-700);
-        }
-        
-        [data-bs-theme="dark"] .admin-nav-link {
-            color: var(--bs-gray-300);
-        }
-        
-        [data-bs-theme="dark"] .admin-nav-link:hover {
-            background: var(--bs-gray-700);
-            color: var(--bs-gray-100);
-        }
-        
         [data-bs-theme="dark"] .stat-card {
             background: var(--bs-gray-800);
             border-color: var(--bs-gray-700);
@@ -190,32 +153,8 @@
     <div class="container-fluid">
         <div class="row">
             <!-- 사이드바 -->
-            <div class="col-md-3 col-lg-2 admin-sidebar">
-                <div class="py-4">
-                    <h5 class="px-3 text-muted fw-bold mb-3">관리자 메뉴</h5>
-                    <nav>
-                        <a href="/admin" class="admin-nav-link">
-                            <i class="bi bi-speedometer2 me-2"></i>대시보드
-                        </a>
-                        <a href="/admin/reports" class="admin-nav-link">
-                            <i class="bi bi-exclamation-triangle me-2"></i>신고 관리
-                        </a>
-                        <a href="/admin/users" class="admin-nav-link">
-                            <i class="bi bi-people me-2"></i>사용자 관리
-                        </a>
-                        <a href="/admin/posts" class="admin-nav-link">
-                            <i class="bi bi-file-post me-2"></i>게시글 관리
-                        </a>
-                        <a href="/admin/statistics" class="admin-nav-link">
-                            <i class="bi bi-graph-up me-2"></i>통계
-                        </a>
-                        <a href="/admin/cache-stats" class="admin-nav-link active">
-                            <i class="bi bi-lightning-charge me-2"></i>캐시 모니터링
-                        </a>
-                    </nav>
-                </div>
-            </div>
-            
+            <div th:replace="~{fragments/admin-sidebar :: sidebar('cache-stats')}"></div>
+
             <!-- 메인 컨텐츠 -->
             <div class="col-md-9 col-lg-10">
                 <div class="p-4">

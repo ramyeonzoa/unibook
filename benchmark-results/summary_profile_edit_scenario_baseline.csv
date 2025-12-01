@@ -1,0 +1,2 @@
+timestamp,testName,samples,mean_ms,median_ms,min_ms,max_ms,p90_ms,p95_ms,p99_ms,stdDev_ms,mean_ns,median_ns,min_ns,max_ns,outliers
+2025-11-24_18-54-12,profile_edit_scenario_baseline,40,0.419,0.357,0.303,0.767,0.592,0.651,0.767,0.120,419145,357000,303100,766700,0

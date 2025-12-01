@@ -6,6 +6,7 @@ import com.unibook.domain.dto.UserInteractionHistory;
 import com.unibook.domain.entity.Book;
 import com.unibook.domain.entity.Post;
 import com.unibook.domain.entity.Subject;
+import com.unibook.config.RecommendationProperties;
 import com.unibook.domain.enums.InteractionWeight;
 import com.unibook.repository.PostRepository;
 import com.unibook.repository.PostViewRepository;
@@ -33,29 +34,27 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RecommendationService {
 
+    private final RecommendationProperties recommendationProperties;
     private final PostRepository postRepository;
     private final PostViewRepository postViewRepository;
     private final PostViewService postViewService;
     private final RecommendationClickRepository recommendationClickRepository;
     private final WishlistRepository wishlistRepository;
 
-    // 적응형 가중치 임계값
-    private static final long MIN_USER_VIEWS_FOR_COLLABORATIVE = 10;
-    private static final long MIN_TOTAL_VIEWS_FOR_COLLABORATIVE = 1000;
-    private static final long INTERMEDIATE_USER_VIEWS = 30;
-    private static final long INTERMEDIATE_TOTAL_VIEWS = 5000;
-
-    // 최신성 계산 기준 (일)
-    private static final long MAX_DAYS_FOR_RECENCY = 30;
-
-    // 다중 행동 추천 시스템 설정
-    private static final int MAX_CLICKS_TO_FETCH = 20;      // 클릭 최대 조회 수
-    private static final int MAX_WISHLISTS_TO_FETCH = 15;   // 찜 최대 조회 수
-    private static final int MAX_VIEWS_TO_FETCH = 30;       // 조회 최대 조회 수
-
-    // 시간 감쇠 설정
-    private static final double TIME_DECAY_LAMBDA = 0.1;    // 시간 감쇠 상수 (λ)
-    private static final int TIME_DECAY_THRESHOLD_DAYS = 7; // 감쇠 시작 임계값 (7일)
+    private record CollaborativeContext(Map<Long, Long> viewCounts, long maxViewCount) {
+        static CollaborativeContext empty() {
+            return new CollaborativeContext(Collections.emptyMap(), 1L);
+        }
+        boolean isEmpty() {
+            return viewCounts.isEmpty();
+        }
+        long getCountOrDefault(Long postId) {
+            return viewCounts.getOrDefault(postId, 0L);
+        }
+        long getMaxViewCountOrDefault() {
+            return Math.max(maxViewCount, 1L);
+        }
+    }
 
     /**
      * 사용자 맞춤 추천 (메인 페이지용)
@@ -105,11 +104,14 @@ public class RecommendationService {
                         .collect(Collectors.toMap(Post::getPostId, p -> p));
             }
 
+            // 5-1. 협업 필터링용 데이터 1회 조회 후 재사용
+            CollaborativeContext collaborativeContext = buildCollaborativeContext(userId);
+
             // 6. 각 게시글에 대한 점수 계산
             Map<Long, Double> scores = new HashMap<>();
             for (Post post : candidates) {
                 double contentScore = calculateContentBasedScore(post, history, interactionPostMap);
-                double collaborativeScore = calculateCollaborativeScore(post, userId);
+                double collaborativeScore = calculateCollaborativeScore(post, collaborativeContext);
 
                 double finalScore = contentScore * weights.getContent()
                         + collaborativeScore * weights.getCollaborative();
@@ -200,17 +202,37 @@ public class RecommendationService {
         long totalViewCount = postViewService.getTotalViewCount();
 
         // 데이터 충분
-        if (userViewCount >= INTERMEDIATE_USER_VIEWS && totalViewCount >= INTERMEDIATE_TOTAL_VIEWS) {
-            return RecommendationWeights.getBalanced();
+        if (userViewCount >= recommendationProperties.getIntermediateUserViews()
+                && totalViewCount >= recommendationProperties.getIntermediateTotalViews()) {
+            return RecommendationWeights.builder()
+                    .content(recommendationProperties.getBalancedContentWeight())
+                    .collaborative(recommendationProperties.getBalancedCollaborativeWeight())
+                    .popularity(0.0)
+                    .recency(0.0)
+                    .strategy("balanced-hybrid")
+                    .build();
         }
 
         // 중간 단계
-        if (userViewCount >= MIN_USER_VIEWS_FOR_COLLABORATIVE && totalViewCount >= MIN_TOTAL_VIEWS_FOR_COLLABORATIVE) {
-            return RecommendationWeights.getIntermediate();
+        if (userViewCount >= recommendationProperties.getMinUserViewsForCollaborative()
+                && totalViewCount >= recommendationProperties.getMinTotalViewsForCollaborative()) {
+            return RecommendationWeights.builder()
+                    .content(recommendationProperties.getIntermediateContentWeight())
+                    .collaborative(recommendationProperties.getIntermediateCollaborativeWeight())
+                    .popularity(0.0)
+                    .recency(0.0)
+                    .strategy("content-collaborative-mix")
+                    .build();
         }
 
         // 데이터 부족 (기본)
-        return RecommendationWeights.getDefault();
+        return RecommendationWeights.builder()
+                .content(recommendationProperties.getDefaultContentWeight())
+                .collaborative(recommendationProperties.getDefaultCollaborativeWeight())
+                .popularity(0.0)
+                .recency(0.0)
+                .strategy("content-heavy")
+                .build();
     }
 
     /**
@@ -241,7 +263,10 @@ public class RecommendationService {
             Post clickedPost = interactionPostMap.get(click.getPostId());
             if (clickedPost != null) {
                 double similarity = calculateSimilarityScore(clickedPost, post);
-                double decayedWeight = click.getDecayedWeight(TIME_DECAY_LAMBDA, TIME_DECAY_THRESHOLD_DAYS, now);
+                double decayedWeight = click.getDecayedWeight(
+                        recommendationProperties.getTimeDecayLambda(),
+                        recommendationProperties.getTimeDecayThresholdDays(),
+                        now);
 
                 totalScore += similarity * decayedWeight;
                 totalWeight += decayedWeight;
@@ -277,7 +302,7 @@ public class RecommendationService {
 
         // 3. 최신성 보정 (0.0 ~ 0.1 추가)
         double recencyScore = calculateRecencyScore(post);
-        score += recencyScore * 0.1;
+        score += recencyScore * recommendationProperties.getContentRecencyBoostWeight();
 
         return Math.min(score, 1.0); // 1.0 초과 방지
     }
@@ -286,42 +311,58 @@ public class RecommendationService {
      * Collaborative 점수 계산 (0.0 ~ 1.0로 정규화)
      * "이 사용자와 비슷한 취향의 사용자들이 본 게시글"
      */
-    private double calculateCollaborativeScore(Post post, Long userId) {
-        if (userId == null) {
+    private double calculateCollaborativeScore(Post post, CollaborativeContext collaborativeContext) {
+        if (collaborativeContext.isEmpty()) {
             return 0.0;
         }
 
+        long currentViewCount = collaborativeContext.getCountOrDefault(post.getPostId());
+        long maxViewCount = collaborativeContext.getMaxViewCountOrDefault();
+
+        return (double) currentViewCount / maxViewCount;
+    }
+
+    /**
+     * 협업 필터링용 데이터 1회 조회
+     */
+    private CollaborativeContext buildCollaborativeContext(Long userId) {
+        if (userId == null) {
+            return CollaborativeContext.empty();
+        }
+
         try {
-            // "이 사용자와 비슷한 취향의 사용자들이 본 게시글" 조회
             List<Object[]> collaborativePosts = postViewRepository.findCollaborativePostsByUserId(
-                    userId, PageRequest.of(0, 50)
+                    userId, PageRequest.of(0, recommendationProperties.getCollaborativeCandidateLimit())
             );
 
             if (collaborativePosts.isEmpty()) {
-                return 0.0;
+                return CollaborativeContext.empty();
             }
 
-            // 해당 게시글이 목록에 있는지 확인
+            Map<Long, Long> viewCounts = new HashMap<>();
             long maxViewCount = 1L;
-            long currentViewCount = 0L;
 
-            for (Object[]result : collaborativePosts) {
+            for (Object[] result : collaborativePosts) {
                 Long collaborativePostId = (Long) result[0];
                 Long viewCount = (Long) result[1];
 
-                maxViewCount = Math.max(maxViewCount, viewCount);
-
-                if (collaborativePostId.equals(post.getPostId())) {
-                    currentViewCount = viewCount;
+                if (collaborativePostId == null || viewCount == null) {
+                    continue;
                 }
+
+                viewCounts.put(collaborativePostId, viewCount);
+                maxViewCount = Math.max(maxViewCount, viewCount);
             }
 
-            // 정규화 (0.0 ~ 1.0)
-            return (double) currentViewCount / maxViewCount;
+            if (viewCounts.isEmpty()) {
+                return CollaborativeContext.empty();
+            }
+
+            return new CollaborativeContext(viewCounts, maxViewCount);
 
         } catch (Exception e) {
-            log.warn("Collaborative 점수 계산 실패", e);
-            return 0.0;
+            log.warn("Collaborative 데이터 조회 실패: userId={}", userId, e);
+            return CollaborativeContext.empty();
         }
     }
 
@@ -339,21 +380,21 @@ public class RecommendationService {
 
         // 1. 같은 책 (ISBN) - 50%
         if (hasSameBook(post1, post2)) {
-            score += 0.5;
+            score += recommendationProperties.getIsbnWeight();
         }
 
         // 2. 같은 과목 - 25%
         if (hasSameSubject(post1, post2)) {
-            score += 0.25;
+            score += recommendationProperties.getSubjectWeight();
         }
 
         // 3. 같은 학과 - 15%
         if (hasSameDepartment(post1, post2)) {
-            score += 0.15;
+            score += recommendationProperties.getDepartmentWeight();
         }
 
         // 4. 최신성 - 10%
-        score += calculateRecencyScore(post2) * 0.10;
+        score += calculateRecencyScore(post2) * recommendationProperties.getSimilarityRecencyWeight();
 
         return Math.min(score, 1.0); // 1.0 초과 방지
     }
@@ -418,17 +459,18 @@ public class RecommendationService {
      */
     private double calculateRecencyScore(Post post) {
         long daysOld = ChronoUnit.DAYS.between(post.getCreatedAt(), LocalDateTime.now());
+        long recencyDays = recommendationProperties.getRecencyDays();
 
         if (daysOld < 0) {
             return 1.0; // 미래 날짜는 1.0
         }
 
-        if (daysOld >= MAX_DAYS_FOR_RECENCY) {
-            return 0.0; // 30일 이상은 0.0
+        if (daysOld >= recencyDays) {
+            return 0.0; // 설정 일수 이상은 0.0
         }
 
         // 선형 감소
-        return 1.0 - ((double) daysOld / MAX_DAYS_FOR_RECENCY);
+        return 1.0 - ((double) daysOld / recencyDays);
     }
 
     /**
@@ -450,7 +492,7 @@ public class RecommendationService {
         try {
             // 1. 클릭 이력 조회 (가중치 1.0)
             List<Object[]> clickResults = recommendationClickRepository
-                    .findRecentClicksWithTimestampByUserId(userId, PageRequest.of(0, MAX_CLICKS_TO_FETCH));
+                    .findRecentClicksWithTimestampByUserId(userId, PageRequest.of(0, recommendationProperties.getMaxClicksToFetch()));
 
             for (Object[] row : clickResults) {
                 Long postId = (Long) row[0];
@@ -467,7 +509,7 @@ public class RecommendationService {
             List<Long> wishlistPostIds = wishlistRepository.findPostIdsByUserId(userId);
             int wishlistCount = 0;
             for (Long postId : wishlistPostIds) {
-                if (wishlistCount >= MAX_WISHLISTS_TO_FETCH) {
+                if (wishlistCount >= recommendationProperties.getMaxWishlistsToFetch()) {
                     break;
                 }
 
@@ -483,7 +525,7 @@ public class RecommendationService {
 
             // 3. 조회 이력 조회 (가중치 0.3)
             List<Long> viewedPostIds = postViewRepository
-                    .findRecentViewedPostIdsByUser_UserId(userId, PageRequest.of(0, MAX_VIEWS_TO_FETCH));
+                    .findRecentViewedPostIdsByUser_UserId(userId, PageRequest.of(0, recommendationProperties.getMaxViewsToFetch()));
 
             for (Long postId : viewedPostIds) {
                 // 조회는 timestamp가 없으므로 현재 시각 사용 (감쇠 없음)

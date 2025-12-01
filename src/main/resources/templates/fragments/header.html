@@ -694,7 +694,7 @@
     </footer>
     
     <!-- Enhanced Styles Fragment -->
-    <div th:fragment="styles">
+    <th:block th:fragment="styles">
         <!-- Dark Mode Prevention Script (깜빡임 방지) -->
         <script>
             (function() {
@@ -713,7 +713,7 @@
 
         <!-- Chatbot Widget Styles -->
         <link rel="stylesheet" th:href="@{/css/chatbot-widget.css}">
-        
+
         <!-- Additional Enhanced Styles -->
         <style>
             /* Footer hover effects */
@@ -721,19 +721,19 @@
                 color: #667eea !important;
                 transition: color 0.3s ease;
             }
-            
+
             /* Main content identification for skip link */
             #main-content {
                 scroll-margin-top: 80px;
             }
-            
+
             /* Enhanced loading states */
             .btn.loading {
                 position: relative;
                 pointer-events: none;
                 opacity: 0.7;
             }
-            
+
             .btn.loading::after {
                 content: '';
                 position: absolute;
@@ -748,16 +748,16 @@
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
             }
-            
+
             @keyframes spin {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
         </style>
-    </div>
-    
+    </th:block>
+
     <!-- Enhanced Scripts Fragment -->
-    <div th:fragment="scripts">
+    <th:block th:fragment="scripts">
         <!-- Core Dependencies -->
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -802,13 +802,13 @@
                 });
             }
         </script>
-    </div>
-    
+    </th:block>
+
     <!-- User Meta Information Fragment -->
-    <div th:fragment="user-meta" sec:authorize="isAuthenticated()">
+    <th:block th:fragment="user-meta" sec:authorize="isAuthenticated()">
         <meta name="user-id" th:content="${#authentication.principal.userId}">
         <meta name="user-name" th:content="${#authentication.principal.name}">
         <meta name="user-email" th:content="${#authentication.principal.email}">
-    </div>
+    </th:block>
 </body>
 </html>

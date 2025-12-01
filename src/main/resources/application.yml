@@ -109,3 +109,28 @@ chatbot:
     cache:
       enabled: true  # 임베딩 캐시 활성화
       file-path: data/embeddings-cache.json  # 캐시 파일 경로
+
+# Recommendation settings
+recommendation:
+  min-user-views-for-collaborative: 10
+  min-total-views-for-collaborative: 1000
+  intermediate-user-views: 30
+  intermediate-total-views: 5000
+  recency-days: 30
+  content-recency-boost-weight: 0.10
+  max-clicks-to-fetch: 20
+  max-wishlists-to-fetch: 15
+  max-views-to-fetch: 30
+  collaborative-candidate-limit: 50
+  time-decay-lambda: 0.1
+  time-decay-threshold-days: 7
+  default-content-weight: 0.90
+  default-collaborative-weight: 0.10
+  intermediate-content-weight: 0.70
+  intermediate-collaborative-weight: 0.30
+  balanced-content-weight: 0.50
+  balanced-collaborative-weight: 0.50
+  isbn-weight: 0.50
+  subject-weight: 0.25
+  department-weight: 0.15
+  similarity-recency-weight: 0.10

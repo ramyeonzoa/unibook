@@ -1,0 +1,37 @@
+{
+  "environment" : {
+    "totalMemoryMB" : 370,
+    "availableProcessors" : 18,
+    "maxMemoryMB" : 512,
+    "osVersion" : "10.0",
+    "javaVersion" : "21.0.4",
+    "osArch" : "amd64",
+    "freeMemoryMB" : 210,
+    "javaVendor" : "Oracle Corporation",
+    "osName" : "Windows 11"
+  },
+  "configuration" : {
+    "performanceThreshold" : 100.0,
+    "concurrentThreads" : 20,
+    "measurementIterations" : 100,
+    "warmupIterations" : 20,
+    "testSchoolIds" : [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+  },
+  "testName" : "repeated_query_baseline",
+  "timestamp" : "2025-11-24_18-41-36",
+  "statistics" : {
+    "operationName" : "반복 조회 (웜)",
+    "totalSamples" : 100,
+    "filteredSamples" : 83,
+    "mean" : 175442.1686746988,
+    "median" : 168100.0,
+    "min" : 149500.0,
+    "max" : 248200.0,
+    "standardDeviation" : 20614.422612087354,
+    "variance" : 4.249544196297384E8,
+    "p90" : 199180.00000000003,
+    "p95" : 237179.99999999997,
+    "p99" : 248200.0,
+    "outlierCount" : 17
+  }
+}

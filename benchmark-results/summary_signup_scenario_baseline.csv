@@ -1,0 +1,2 @@
+timestamp,testName,samples,mean_ms,median_ms,min_ms,max_ms,p90_ms,p95_ms,p99_ms,stdDev_ms,mean_ns,median_ns,min_ns,max_ns,outliers
+2025-11-24_18-54-12,signup_scenario_baseline,41,0.385,0.382,0.263,0.534,0.437,0.490,0.534,0.047,384968,381900,263000,534200,9

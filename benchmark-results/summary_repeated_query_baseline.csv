@@ -1,0 +1,2 @@
+timestamp,testName,samples,mean_ms,median_ms,min_ms,max_ms,p90_ms,p95_ms,p99_ms,stdDev_ms,mean_ns,median_ns,min_ns,max_ns,outliers
+2025-11-24_18-41-36,repeated_query_baseline,83,0.175,0.168,0.150,0.248,0.199,0.237,0.248,0.021,175442,168100,149500,248200,17

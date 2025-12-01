@@ -638,22 +638,39 @@ function stopRecAutoplay() {
  * @param {number|null} sourcePostId - SIMILAR 타입일 경우 기준 게시글 ID
  */
 function trackRecommendationClick(postId, type, position, sourcePostId = null) {
+  const url = '/api/recommendations/track-click';
+  const payload = {
+    postId: postId,
+    type: type,
+    position: position,
+    sourcePostId: sourcePostId
+  };
+  const body = JSON.stringify(payload);
+
+  // 1) sendBeacon 우선 시도
+  if (navigator.sendBeacon) {
+    const queued = navigator.sendBeacon(
+      url,
+      new Blob([body], { type: 'application/json' })
+    );
+    if (queued) {
+      return;
+    }
+  }
+
+  // 2) keepalive fetch 폴백
   const csrfToken = getCsrfToken();
   const csrfHeader = getCsrfHeader();
+  const headers = { 'Content-Type': 'application/json' };
+  if (csrfToken && csrfHeader) {
+    headers[csrfHeader] = csrfToken;
+  }
 
-  // 비동기 전송 (사용자 경험에 영향 없음)
-  fetch('/api/recommendations/track-click', {
+  fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      [csrfHeader]: csrfToken
-    },
-    body: JSON.stringify({
-      postId: postId,
-      type: type,
-      position: position,
-      sourcePostId: sourcePostId
-    })
+    headers: headers,
+    body: body,
+    keepalive: true
   }).catch(err => {
     // 실패해도 사용자에게 영향 없음
     console.debug('클릭 추적 실패:', err);
