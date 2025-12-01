@@ -1,7 +1,10 @@
 package com.unibook.controller.api;
 
 import com.unibook.domain.dto.PostResponseDto;
+import com.unibook.domain.dto.RecommendationMetricsDto;
 import com.unibook.security.UserPrincipal;
+import com.unibook.service.RecommendationClickService;
+import com.unibook.service.RecommendationImpressionService;
 import com.unibook.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +25,8 @@ import java.util.Map;
 public class RecommendationApiController {
 
     private final RecommendationService recommendationService;
+    private final RecommendationClickService clickService;
+    private final RecommendationImpressionService impressionService;
 
     /**
      * 사용자 맞춤 추천 (메인 페이지용)
@@ -81,6 +86,74 @@ public class RecommendationApiController {
                     "message", "추천 목록을 불러오는 중 오류가 발생했습니다",
                     "similarPosts", List.of()
             ));
+        }
+    }
+
+    /**
+     * 추천 클릭 추적
+     * POST /api/recommendations/track-click
+     */
+    @PostMapping("/track-click")
+    public ResponseEntity<Map<String, Object>> trackClick(
+            @RequestBody RecommendationMetricsDto.ClickTrackingRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        try {
+            Long userId = userPrincipal != null ? userPrincipal.getUserId() : null;
+
+            log.debug("추천 클릭 추적: postId={}, type={}, position={}, userId={}",
+                    request.getPostId(), request.getType(), request.getPosition(), userId);
+
+            // 비동기로 클릭 기록
+            clickService.recordClick(
+                    request.getPostId(),
+                    userId,
+                    request.getTypeEnum(),
+                    request.getPosition(),
+                    request.getSourcePostId()
+            );
+
+            return ResponseEntity.ok(Map.of("success", true));
+
+        } catch (Exception e) {
+            log.error("추천 클릭 추적 실패", e);
+            // 클릭 추적 실패는 사용자 경험에 영향 없으므로 success true 반환
+            return ResponseEntity.ok(Map.of("success", true));
+        }
+    }
+
+    /**
+     * 추천 노출 추적
+     * POST /api/recommendations/track-impression
+     */
+    @PostMapping("/track-impression")
+    public ResponseEntity<Map<String, Object>> trackImpression(
+            @RequestBody RecommendationMetricsDto.ImpressionTrackingRequest request,
+            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+
+        try {
+            Long userId = userPrincipal != null ? userPrincipal.getUserId() : null;
+
+            log.debug("추천 노출 추적: sessionId={}, type={}, count={}, pageType={}, userId={}",
+                    request.getSessionId(), request.getType(), request.getCount(),
+                    request.getPageType(), userId);
+
+            // 비동기로 노출 기록
+            impressionService.recordImpression(
+                    request.getSessionId(),
+                    userId,
+                    request.getTypeEnum(),
+                    request.getCount(),
+                    request.getPageType(),
+                    request.getSourcePostId()
+            );
+
+            return ResponseEntity.ok(Map.of("success", true));
+
+        } catch (Exception e) {
+            log.error("추천 노출 추적 실패", e);
+            // 노출 추적 실패는 사용자 경험에 영향 없으므로 success true 반환
+            return ResponseEntity.ok(Map.of("success", true));
         }
     }
 }

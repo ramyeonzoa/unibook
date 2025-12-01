@@ -12,6 +12,106 @@ function getCsrfHeader() {
   return document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
 }
 
+// ======== 세션 관리 시스템 ========
+const SessionManager = {
+  SESSION_KEY: 'unibook_rec_session',
+  SESSION_DURATION: 24 * 60 * 60 * 1000, // 24시간 (밀리초)
+
+  /**
+   * 세션 ID 생성
+   * UUID v4 형식 생성
+   */
+  generateSessionId() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  },
+
+  /**
+   * 현재 세션 정보 가져오기
+   * @returns {Object} { sessionId, expiresAt }
+   */
+  getSession() {
+    try {
+      const sessionData = localStorage.getItem(this.SESSION_KEY);
+      if (!sessionData) {
+        return this.createNewSession();
+      }
+
+      const session = JSON.parse(sessionData);
+      const now = Date.now();
+
+      // 세션 만료 체크
+      if (session.expiresAt < now) {
+        console.debug('세션 만료, 새로운 세션 생성');
+        return this.createNewSession();
+      }
+
+      return session;
+    } catch (error) {
+      console.error('세션 조회 실패:', error);
+      return this.createNewSession();
+    }
+  },
+
+  /**
+   * 새로운 세션 생성 및 저장
+   * @returns {Object} { sessionId, expiresAt }
+   */
+  createNewSession() {
+    const session = {
+      sessionId: this.generateSessionId(),
+      expiresAt: Date.now() + this.SESSION_DURATION
+    };
+
+    try {
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+      console.debug('새로운 세션 생성:', session.sessionId);
+    } catch (error) {
+      console.error('세션 저장 실패:', error);
+    }
+
+    return session;
+  },
+
+  /**
+   * 세션 ID 가져오기 (간편 접근 메서드)
+   * @returns {string}
+   */
+  getSessionId() {
+    return this.getSession().sessionId;
+  },
+
+  /**
+   * 세션 갱신 (만료 시간 연장)
+   */
+  renewSession() {
+    const session = this.getSession();
+    session.expiresAt = Date.now() + this.SESSION_DURATION;
+
+    try {
+      localStorage.setItem(this.SESSION_KEY, JSON.stringify(session));
+      console.debug('세션 갱신:', session.sessionId);
+    } catch (error) {
+      console.error('세션 갱신 실패:', error);
+    }
+  },
+
+  /**
+   * 세션 삭제 (테스트용 또는 로그아웃 시)
+   */
+  clearSession() {
+    try {
+      localStorage.removeItem(this.SESSION_KEY);
+      console.debug('세션 삭제 완료');
+    } catch (error) {
+      console.error('세션 삭제 실패:', error);
+    }
+  }
+};
+
 /**
  * 맞춤 추천 로드 (메인 페이지용)
  */
@@ -41,6 +141,9 @@ function loadPersonalizedRecommendations(limit = 10) {
   .then(data => {
     if (data.success && data.recommendations && data.recommendations.length > 0) {
       renderMainPageRecommendations(wrapper, data.recommendations);
+
+      // 노출 추적 (5분 중복 윈도우는 서버에서 처리)
+      trackRecommendationImpression('FOR_YOU', data.recommendations.length, 'main', null);
     } else {
       // 추천할 게시글이 없을 때
       wrapper.innerHTML = `
@@ -90,6 +193,9 @@ function loadSimilarPosts(postId, limit = 6) {
   .then(data => {
     if (data.success && data.similarPosts && data.similarPosts.length > 0) {
       renderDetailPageSimilarPosts(container, data.similarPosts);
+
+      // 노출 추적 (5분 중복 윈도우는 서버에서 처리)
+      trackRecommendationImpression('SIMILAR', data.similarPosts.length, 'detail', postId);
     } else {
       container.innerHTML = `
         <p class="text-muted text-center">비슷한 게시글이 없습니다</p>
@@ -111,7 +217,7 @@ function loadSimilarPosts(postId, limit = 6) {
  * 메인 페이지 추천 렌더링 (index.html의 최근 거래 게시글과 동일한 구조)
  */
 function renderMainPageRecommendations(wrapper, posts) {
-  const cardsHTML = posts.map(post => createMainPageCard(post)).join('');
+  const cardsHTML = posts.map((post, index) => createMainPageCard(post, index)).join('');
   wrapper.innerHTML = `
     <div class="posts-carousel">
       <!-- 캐러셀 네비게이션 버튼 -->
@@ -144,7 +250,9 @@ function renderMainPageRecommendations(wrapper, posts) {
  * 상세 페이지 비슷한 게시글 렌더링 (detail.html의 같은 과목 구조)
  */
 function renderDetailPageSimilarPosts(container, posts) {
-  const cardsHTML = posts.map(post => createDetailPageCard(post)).join('');
+  // 현재 게시글 ID 가져오기
+  const sourcePostId = document.getElementById('current-post-id')?.value || null;
+  const cardsHTML = posts.map((post, index) => createDetailPageCard(post, index, sourcePostId)).join('');
   // container 자체가 swiper-wrapper이므로 바로 카드들만 넣음
   container.innerHTML = cardsHTML;
 
@@ -186,7 +294,7 @@ function renderDetailPageSimilarPosts(container, posts) {
 /**
  * 메인 페이지 카드 생성 (index.html post-card 구조와 동일)
  */
-function createMainPageCard(post) {
+function createMainPageCard(post, position) {
   const hasImage = post.images && post.images.length > 0;
   const imagePath = hasImage ? post.images[0].imagePath : '';
   const statusInfo = getStatusInfo(post.status);
@@ -196,7 +304,7 @@ function createMainPageCard(post) {
   const schoolName = post.user?.schoolName || '학교 정보 없음';
 
   return `
-    <div class="post-card" onclick="window.location.href='/posts/${post.postId}'">
+    <div class="post-card" onclick="trackRecommendationClick(${post.postId}, 'FOR_YOU', ${position}); window.location.href='/posts/${post.postId}'">
       <div class="post-card-image ${hasImage ? 'has-image' : ''}">
         <!-- 상태 배지 -->
         <span class="status-badge ${statusInfo.className}">
@@ -239,7 +347,7 @@ function createMainPageCard(post) {
 /**
  * 상세 페이지 카드 생성 (detail.html related-card 구조와 동일)
  */
-function createDetailPageCard(post) {
+function createDetailPageCard(post, position, sourcePostId) {
   const hasImage = post.images && post.images.length > 0;
   const imagePath = hasImage ? post.images[0].imagePath : '';
   const statusInfo = getStatusInfo(post.status);
@@ -248,7 +356,7 @@ function createDetailPageCard(post) {
 
   return `
     <div class="swiper-slide">
-      <a href="/posts/${post.postId}" class="text-decoration-none">
+      <a href="/posts/${post.postId}" class="text-decoration-none" onclick="trackRecommendationClick(${post.postId}, 'SIMILAR', ${position}, ${sourcePostId}); return true;">
         <div class="related-card">
           <!-- 이미지 -->
           <div class="related-card-image">
@@ -520,6 +628,70 @@ function stopRecAutoplay() {
   if (recAutoplayInterval) {
     clearInterval(recAutoplayInterval);
   }
+}
+
+/**
+ * 추천 클릭 추적
+ * @param {number} postId - 클릭된 게시글 ID
+ * @param {string} type - 추천 타입 ("FOR_YOU" 또는 "SIMILAR")
+ * @param {number} position - 추천 목록 내 위치 (0부터 시작)
+ * @param {number|null} sourcePostId - SIMILAR 타입일 경우 기준 게시글 ID
+ */
+function trackRecommendationClick(postId, type, position, sourcePostId = null) {
+  const csrfToken = getCsrfToken();
+  const csrfHeader = getCsrfHeader();
+
+  // 비동기 전송 (사용자 경험에 영향 없음)
+  fetch('/api/recommendations/track-click', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      [csrfHeader]: csrfToken
+    },
+    body: JSON.stringify({
+      postId: postId,
+      type: type,
+      position: position,
+      sourcePostId: sourcePostId
+    })
+  }).catch(err => {
+    // 실패해도 사용자에게 영향 없음
+    console.debug('클릭 추적 실패:', err);
+  });
+}
+
+/**
+ * 추천 노출 추적
+ * @param {string} type - 추천 타입 ("FOR_YOU" 또는 "SIMILAR")
+ * @param {number} count - 노출된 추천 개수
+ * @param {string} pageType - 페이지 타입 ("main", "detail" 등)
+ * @param {number|null} sourcePostId - SIMILAR 타입일 경우 기준 게시글 ID
+ */
+function trackRecommendationImpression(type, count, pageType, sourcePostId = null) {
+  if (count <= 0) return;
+
+  const sessionId = SessionManager.getSessionId();
+  const csrfToken = getCsrfToken();
+  const csrfHeader = getCsrfHeader();
+
+  // 비동기 전송 (사용자 경험에 영향 없음)
+  fetch('/api/recommendations/track-impression', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      [csrfHeader]: csrfToken
+    },
+    body: JSON.stringify({
+      sessionId: sessionId,
+      type: type,
+      count: count,
+      pageType: pageType,
+      sourcePostId: sourcePostId
+    })
+  }).catch(err => {
+    // 실패해도 사용자에게 영향 없음
+    console.debug('노출 추적 실패:', err);
+  });
 }
 
 // 페이지 로드 시 자동 실행

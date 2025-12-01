@@ -67,3 +67,7 @@ Thumbs.db
 
 # Environment variables
 .env
+
+# AI / Claude Code related files
+.claude/
+**/claude-code-guide/

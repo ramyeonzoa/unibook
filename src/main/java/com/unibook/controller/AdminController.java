@@ -3,14 +3,17 @@ package com.unibook.controller;
 import com.unibook.domain.entity.Post;
 import com.unibook.domain.entity.Report;
 import com.unibook.domain.entity.User;
+import com.unibook.domain.entity.RecommendationClick;
 import com.unibook.domain.dto.PostResponseDto;
 import com.unibook.domain.dto.EmbeddingMetricsSummary;
 import com.unibook.domain.dto.EvaluationResult;
+import com.unibook.domain.dto.RecommendationMetricsDto;
 import com.unibook.service.PostService;
 import com.unibook.service.ReportService;
 import com.unibook.service.UserService;
 import com.unibook.service.EmbeddingMetricsLogger;
 import com.unibook.service.ChatbotEvaluationService;
+import com.unibook.service.RecommendationMetricsService;
 import com.unibook.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +44,7 @@ public class AdminController {
     private final PostService postService;
     private final EmbeddingMetricsLogger metricsLogger;
     private final ChatbotEvaluationService chatbotEvaluationService;
+    private final RecommendationMetricsService recommendationMetricsService;
     
     /**
      * 관리자 대시보드 메인
@@ -310,6 +314,73 @@ public class AdminController {
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("챗봇 평가 실패", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * 추천 시스템 메트릭 페이지
+     */
+    @GetMapping("/recommendations")
+    public String recommendations(
+            @RequestParam(defaultValue = "7") int days,
+            Model model) {
+        log.info("추천 메트릭 페이지 접근: days={}", days);
+
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(days);
+
+        // 기본 메트릭
+        RecommendationMetricsDto.Response metrics =
+                recommendationMetricsService.getMetrics(startDate, endDate);
+
+        // CTR 관련 메트릭 추가
+        long totalImpressions = recommendationMetricsService.getTotalImpressions(startDate, endDate);
+        double overallCTR = recommendationMetricsService.calculateCTR(startDate, endDate);
+
+        // 타입별 통계
+        List<RecommendationMetricsDto.TypeStats> typeStats =
+                recommendationMetricsService.getTypeStats(startDate, endDate);
+
+        // 타입별 통계를 각각 분리해서 템플릿으로 보냄
+        RecommendationMetricsDto.TypeStats forYouStats = typeStats.stream()
+                .filter(ts -> ts.getType() == RecommendationClick.RecommendationType.FOR_YOU)
+                .findFirst()
+                .orElse(null);
+
+        RecommendationMetricsDto.TypeStats similarStats = typeStats.stream()
+                .filter(ts -> ts.getType() == RecommendationClick.RecommendationType.SIMILAR)
+                .findFirst()
+                .orElse(null);
+
+        model.addAttribute("metrics", metrics);
+        model.addAttribute("totalImpressions", totalImpressions);
+        model.addAttribute("overallCTR", overallCTR);
+        model.addAttribute("typeStats", typeStats);
+        model.addAttribute("forYouStats", forYouStats);
+        model.addAttribute("similarStats", similarStats);
+        model.addAttribute("days", days);
+
+        return "admin/recommendations";
+    }
+
+    /**
+     * 추천 시스템 메트릭 API (AJAX용)
+     */
+    @GetMapping("/api/recommendations/metrics")
+    @ResponseBody
+    public ResponseEntity<RecommendationMetricsDto.Response> getRecommendationMetricsApi(
+            @RequestParam(defaultValue = "7") int days) {
+        try {
+            LocalDateTime endDate = LocalDateTime.now();
+            LocalDateTime startDate = endDate.minusDays(days);
+
+            RecommendationMetricsDto.Response metrics =
+                    recommendationMetricsService.getMetrics(startDate, endDate);
+
+            return ResponseEntity.ok(metrics);
+        } catch (Exception e) {
+            log.error("추천 메트릭 조회 실패", e);
             return ResponseEntity.internalServerError().build();
         }
     }

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>추천 메트릭 - Unibook</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- 공통 스타일 -->
+  <div th:replace="~{fragments/header :: styles}"></div>
+  <!-- CSRF Token -->
+  <meta name="_csrf" th:content="${_csrf.token}"/>
+  <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+  <!-- 사용자 정보 메타 태그 -->
+  <div th:replace="~{fragments/header :: user-meta}"></div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Admin 사이드바 스타일 -->
+  <style th:replace="~{fragments/admin-sidebar :: styles}"></style>
+
+  <style>
+    .stat-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stat-icon.clicks {
+      background: #e7f3ff;
+      color: #0066cc;
+    }
+
+    .stat-icon.ctr {
+      background: #e8f5e8;
+      color: #198754;
+    }
+
+    .stat-icon.for-you {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .stat-icon.similar {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+
+    /* 다크모드 */
+    [data-bs-theme="dark"] .stat-card,
+    [data-bs-theme="dark"] .chart-card {
+      background: var(--bs-gray-800);
+    }
+
+    [data-bs-theme="dark"] .stat-icon.clicks {
+      background: rgba(0, 102, 204, 0.2);
+      color: #66b3ff;
+    }
+
+    [data-bs-theme="dark"] .stat-icon.ctr {
+      background: rgba(25, 135, 84, 0.2);
+      color: #75d99c;
+    }
+
+    [data-bs-theme="dark"] .stat-icon.for-you {
+      background: rgba(133, 100, 4, 0.2);
+      color: #ffc107;
+    }
+
+    [data-bs-theme="dark"] .stat-icon.similar {
+      background: rgba(114, 28, 36, 0.2);
+      color: #ff6b7a;
+    }
+  </style>
+</head>
+<body>
+<!-- Header -->
+<div th:replace="~{fragments/header :: header}"></div>
+
+<div class="container-fluid" id="main-content">
+  <div class="row">
+    <!-- 사이드바 -->
+    <div th:replace="~{fragments/admin-sidebar :: sidebar('recommendations')}"></div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="col-md-9 col-lg-10">
+      <div class="p-4">
+        <!-- 페이지 헤더 -->
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+          <h2 class="mb-0">
+            <i class="bi bi-stars text-warning me-2"></i>추천 메트릭
+          </h2>
+
+          <!-- 기간 선택 -->
+          <div class="btn-toolbar mb-2 mb-md-0">
+            <div class="btn-group me-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      th:classappend="${days == 7} ? 'active' : ''"
+                      onclick="location.href='/admin/recommendations?days=7'">7일</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      th:classappend="${days == 30} ? 'active' : ''"
+                      onclick="location.href='/admin/recommendations?days=30'">30일</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary"
+                      th:classappend="${days == 90} ? 'active' : ''"
+                      onclick="location.href='/admin/recommendations?days=90'">90일</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 통계 카드 - 첫 번째 행 -->
+        <div class="row g-4 mb-4">
+          <div class="col-md-3">
+            <div class="stat-card p-4">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon clicks">
+                  <i class="bi bi-cursor"></i>
+                </div>
+                <div class="ms-3">
+                  <h3 class="fw-bold mb-1" th:text="${metrics.totalClicks}">0</h3>
+                  <p class="text-muted mb-0">총 클릭 수</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card p-4">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon clicks" style="background: #fff0e6; color: #ff8c42;">
+                  <i class="bi bi-eye"></i>
+                </div>
+                <div class="ms-3">
+                  <h3 class="fw-bold mb-1" th:text="${totalImpressions}">0</h3>
+                  <p class="text-muted mb-0">총 노출 수</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card p-4">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon ctr">
+                  <i class="bi bi-percent"></i>
+                </div>
+                <div class="ms-3">
+                  <h3 class="fw-bold mb-1"><span th:text="${overallCTR}">0.0</span>%</h3>
+                  <p class="text-muted mb-0">전체 CTR</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stat-card p-4">
+              <div class="d-flex align-items-center">
+                <div class="stat-icon clicks" style="background: #e0e7ff; color: #6366f1;">
+                  <i class="bi bi-people"></i>
+                </div>
+                <div class="ms-3">
+                  <h3 class="fw-bold mb-1" th:text="${totalImpressions > 0 ? metrics.totalClicks * 100 / totalImpressions : 0}">0</h3>
+                  <p class="text-muted mb-0">참여율 (×100)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 통계 카드 - 두 번째 행 (타입별) -->
+        <div class="row g-4 mb-5">
+          <div class="col-md-6">
+            <div class="stat-card p-4">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex align-items-center">
+                  <div class="stat-icon for-you">
+                    <i class="bi bi-person-check"></i>
+                  </div>
+                  <div class="ms-3">
+                    <h5 class="fw-bold mb-0">맞춤 추천</h5>
+                    <p class="text-muted mb-0 small">FOR_YOU</p>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-4">
+                  <p class="text-muted mb-1 small">클릭 수</p>
+                  <h4 class="fw-bold" th:text="${forYouStats != null ? forYouStats.clicks : 0}">0</h4>
+                </div>
+                <div class="col-4">
+                  <p class="text-muted mb-1 small">노출 수</p>
+                  <h4 class="fw-bold" th:text="${forYouStats != null ? forYouStats.impressions : 0}">0</h4>
+                </div>
+                <div class="col-4">
+                  <p class="text-muted mb-1 small">CTR</p>
+                  <h4 class="fw-bold text-success">
+                    <span th:text="${forYouStats != null ? forYouStats.ctr : 0.0}">0.0</span>%
+                  </h4>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="stat-card p-4">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div class="d-flex align-items-center">
+                  <div class="stat-icon similar">
+                    <i class="bi bi-grid"></i>
+                  </div>
+                  <div class="ms-3">
+                    <h5 class="fw-bold mb-0">비슷한 게시글</h5>
+                    <p class="text-muted mb-0 small">SIMILAR</p>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-4">
+                  <p class="text-muted mb-1 small">클릭 수</p>
+                  <h4 class="fw-bold" th:text="${similarStats != null ? similarStats.clicks : 0}">0</h4>
+                </div>
+                <div class="col-4">
+                  <p class="text-muted mb-1 small">노출 수</p>
+                  <h4 class="fw-bold" th:text="${similarStats != null ? similarStats.impressions : 0}">0</h4>
+                </div>
+                <div class="col-4">
+                  <p class="text-muted mb-1 small">CTR</p>
+                  <h4 class="fw-bold text-success">
+                    <span th:text="${similarStats != null ? similarStats.ctr : 0.0}">0.0</span>%
+                  </h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 차트 -->
+        <div class="row">
+          <div class="col-md-8">
+            <div class="chart-card p-4">
+              <h5 class="mb-4">일별 클릭 추이</h5>
+              <div class="chart-container">
+                <canvas id="dailyChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="chart-card p-4">
+              <h5 class="mb-4">타입별 클릭 비율</h5>
+              <div class="chart-container">
+                <canvas id="typeChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Dark Mode Script -->
+<script th:src="@{/js/dark-mode.js}"></script>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  // 일별 클릭 차트
+  const dailyMetrics = /*[[${metrics.dailyMetrics}]]*/ [];
+  const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+
+  new Chart(dailyCtx, {
+    type: 'line',
+    data: {
+      labels: dailyMetrics.map(m => m.date),
+      datasets: [
+        {
+          label: '맞춤 추천',
+          data: dailyMetrics.map(m => m.forYouClicks),
+          borderColor: '#667eea',
+          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+          tension: 0.4
+        },
+        {
+          label: '비슷한 게시글',
+          data: dailyMetrics.map(m => m.similarClicks),
+          borderColor: '#764ba2',
+          backgroundColor: 'rgba(118, 75, 162, 0.1)',
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  // 타입별 클릭 차트
+  const clicksByType = /*[[${metrics.clicksByType}]]*/ {};
+  const typeCtx = document.getElementById('typeChart').getContext('2d');
+
+  new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['맞춤 추천', '비슷한 게시글'],
+      datasets: [{
+        data: [clicksByType['FOR_YOU'] || 0, clicksByType['SIMILAR'] || 0],
+        backgroundColor: ['#667eea', '#764ba2']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        }
+      }
+    }
+  });
+  /*]]>*/
+</script>
+
+</body>
+</html>
