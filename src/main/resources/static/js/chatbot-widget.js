@@ -220,7 +220,7 @@ class ChatbotWidget {
       this.hideLoading();
 
       // 봇 응답 추가
-      this.addMessage('bot', response.answer, response.sources);
+      this.addMessage('bot', response.answer, response.sources, response.recommendations);
 
     } catch (error) {
       console.error('챗봇 API 오류:', error);
@@ -270,7 +270,7 @@ class ChatbotWidget {
   /**
    * 메시지 추가
    */
-  addMessage(type, content, sources = null) {
+  addMessage(type, content, sources = null, recommendations = null) {
     const messagesContainer = document.getElementById('chatbotMessages');
 
     // 환영 메시지 제거
@@ -284,6 +284,7 @@ class ChatbotWidget {
       type: type,
       content: content,
       sources: sources,
+      recommendations: recommendations,
       timestamp: new Date()
     };
 
@@ -346,17 +347,74 @@ class ChatbotWidget {
       `;
     }
 
+    const recommendationsHTML = this.buildRecommendationsHTML(message.recommendations);
+
     return `
       <div class="chatbot-message-wrapper ${alignClass}">
         <div class="chatbot-message ${messageClass}">
           <div class="chatbot-message-content">
-            ${this.escapeHtml(message.content)}
+            ${this.escapeHtml(message.content).replace(/\\n/g, '<br>').replace(/\n/g, '<br>')}
           </div>
+          ${recommendationsHTML}
           <div class="chatbot-message-info">
             <small>${timeString}</small>
           </div>
           ${sourcesHTML}
         </div>
+      </div>
+    `;
+  }
+
+  buildRecommendationsHTML(recommendations) {
+    if (!recommendations || recommendations.length === 0) return '';
+
+    const visibleLimit = 3;
+    const visible = recommendations.slice(0, visibleLimit);
+    const hidden = recommendations.slice(visibleLimit);
+    const hiddenId = `chatbot-rec-hidden-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
+    const renderItem = (rec, idx) => {
+      const title = this.escapeHtml(rec.title || '제목 없음');
+      const price = rec.price != null ? rec.price.toLocaleString('ko-KR') + '원' : '가격 정보 없음';
+      const link = `/posts/${rec.postId}`;
+
+      return `
+        <div class="chatbot-rec-item">
+          <div class="chatbot-rec-left">
+            <div class="chatbot-rec-title">${idx + 1}. ${title}</div>
+            <div class="chatbot-rec-meta">
+              <span class="chatbot-rec-price">${price}</span>
+            </div>
+          </div>
+          <div class="chatbot-rec-right">
+            <a class="chatbot-rec-link" href="${link}">바로가기</a>
+          </div>
+        </div>
+      `;
+    };
+
+    const itemsVisible = visible.map(renderItem).join('');
+    const itemsHidden = hidden.map((rec, idx) => renderItem(rec, visibleLimit + idx)).join('');
+
+    const moreToggle = hidden.length > 0 ? `
+      <button class="chatbot-rec-toggle" type="button"
+        onclick="const el=document.getElementById('${hiddenId}'); const opened=el.classList.toggle('show'); this.innerText = opened ? '접기' : '추가 ${hidden.length}개 보기';">
+        추가 ${hidden.length}개 보기
+      </button>
+    ` : '';
+
+    return `
+      <div class="chatbot-recommendations">
+        <div class="chatbot-rec-titlebar">
+          <i class="bi bi-stars me-1"></i> 추천 목록
+        </div>
+        <div class="chatbot-rec-list">
+          ${itemsVisible}
+        </div>
+        <div class="chatbot-rec-list chatbot-rec-hidden" id="${hiddenId}">
+          ${itemsHidden}
+        </div>
+        ${moreToggle}
       </div>
     `;
   }

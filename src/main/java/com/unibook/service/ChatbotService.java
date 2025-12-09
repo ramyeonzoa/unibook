@@ -1,6 +1,9 @@
 package com.unibook.service;
 
 import com.unibook.domain.dto.ChatbotResponseDto;
+import com.unibook.domain.dto.PostResponseDto;
+import com.unibook.config.RecommendationProperties;
+import com.unibook.service.RecommendationService;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
@@ -15,6 +18,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.text.NumberFormat;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,6 +40,8 @@ import java.util.stream.Collectors;
 public class ChatbotService {
 
   private final EmbeddingService embeddingService;
+  private final RecommendationService recommendationService;
+  private final RecommendationProperties recommendationProperties;
 
   @Value("${openai.api.key}")
   private String openAiApiKey;
@@ -78,6 +86,12 @@ public class ChatbotService {
     log.info("사용자 질문: {}", userQuestion);
 
     try {
+      // 추천 의도 감지 시 추천 API 연동
+      if (isRecommendationIntent(userQuestion)) {
+        log.info("추천 의도 감지: '{}'", userQuestion);
+        return buildRecommendationResponse();
+      }
+
       // Step 1: 유사한 FAQ 검색 (상위 10개 후보 가져오기)
       double similarityThreshold = 0.625; // 유사도 임계값 (GPT 거부 패턴 감지와 최적 균형점)
       List<EmbeddingMatch<TextSegment>> relevantDocs =
@@ -317,5 +331,61 @@ public class ChatbotService {
   public String getServiceInfo() {
     return String.format("Model: %s, MaxTokens: %d",
         modelName, maxTokens);
+  }
+
+  /**
+   * 추천 의도 감지 (간단한 키워드 기반)
+   */
+  private boolean isRecommendationIntent(String userQuestion) {
+    if (userQuestion == null) {
+      return false;
+    }
+    String normalized = userQuestion.toLowerCase();
+    String compact = normalized.replaceAll("\\s+", "");
+
+    // 명시적 요청 패턴
+    boolean hasRequest =
+        compact.contains("추천해") ||
+        compact.contains("추천해줘") ||
+        compact.contains("추천좀") ||
+        compact.contains("추천부탁") ||
+        compact.contains("추천해주") ||
+        normalized.contains("recommend");
+
+    if (!hasRequest) {
+      return false;
+    }
+
+    // 단순 설명/질문은 제외
+    String[] explanationKeywords = {"뭐야", "무엇", "어떻게", "설명", "원리", "시스템", "기능", "동작", "왜"};
+    if (Arrays.stream(explanationKeywords).anyMatch(compact::contains)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * 추천 서비스와 오케스트레이션하여 게시글 추천 반환
+   */
+  private ChatbotResponseDto buildRecommendationResponse() {
+    int limit = Math.max(1, recommendationProperties.getSlotMixSize());
+    List<PostResponseDto> recommendations = recommendationService.getPersonalizedRecommendations(null, limit);
+
+    if (recommendations.isEmpty()) {
+      return ChatbotResponseDto.builder()
+          .answer("추천할 게시글이 없습니다. 조금 뒤에 다시 시도해 주세요.")
+          .confidence(null)
+          .recommendations(List.of())
+          .status("RECOMMENDATION_EMPTY")
+          .build();
+    }
+
+    return ChatbotResponseDto.builder()
+        .answer("추천 결과입니다.")
+        .confidence(0.9)
+        .recommendations(recommendations)
+        .status("RECOMMENDATION")
+        .build();
   }
 }

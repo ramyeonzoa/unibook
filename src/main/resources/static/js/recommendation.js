@@ -743,7 +743,9 @@ function trackRecommendationImpression(type, count, pageType, sourcePostId = nul
 document.addEventListener('DOMContentLoaded', function() {
   // 메인 페이지 추천
   if (document.getElementById('recommendations-wrapper')) {
-    const mixSize = /*[[${recommendationSlotMixSize}]]*/ 10;
+    const mixSize = (window.RECOMMENDATION_CONFIG && window.RECOMMENDATION_CONFIG.slotMixSize)
+      ? window.RECOMMENDATION_CONFIG.slotMixSize
+      : 10;
     loadPersonalizedRecommendations(mixSize);
   }
 

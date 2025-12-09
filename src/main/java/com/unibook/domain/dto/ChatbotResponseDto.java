@@ -67,6 +67,11 @@ public class ChatbotResponseDto {
   private List<String> relatedAnchors;
 
   /**
+   * 추천 게시글 (의도 감지 시 선택적으로 포함)
+   */
+  private List<PostResponseDto> recommendations;
+
+  /**
    * 에러 또는 특수 상황 표시 (선택적)
    * 예: "RATE_LIMITED", "NO_MATCH_FOUND"
    */

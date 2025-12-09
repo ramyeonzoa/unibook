@@ -49,7 +49,7 @@ public class RecommendationProperties {
 
   // 슬롯 기반 믹싱 설정
   private boolean slotMixEnabled = true;
-  private int slotMixSize = 10;
+  private int slotMixSize = 12;
   private double slotMixPersonalizedRatio = 1.0;
   private double slotMixPopularRatio = 0.0;
   private double slotMixFreshRatio = 0.0;

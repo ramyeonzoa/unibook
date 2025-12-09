@@ -643,6 +643,11 @@
                 <i class="bi bi-stars me-2" style="color: #ffd700;"></i>맞춤 추천
             </h2>
 
+            <script th:inline="javascript">
+              window.RECOMMENDATION_CONFIG = window.RECOMMENDATION_CONFIG || {};
+              window.RECOMMENDATION_CONFIG.slotMixSize = [[${recommendationSlotMixSize}]];
+            </script>
+
             <div id="recommendations-wrapper">
                 <!-- recommendation.js가 자동으로 채움 -->
                 <div class="text-center py-5">
