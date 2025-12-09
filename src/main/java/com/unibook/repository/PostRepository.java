@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -390,6 +391,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Page<Post> findByTitleContainingOrDescriptionContaining(String title, String description, Pageable pageable);
     Page<Post> findByTitleContainingOrDescriptionContainingAndStatus(String title, String description, Post.PostStatus status, Pageable pageable);
     Page<Post> findByStatus(Post.PostStatus status, Pageable pageable);
+    Page<Post> findByStatusAndCreatedAtAfter(Post.PostStatus status, LocalDateTime createdAt, Pageable pageable);
     long countByStatus(Post.PostStatus status);
     
     /**

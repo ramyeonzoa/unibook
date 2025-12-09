@@ -8,6 +8,7 @@ import com.unibook.domain.dto.PostResponseDto;
 import com.unibook.domain.dto.EmbeddingMetricsSummary;
 import com.unibook.domain.dto.EvaluationResult;
 import com.unibook.domain.dto.RecommendationMetricsDto;
+import com.unibook.config.RecommendationProperties;
 import com.unibook.service.PostService;
 import com.unibook.service.ReportService;
 import com.unibook.service.UserService;
@@ -28,6 +29,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,7 @@ public class AdminController {
     private final EmbeddingMetricsLogger metricsLogger;
     private final ChatbotEvaluationService chatbotEvaluationService;
     private final RecommendationMetricsService recommendationMetricsService;
+    private final RecommendationProperties recommendationProperties;
     
     /**
      * 관리자 대시보드 메인
@@ -323,24 +326,39 @@ public class AdminController {
      */
     @GetMapping("/recommendations")
     public String recommendations(
-            @RequestParam(defaultValue = "7") int days,
+            @RequestParam(required = false) Integer days,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             Model model) {
-        log.info("추천 메트릭 페이지 접근: days={}", days);
+        log.info("추천 메트릭 페이지 접근: days={}, startDate={}, endDate={}", days, startDate, endDate);
 
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(days);
+        LocalDateTime endDt = endDate != null
+                ? LocalDate.parse(endDate).atTime(23, 59, 59)
+                : LocalDateTime.now();
+        LocalDateTime startDt;
+        if (startDate != null) {
+            startDt = LocalDate.parse(startDate).atStartOfDay();
+        } else {
+            int targetDays = days != null ? days : 7;
+            startDt = endDt.minusDays(targetDays);
+            days = targetDays;
+        }
 
         // 기본 메트릭
         RecommendationMetricsDto.Response metrics =
-                recommendationMetricsService.getMetrics(startDate, endDate);
+                recommendationMetricsService.getMetrics(startDt, endDt);
 
         // CTR 관련 메트릭 추가
-        long totalImpressions = recommendationMetricsService.getTotalImpressions(startDate, endDate);
-        double overallCTR = recommendationMetricsService.calculateCTR(startDate, endDate);
+        long totalImpressions = recommendationMetricsService.getTotalImpressions(startDt, endDt);
+        double overallCTR = recommendationMetricsService.calculateCTR(startDt, endDt);
 
         // 타입별 통계
         List<RecommendationMetricsDto.TypeStats> typeStats =
-                recommendationMetricsService.getTypeStats(startDate, endDate);
+                recommendationMetricsService.getTypeStats(startDt, endDt);
+
+        // 슬롯/소스별 통계 테이블
+        List<Map<String, Object>> sourceStats =
+                recommendationMetricsService.getSourceStats(startDt, endDt);
 
         // 타입별 통계를 각각 분리해서 템플릿으로 보냄
         RecommendationMetricsDto.TypeStats forYouStats = typeStats.stream()
@@ -359,7 +377,11 @@ public class AdminController {
         model.addAttribute("typeStats", typeStats);
         model.addAttribute("forYouStats", forYouStats);
         model.addAttribute("similarStats", similarStats);
-        model.addAttribute("days", days);
+        model.addAttribute("sourceStats", sourceStats);
+        model.addAttribute("days", days != null ? days : 0);
+        model.addAttribute("startDate", startDt.toLocalDate());
+        model.addAttribute("endDate", endDt.toLocalDate());
+        model.addAttribute("recommendationSlotMixSize", recommendationProperties.getSlotMixSize());
 
         return "admin/recommendations";
     }

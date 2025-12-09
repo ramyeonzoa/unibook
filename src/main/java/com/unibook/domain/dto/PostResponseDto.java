@@ -46,6 +46,9 @@ public class PostResponseDto {
     private String professorName;
     private String bookTitle;
     private String bookAuthor;
+
+    // 추천 소스 라벨 (예: personalized, popular, fresh, explore)
+    private String source;
     
     // User 정보를 담는 내부 DTO
     @Data

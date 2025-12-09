@@ -45,12 +45,18 @@ public class RecommendationMetricsService {
     // 3. 일별 메트릭
     List<RecommendationMetricsDto.DailyMetric> dailyMetrics = getDailyMetrics(startDate);
 
+    // 4. 슬롯/소스별 클릭/노출 (옵션 사용: null 키는 제외)
+    Map<String, Long> clicksBySource = calculateClicksBySourceLabel(startDate, endDate);
+    Map<String, Long> impressionsBySource = calculateImpressionsBySourceLabel(startDate, endDate);
+
     return RecommendationMetricsDto.Response.builder()
             .clicksByType(clicksByType)
             .totalClicks(totalClicks)
             .periodStart(startDate)
             .periodEnd(endDate)
             .dailyMetrics(dailyMetrics)
+            .clicksBySource(clicksBySource)
+            .impressionsBySource(impressionsBySource)
             .build();
   }
 
@@ -67,6 +73,70 @@ public class RecommendationMetricsService {
     }
 
     return clicksByType;
+  }
+
+  /**
+   * 슬롯/소스 라벨별 클릭 수
+   */
+  @Transactional(readOnly = true)
+  public Map<String, Long> calculateClicksBySourceLabel(LocalDateTime startDate, LocalDateTime endDate) {
+    Map<String, Long> clicksBySource = new HashMap<>();
+    List<Object[]> rows = clickRepository.countClicksBySourceLabel(startDate, endDate);
+    for (Object[] row : rows) {
+      String label = (String) row[0];
+      Long count = (Long) row[1];
+      if (label != null) {
+        clicksBySource.put(label, count);
+      }
+    }
+    return clicksBySource;
+  }
+
+  /**
+   * 슬롯/소스 라벨별 노출 수
+   */
+  @Transactional(readOnly = true)
+  public Map<String, Long> calculateImpressionsBySourceLabel(LocalDateTime startDate, LocalDateTime endDate) {
+    Map<String, Long> impressionsBySource = new HashMap<>();
+    List<Object[]> rows = impressionRepository.sumImpressionsBySourceLabel(startDate, endDate);
+    for (Object[] row : rows) {
+      String label = (String) row[0];
+      Long count = (Long) row[1];
+      if (label != null) {
+        impressionsBySource.put(label, count);
+      }
+    }
+    return impressionsBySource;
+  }
+
+  /**
+   * 슬롯/소스 라벨별 CTR 테이블 데이터
+   */
+  @Transactional(readOnly = true)
+  public List<Map<String, Object>> getSourceStats(LocalDateTime startDate, LocalDateTime endDate) {
+    Map<String, Long> clicks = calculateClicksBySourceLabel(startDate, endDate);
+    Map<String, Long> impressions = calculateImpressionsBySourceLabel(startDate, endDate);
+
+    Set<String> labels = new HashSet<>();
+    labels.addAll(clicks.keySet());
+    labels.addAll(impressions.keySet());
+    labels.remove(null);
+
+    List<Map<String, Object>> stats = new ArrayList<>();
+    for (String label : labels) {
+      long c = clicks.getOrDefault(label, 0L);
+      long i = impressions.getOrDefault(label, 0L);
+      double ctr = i == 0 ? 0.0 : Math.round((c * 10000.0 / i)) / 100.0;
+      Map<String, Object> row = new HashMap<>();
+      row.put("label", label);
+      row.put("clicks", c);
+      row.put("impressions", i);
+      row.put("ctr", ctr);
+      stats.add(row);
+    }
+
+    stats.sort(Comparator.comparing((Map<String, Object> m) -> (String) m.get("label")));
+    return stats;
   }
 
   /**

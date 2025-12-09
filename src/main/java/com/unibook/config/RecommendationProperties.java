@@ -34,6 +34,8 @@ public class RecommendationProperties {
   private int maxWishlistsToFetch = 15;
   private int maxViewsToFetch = 30;
   private int collaborativeCandidateLimit = 50;
+  private int personalizedCandidateLimit = 500;
+  private int similarCandidateLimit = 200;
 
   // 시간 감쇠 설정
   private double timeDecayLambda = 0.1;
@@ -44,4 +46,19 @@ public class RecommendationProperties {
   private double subjectWeight = 0.25;
   private double departmentWeight = 0.15;
   private double similarityRecencyWeight = 0.10;
+
+  // 슬롯 기반 믹싱 설정
+  private boolean slotMixEnabled = true;
+  private int slotMixSize = 10;
+  private double slotMixPersonalizedRatio = 1.0;
+  private double slotMixPopularRatio = 0.0;
+  private double slotMixFreshRatio = 0.0;
+  private double slotMixExploreEpsilon = 0.0;
+  private int slotMixExploreSize = 2;
+  private int slotMixPopularLookbackDays = 7;
+  private int slotMixFreshWindowDays = 2;
+  private int slotMixPopularCacheSize = 50;
+  private int slotMixFreshCacheSize = 50;
+  private int slotMixPopularCacheTtlSeconds = 60;
+  private int slotMixFreshCacheTtlSeconds = 60;
 }

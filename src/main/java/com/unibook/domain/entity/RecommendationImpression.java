@@ -73,6 +73,13 @@ public class RecommendationImpression {
   @Column(name = "source_post_id")
   private Long sourcePostId;
 
+  /**
+   * 추천 슬롯/소스 라벨 (personalized, popular, fresh, explore 등)
+   * 집계용. 개별 아이템 노출 단위가 아닌 페이지 단위면 null 가능.
+   */
+  @Column(name = "source_label", length = 30)
+  private String sourceLabel;
+
   @PrePersist
   protected void onCreate() {
     if (impressedAt == null) {

@@ -122,6 +122,8 @@ recommendation:
   max-wishlists-to-fetch: 15
   max-views-to-fetch: 30
   collaborative-candidate-limit: 50
+  personalized-candidate-limit: 500
+  similar-candidate-limit: 200
   time-decay-lambda: 0.1
   time-decay-threshold-days: 7
   default-content-weight: 0.90
@@ -134,3 +136,17 @@ recommendation:
   subject-weight: 0.25
   department-weight: 0.15
   similarity-recency-weight: 0.10
+  # ▼ 슬롯 기반 믹싱
+  slot-mix-enabled: true
+  slot-mix-size: 12
+  slot-mix-personalized-ratio: 0.6
+  slot-mix-popular-ratio: 0.2
+  slot-mix-fresh-ratio: 0.2
+  slot-mix-explore-epsilon: 0.1
+  slot-mix-explore-size: 1
+  slot-mix-popular-lookback-days: 365
+  slot-mix-fresh-window-days: 365
+  slot-mix-popular-cache-size: 50
+  slot-mix-fresh-cache-size: 50
+  slot-mix-popular-cache-ttl-seconds: 60
+  slot-mix-fresh-cache-ttl-seconds: 60

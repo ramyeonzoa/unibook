@@ -91,4 +91,13 @@ public interface RecommendationClickRepository extends JpaRepository<Recommendat
            "WHERE rc.user.userId = :userId " +
            "ORDER BY rc.clickedAt DESC")
     List<Object[]> findRecentClicksWithTimestampByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    /**
+     * 슬롯/소스 라벨별 클릭 수 통계 (기간 필터)
+     */
+    @Query("SELECT rc.sourceLabel, COUNT(rc) FROM RecommendationClick rc " +
+           "WHERE rc.clickedAt BETWEEN :start AND :end " +
+           "GROUP BY rc.sourceLabel")
+    List<Object[]> countClicksBySourceLabel(@Param("start") LocalDateTime start,
+                                             @Param("end") LocalDateTime end);
 }

@@ -87,4 +87,13 @@ public interface RecommendationImpressionRepository extends JpaRepository<Recomm
          "WHERE ri.impressedAt BETWEEN :start AND :end")
   long countDistinctSessionsByPeriod(@Param("start") LocalDateTime start,
                                      @Param("end") LocalDateTime end);
+
+  /**
+   * 슬롯/소스 라벨별 노출 수 통계 (기간 필터)
+   */
+  @Query("SELECT ri.sourceLabel, COALESCE(SUM(ri.count), 0) FROM RecommendationImpression ri " +
+         "WHERE ri.impressedAt BETWEEN :start AND :end " +
+         "GROUP BY ri.sourceLabel")
+  List<Object[]> sumImpressionsBySourceLabel(@Param("start") LocalDateTime start,
+                                             @Param("end") LocalDateTime end);
 }

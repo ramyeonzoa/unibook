@@ -99,10 +99,29 @@
       color: #ffc107;
     }
 
-    [data-bs-theme="dark"] .stat-icon.similar {
-      background: rgba(114, 28, 36, 0.2);
-      color: #ff6b7a;
-    }
+  [data-bs-theme="dark"] .stat-icon.similar {
+    background: rgba(114, 28, 36, 0.2);
+    color: #ff6b7a;
+  }
+
+  /* 기간 선택 버튼 스타일 */
+  .range-btn {
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-weight: 600;
+  }
+  .range-btn.active,
+  .range-btn:hover {
+    background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+    color: #fff !important;
+    border-color: transparent;
+  }
+  .range-form {
+    gap: 8px;
+  }
+  .range-input {
+    min-width: 110px;
+  }
   </style>
 </head>
 <body>
@@ -125,16 +144,26 @@
 
           <!-- 기간 선택 -->
           <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-              <button type="button" class="btn btn-sm btn-outline-secondary"
-                      th:classappend="${days == 7} ? 'active' : ''"
-                      onclick="location.href='/admin/recommendations?days=7'">7일</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary"
-                      th:classappend="${days == 30} ? 'active' : ''"
-                      onclick="location.href='/admin/recommendations?days=30'">30일</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary"
-                      th:classappend="${days == 90} ? 'active' : ''"
-                      onclick="location.href='/admin/recommendations?days=90'">90일</button>
+            <div class="d-flex align-items-center range-form">
+              <div class="btn-group">
+                <button type="button" class="btn btn-sm range-btn"
+                        th:classappend="${days == 7} ? ' active' : ' btn-outline-secondary'"
+                        onclick="location.href='/admin/recommendations?days=7'">7일</button>
+                <button type="button" class="btn btn-sm range-btn"
+                        th:classappend="${days == 30} ? ' active' : ' btn-outline-secondary'"
+                        onclick="location.href='/admin/recommendations?days=30'">30일</button>
+                <button type="button" class="btn btn-sm range-btn"
+                        th:classappend="${days == 90} ? ' active' : ' btn-outline-secondary'"
+                        onclick="location.href='/admin/recommendations?days=90'">90일</button>
+              </div>
+              <form class="d-flex align-items-center ms-2 range-form" method="get" action="/admin/recommendations">
+                <input type="date" name="startDate" class="form-control form-control-sm range-input"
+                       th:value="${startDate}">
+                <span class="mx-1 text-muted">~</span>
+                <input type="date" name="endDate" class="form-control form-control-sm range-input"
+                       th:value="${endDate}">
+                <button type="submit" class="btn btn-sm btn-outline-primary">조회</button>
+              </form>
             </div>
           </div>
         </div>
@@ -281,6 +310,60 @@
           </div>
         </div>
 
+        <!-- 슬롯/소스별 클릭/노출/CTR -->
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <div class="chart-card p-4">
+              <h5 class="mb-4">소스별 CTR (클릭/노출)</h5>
+              <div class="chart-container">
+                <canvas id="sourceCtrChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="chart-card p-4">
+              <h5 class="mb-4">소스별 클릭·노출 수</h5>
+              <div class="chart-container">
+                <canvas id="sourceCombinedChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 소스별 테이블 -->
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <div class="chart-card p-4">
+              <h5 class="mb-3">소스별 상세</h5>
+              <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                  <thead>
+                    <tr>
+                      <th scope="col">소스</th>
+                      <th scope="col" class="text-end">클릭</th>
+                      <th scope="col" class="text-end">노출</th>
+                      <th scope="col" class="text-end">CTR (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr th:each="row : ${sourceStats}">
+                      <td th:text="${row['label']} ?: 'N/A'">personalized</td>
+                      <td class="text-end" th:text="${row['clicks']} ?: 0">0</td>
+                      <td class="text-end" th:text="${row['impressions']} ?: 0">0</td>
+                      <td class="text-end">
+                        <span th:text="${row['ctr']} ?: 0.0">0.0</span>%
+                      </td>
+                    </tr>
+                    <tr th:if="${sourceStats == null or #lists.isEmpty(sourceStats)}">
+                      <td colspan="4" class="text-center text-muted">데이터가 없습니다</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -354,6 +437,93 @@
         legend: {
           position: 'bottom',
         }
+      }
+    }
+  });
+
+  // 슬롯/소스별 바 차트 데이터 준비
+  const clicksBySource = /*[[${metrics.clicksBySource}]]*/ {};
+  const impressionsBySource = /*[[${metrics.impressionsBySource}]]*/ {};
+
+  const sourceLabels = Array.from(new Set([
+    ...Object.keys(clicksBySource || {}),
+    ...Object.keys(impressionsBySource || {})
+  ])).filter(l => l); // null 제외
+
+  const sourceClicksData = sourceLabels.map(label => clicksBySource[label] || 0);
+  const sourceImpressionsData = sourceLabels.map(label => impressionsBySource[label] || 0);
+
+  // 소스별 CTR 계산 (노출 0이면 0)
+  const sourceCtrData = sourceLabels.map(label => {
+    const imp = sourceImpressionsData[sourceLabels.indexOf(label)];
+    const clk = sourceClicksData[sourceLabels.indexOf(label)];
+    if (!imp || imp === 0) return 0;
+    return (clk * 100.0) / imp;
+  });
+
+  const sourceCtrCtx = document.getElementById('sourceCtrChart').getContext('2d');
+  new Chart(sourceCtrCtx, {
+    type: 'bar',
+    data: {
+      labels: sourceLabels,
+      datasets: [{
+        label: 'CTR (%)',
+        data: sourceCtrData,
+        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+        borderColor: '#667eea',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `CTR: ${parseFloat(context.raw).toFixed(2)}%`;
+            }
+          }
+        }
+      },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  // 소스별 클릭/노출 grouped bar
+  const sourceCombinedCtx = document.getElementById('sourceCombinedChart').getContext('2d');
+  new Chart(sourceCombinedCtx, {
+    type: 'bar',
+    data: {
+      labels: sourceLabels,
+      datasets: [
+        {
+          label: '노출 수',
+          data: sourceImpressionsData,
+          backgroundColor: 'rgba(52, 211, 153, 0.5)',
+          borderColor: '#34d399',
+          borderWidth: 1
+        },
+        {
+          label: '클릭 수',
+          data: sourceClicksData,
+          backgroundColor: 'rgba(102, 126, 234, 0.6)',
+          borderColor: '#667eea',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      },
+      scales: {
+        y: { beginAtZero: true }
       }
     }
   });

@@ -20,6 +20,8 @@ public class RecommendationMetricsDto {
   @NoArgsConstructor @AllArgsConstructor
   public static class Response {
     private Map<String, Long> clicksByType;  // 타입별 클릭 수
+    private Map<String, Long> clicksBySource; // 슬롯/소스별 클릭 수
+    private Map<String, Long> impressionsBySource; // 슬롯/소스별 노출 수
     private Long totalClicks;  // 총 클릭 수
     private LocalDateTime periodStart;  // 조회 기간 시작
     private LocalDateTime periodEnd;  // 조회 기간 종료
@@ -76,6 +78,7 @@ public class RecommendationMetricsDto {
     private String type;  // "FOR_YOU" or "SIMILAR"
     private Integer position;
     private Long sourcePostId;  // SIMILAR 타입일 경우만
+    private String sourceLabel; // 슬롯/소스 라벨 (optional)
 
     public RecommendationType getTypeEnum() {
       return RecommendationType.valueOf(type);
@@ -94,6 +97,7 @@ public class RecommendationMetricsDto {
     private Integer count;  // 노출된 추천 개수
     private String pageType;  // "main", "detail", "list" 등
     private Long sourcePostId;  // SIMILAR 타입일 경우만
+    private String sourceLabel; // 슬롯/소스 라벨 (optional)
 
     public RecommendationType getTypeEnum() {
       return RecommendationType.valueOf(type);

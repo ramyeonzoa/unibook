@@ -141,9 +141,6 @@ function loadPersonalizedRecommendations(limit = 10) {
   .then(data => {
     if (data.success && data.recommendations && data.recommendations.length > 0) {
       renderMainPageRecommendations(wrapper, data.recommendations);
-
-      // 노출 추적 (5분 중복 윈도우는 서버에서 처리)
-      trackRecommendationImpression('FOR_YOU', data.recommendations.length, 'main', null);
     } else {
       // 추천할 게시글이 없을 때
       wrapper.innerHTML = `
@@ -193,9 +190,6 @@ function loadSimilarPosts(postId, limit = 6) {
   .then(data => {
     if (data.success && data.similarPosts && data.similarPosts.length > 0) {
       renderDetailPageSimilarPosts(container, data.similarPosts);
-
-      // 노출 추적 (5분 중복 윈도우는 서버에서 처리)
-      trackRecommendationImpression('SIMILAR', data.similarPosts.length, 'detail', postId);
     } else {
       container.innerHTML = `
         <p class="text-muted text-center">비슷한 게시글이 없습니다</p>
@@ -244,6 +238,21 @@ function renderMainPageRecommendations(wrapper, posts) {
 
   // 캐러셀 초기화
   initRecommendationCarousel();
+
+  // 노출 추적: 슬롯 라벨별 집계가 있으면 라벨 단위로 전송
+  const hasSource = posts.some(p => p.source);
+  if (hasSource) {
+    const countsBySource = {};
+    posts.forEach(p => {
+      const label = p.source || 'unknown';
+      countsBySource[label] = (countsBySource[label] || 0) + 1;
+    });
+    Object.entries(countsBySource).forEach(([label, count]) => {
+      trackRecommendationImpression('FOR_YOU', count, 'main', null, label);
+    });
+  } else {
+    trackRecommendationImpression('FOR_YOU', posts.length, 'main', null, null);
+  }
 }
 
 /**
@@ -289,6 +298,21 @@ function renderDetailPageSimilarPosts(container, posts) {
       });
     }
   }, 150);
+
+  // 노출 추적: 슬롯 라벨별 집계가 있으면 라벨 단위로 전송
+  const hasSource = posts.some(p => p.source);
+  if (hasSource) {
+    const countsBySource = {};
+    posts.forEach(p => {
+      const label = p.source || 'unknown';
+      countsBySource[label] = (countsBySource[label] || 0) + 1;
+    });
+    Object.entries(countsBySource).forEach(([label, count]) => {
+      trackRecommendationImpression('SIMILAR', count, 'detail', sourcePostId, label);
+    });
+  } else {
+    trackRecommendationImpression('SIMILAR', posts.length, 'detail', sourcePostId, null);
+  }
 }
 
 /**
@@ -302,9 +326,10 @@ function createMainPageCard(post, position) {
   const formattedPrice = formatPrice(post.price);
   const formattedDate = formatDate(post.createdAt);
   const schoolName = post.user?.schoolName || '학교 정보 없음';
+  const sourceLabel = post.source || null;
 
   return `
-    <div class="post-card" onclick="trackRecommendationClick(${post.postId}, 'FOR_YOU', ${position}); window.location.href='/posts/${post.postId}'">
+    <div class="post-card" onclick="trackRecommendationClick(${post.postId}, 'FOR_YOU', ${position}, null, ${sourceLabel ? `'${sourceLabel}'` : 'null'}); window.location.href='/posts/${post.postId}'">
       <div class="post-card-image ${hasImage ? 'has-image' : ''}">
         <!-- 상태 배지 -->
         <span class="status-badge ${statusInfo.className}">
@@ -353,10 +378,11 @@ function createDetailPageCard(post, position, sourcePostId) {
   const statusInfo = getStatusInfo(post.status);
   const formattedPrice = formatPrice(post.price);
   const formattedDate = formatDetailDate(post.createdAt);
+  const sourceLabel = post.source || null;
 
   return `
     <div class="swiper-slide">
-      <a href="/posts/${post.postId}" class="text-decoration-none" onclick="trackRecommendationClick(${post.postId}, 'SIMILAR', ${position}, ${sourcePostId}); return true;">
+      <a href="/posts/${post.postId}" class="text-decoration-none" onclick="trackRecommendationClick(${post.postId}, 'SIMILAR', ${position}, ${sourcePostId}, ${sourceLabel ? `'${sourceLabel}'` : 'null'}); return true;">
         <div class="related-card">
           <!-- 이미지 -->
           <div class="related-card-image">
@@ -637,13 +663,14 @@ function stopRecAutoplay() {
  * @param {number} position - 추천 목록 내 위치 (0부터 시작)
  * @param {number|null} sourcePostId - SIMILAR 타입일 경우 기준 게시글 ID
  */
-function trackRecommendationClick(postId, type, position, sourcePostId = null) {
+function trackRecommendationClick(postId, type, position, sourcePostId = null, sourceLabel = null) {
   const url = '/api/recommendations/track-click';
   const payload = {
     postId: postId,
     type: type,
     position: position,
-    sourcePostId: sourcePostId
+    sourcePostId: sourcePostId,
+    sourceLabel: sourceLabel
   };
   const body = JSON.stringify(payload);
 
@@ -684,7 +711,7 @@ function trackRecommendationClick(postId, type, position, sourcePostId = null) {
  * @param {string} pageType - 페이지 타입 ("main", "detail" 등)
  * @param {number|null} sourcePostId - SIMILAR 타입일 경우 기준 게시글 ID
  */
-function trackRecommendationImpression(type, count, pageType, sourcePostId = null) {
+function trackRecommendationImpression(type, count, pageType, sourcePostId = null, sourceLabel = null) {
   if (count <= 0) return;
 
   const sessionId = SessionManager.getSessionId();
@@ -703,7 +730,8 @@ function trackRecommendationImpression(type, count, pageType, sourcePostId = nul
       type: type,
       count: count,
       pageType: pageType,
-      sourcePostId: sourcePostId
+      sourcePostId: sourcePostId,
+      sourceLabel: sourceLabel
     })
   }).catch(err => {
     // 실패해도 사용자에게 영향 없음
@@ -715,7 +743,8 @@ function trackRecommendationImpression(type, count, pageType, sourcePostId = nul
 document.addEventListener('DOMContentLoaded', function() {
   // 메인 페이지 추천
   if (document.getElementById('recommendations-wrapper')) {
-    loadPersonalizedRecommendations(10);
+    const mixSize = /*[[${recommendationSlotMixSize}]]*/ 10;
+    loadPersonalizedRecommendations(mixSize);
   }
 
   // 상세 페이지 비슷한 게시글

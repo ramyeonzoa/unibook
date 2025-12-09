@@ -38,7 +38,7 @@ public class RecommendationClickService {
   @Async
   @Transactional
   public void recordClick(Long postId, Long userId, RecommendationType type,
-                          Integer position, Long sourcePostId) {
+                          Integer position, Long sourcePostId, String sourceLabel) {
     try {
       Post post = postRepository.findById(postId).orElse(null);
       if (post == null) {
@@ -61,6 +61,7 @@ public class RecommendationClickService {
               .type(type)
               .position(position)
               .sourcePostId(sourcePostId)
+              .sourceLabel(sourceLabel)
               .clickedAt(LocalDateTime.now())
               .build();
 

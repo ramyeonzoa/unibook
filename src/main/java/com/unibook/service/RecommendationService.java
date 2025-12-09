@@ -14,10 +14,13 @@ import com.unibook.repository.RecommendationClickRepository;
 import com.unibook.repository.WishlistRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -40,6 +43,19 @@ public class RecommendationService {
     private final PostViewService postViewService;
     private final RecommendationClickRepository recommendationClickRepository;
     private final WishlistRepository wishlistRepository;
+    private final Object cacheLock = new Object();
+
+    private CachedPool popularCache;
+    private CachedPool freshCache;
+
+    private record CachedPool(List<Post> posts, Instant expiresAt, int windowDays, int size) {
+        boolean isValid(int currentWindowDays, int currentSize) {
+            return expiresAt != null
+                    && expiresAt.isAfter(Instant.now())
+                    && this.windowDays == currentWindowDays
+                    && this.size == currentSize;
+        }
+    }
 
     private record CollaborativeContext(Map<Long, Long> viewCounts, long maxViewCount) {
         static CollaborativeContext empty() {
@@ -67,19 +83,35 @@ public class RecommendationService {
     @Transactional(readOnly = true)
     public List<PostResponseDto> getPersonalizedRecommendations(Long userId, int limit) {
         try {
+            int targetSize = recommendationProperties.isSlotMixEnabled()
+                    ? Math.min(limit, recommendationProperties.getSlotMixSize())
+                    : limit;
+
             // 1. 적응형 가중치 계산
             RecommendationWeights weights = calculateAdaptiveWeights(userId);
             log.debug("추천 가중치: strategy={}, content={}, collaborative={}",
                     weights.getStrategy(), weights.getContent(), weights.getCollaborative());
 
-            // 2. 후보 게시글 조회 (AVAILABLE만)
-            List<Post> candidates = postRepository.findByStatus(Post.PostStatus.AVAILABLE);
+            int candidateLimit = recommendationProperties.getPersonalizedCandidateLimit();
+            List<Post> candidates = fetchAvailablePosts(candidateLimit);
 
             // 본인 글 제외
             if (userId != null) {
                 candidates = candidates.stream()
                         .filter(p -> !p.getUser().getUserId().equals(userId))
                         .collect(Collectors.toList());
+            }
+            if (candidates.size() < limit) {
+                // 너무 적으면 기존 방식으로 한 번 더 채워서 커버리지 확보
+                List<Post> fallback = postRepository.findByStatus(Post.PostStatus.AVAILABLE);
+                if (userId != null) {
+                    fallback = fallback.stream()
+                            .filter(p -> !p.getUser().getUserId().equals(userId))
+                            .collect(Collectors.toList());
+                }
+                if (!fallback.isEmpty()) {
+                    candidates = fallback;
+                }
             }
 
             if (candidates.isEmpty()) {
@@ -119,19 +151,11 @@ public class RecommendationService {
                 scores.put(post.getPostId(), finalScore);
             }
 
-            // 7. 점수 순으로 정렬하여 상위 N개 반환
-            List<Long> topPostIds = scores.entrySet().stream()
-                    .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
-                    .limit(limit)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList());
-
-            // 8. DTO 변환 (순서 유지)
-            return candidates.stream()
-                    .filter(p -> topPostIds.contains(p.getPostId()))
-                    .sorted(Comparator.comparingInt(p -> topPostIds.indexOf(p.getPostId())))
-                    .map(PostResponseDto::from)
-                    .collect(Collectors.toList());
+            // 7. 슬롯 믹싱 토글에 따라 결과 생성
+            if (recommendationProperties.isSlotMixEnabled()) {
+                return buildSlotMixedRecommendations(candidates, scores, targetSize, userId);
+            }
+            return buildPersonalizedOnlyRecommendations(candidates, scores, targetSize);
 
         } catch (Exception e) {
             log.error("추천 시스템 오류", e);
@@ -155,11 +179,21 @@ public class RecommendationService {
             }
             Post basePost = basePostOpt.get();
 
-            // 후보 게시글 조회 (AVAILABLE만, 본인 글 제외)
-            List<Post> candidates = postRepository.findByStatus(Post.PostStatus.AVAILABLE).stream()
+            int candidateLimit = recommendationProperties.getSimilarCandidateLimit();
+            List<Post> candidates = fetchAvailablePosts(candidateLimit);
+            candidates = candidates.stream()
                     .filter(p -> !p.getPostId().equals(postId))
                     .filter(p -> !p.getUser().getUserId().equals(basePost.getUser().getUserId()))
                     .collect(Collectors.toList());
+            if (candidates.size() < limit) {
+                List<Post> fallback = postRepository.findByStatus(Post.PostStatus.AVAILABLE).stream()
+                        .filter(p -> !p.getPostId().equals(postId))
+                        .filter(p -> !p.getUser().getUserId().equals(basePost.getUser().getUserId()))
+                        .collect(Collectors.toList());
+                if (!fallback.isEmpty()) {
+                    candidates = fallback;
+                }
+            }
 
             // 유사도 점수 계산
             Map<Long, Double> scores = new HashMap<>();
@@ -185,6 +219,22 @@ public class RecommendationService {
         } catch (Exception e) {
             log.error("비슷한 게시글 추천 오류", e);
             return Collections.emptyList();
+        }
+    }
+
+    private List<Post> fetchAvailablePosts(int limit) {
+        if (limit <= 0) {
+            return postRepository.findByStatus(Post.PostStatus.AVAILABLE);
+        }
+        try {
+            Page<Post> page = postRepository.findByStatus(
+                    Post.PostStatus.AVAILABLE,
+                    PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "createdAt"))
+            );
+            return page.getContent();
+        } catch (Exception e) {
+            log.warn("후보 게시글 페이지 조회 실패, 전체 조회로 대체", e);
+            return postRepository.findByStatus(Post.PostStatus.AVAILABLE);
         }
     }
 
@@ -229,8 +279,8 @@ public class RecommendationService {
         return RecommendationWeights.builder()
                 .content(recommendationProperties.getDefaultContentWeight())
                 .collaborative(recommendationProperties.getDefaultCollaborativeWeight())
-                .popularity(0.0)
-                .recency(0.0)
+                .popularity(0.0) // 현재 미사용
+                .recency(0.0) // 현재 미사용
                 .strategy("content-heavy")
                 .build();
     }
@@ -364,6 +414,238 @@ public class RecommendationService {
             log.warn("Collaborative 데이터 조회 실패: userId={}", userId, e);
             return CollaborativeContext.empty();
         }
+    }
+
+    /**
+     * 슬롯 믹싱 미사용 시 기존 순위만 반환
+     */
+    private List<PostResponseDto> buildPersonalizedOnlyRecommendations(List<Post> candidates,
+                                                                       Map<Long, Double> scores,
+                                                                       int limit) {
+        List<Long> topPostIds = scores.entrySet().stream()
+                .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
+                .limit(limit)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+
+        return candidates.stream()
+                .filter(p -> topPostIds.contains(p.getPostId()))
+                .sorted(Comparator.comparingInt(p -> topPostIds.indexOf(p.getPostId())))
+                .map(PostResponseDto::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 슬롯 믹싱 경로: 개인화/인기/신선/탐험 비율로 섞기
+     */
+    private List<PostResponseDto> buildSlotMixedRecommendations(List<Post> candidates,
+                                                                Map<Long, Double> scores,
+                                                                int limit,
+                                                                Long userId) {
+        if (limit <= 0) {
+            return Collections.emptyList();
+        }
+
+        Map<Long, Post> candidateMap = candidates.stream()
+                .collect(Collectors.toMap(Post::getPostId, p -> p));
+
+        List<Post> personalizedSorted = scores.entrySet().stream()
+                .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
+                .map(entry -> candidateMap.get(entry.getKey()))
+                .filter(Objects::nonNull)
+                .toList();
+
+        LocalDateTime now = LocalDateTime.now();
+        List<Post> popularCandidates = getPopularCandidates(now, userId);
+        List<Post> freshCandidates = getFreshCandidates(now, userId);
+        for (Post post : popularCandidates) {
+            candidateMap.putIfAbsent(post.getPostId(), post);
+        }
+        for (Post post : freshCandidates) {
+            candidateMap.putIfAbsent(post.getPostId(), post);
+        }
+
+        double pRatio = recommendationProperties.getSlotMixPersonalizedRatio();
+        double popRatio = recommendationProperties.getSlotMixPopularRatio();
+        double freshRatio = recommendationProperties.getSlotMixFreshRatio();
+        double epsilon = recommendationProperties.getSlotMixExploreEpsilon();
+
+        double ratioSum = pRatio + popRatio + freshRatio;
+        if (ratioSum <= 0) {
+            return buildPersonalizedOnlyRecommendations(candidates, scores, limit);
+        }
+
+        // 비율 정규화
+        pRatio /= ratioSum;
+        popRatio /= ratioSum;
+        freshRatio /= ratioSum;
+
+        // 탐험 슬롯 수 계산 (epsilon 비율 기반, explore-size 상한)
+        int exploreTarget = (int) Math.floor(limit * epsilon);
+        exploreTarget = Math.min(exploreTarget, recommendationProperties.getSlotMixExploreSize());
+        exploreTarget = Math.min(exploreTarget, Math.max(0, limit));
+
+        // 나머지 슬롯을 비율대로 할당
+        int remainingSlots = Math.max(0, limit - exploreTarget);
+        int personalizedTarget = (int) Math.floor(remainingSlots * pRatio);
+        int popularTarget = (int) Math.floor(remainingSlots * popRatio);
+        int freshTarget = (int) Math.floor(remainingSlots * freshRatio);
+
+        // 반올림으로 부족분 보정
+        int allocated = personalizedTarget + popularTarget + freshTarget;
+        int deficit = Math.max(0, remainingSlots - allocated);
+        personalizedTarget += deficit; // 부족분은 개인화에 보충
+
+        LinkedHashMap<Long, String> selected = new LinkedHashMap<>();
+
+        fillWithLabel(selected, personalizedSorted, personalizedTarget, "personalized", limit);
+        fillWithLabel(selected, popularCandidates, popularTarget, "popular", limit);
+        fillWithLabel(selected, freshCandidates, freshTarget, "fresh", limit);
+
+        if (exploreTarget > 0 && selected.size() < limit) {
+            exploreTarget = Math.min(exploreTarget, limit - selected.size());
+            List<Post> explorePool = !freshCandidates.isEmpty() ? freshCandidates : candidates;
+            addRandomExplore(selected, explorePool, exploreTarget, "explore", limit);
+        }
+
+        if (selected.size() < limit) {
+            fillWithLabel(selected, personalizedSorted, limit - selected.size(), "personalized", limit);
+        }
+
+        List<PostResponseDto> result = new ArrayList<>();
+        for (Map.Entry<Long, String> entry : selected.entrySet()) {
+            Long postId = entry.getKey();
+            String source = entry.getValue();
+            Post post = candidateMap.get(postId);
+            if (post != null) {
+                PostResponseDto dto = PostResponseDto.from(post);
+                dto.setSource(source);
+                result.add(dto);
+            }
+        }
+
+        return result.size() > limit ? result.subList(0, limit) : result;
+    }
+
+    private void fillWithLabel(LinkedHashMap<Long, String> selected,
+                               List<Post> pool,
+                               int targetCount,
+                               String label,
+                               int limit) {
+        if (targetCount <= 0 || pool == null || pool.isEmpty()) {
+            return;
+        }
+        int added = 0;
+        for (Post post : pool) {
+            if (selected.size() >= limit) {
+                break;
+            }
+            if (!selected.containsKey(post.getPostId())) {
+                selected.put(post.getPostId(), label);
+                added++;
+                if (added >= targetCount) {
+                    break;
+                }
+            }
+        }
+    }
+
+    private void addRandomExplore(LinkedHashMap<Long, String> selected,
+                                  List<Post> pool,
+                                  int targetCount,
+                                  String label,
+                                  int limit) {
+        if (targetCount <= 0 || pool == null || pool.isEmpty()) {
+            return;
+        }
+        List<Post> shuffled = new ArrayList<>(pool);
+        Collections.shuffle(shuffled);
+        int added = 0;
+        for (Post post : shuffled) {
+            if (selected.size() >= limit) {
+                break;
+            }
+            if (selected.containsKey(post.getPostId())) {
+                continue;
+            }
+            selected.put(post.getPostId(), label);
+            added++;
+            if (added >= targetCount) {
+                break;
+            }
+        }
+    }
+
+    private List<Post> getPopularCandidates(LocalDateTime now, Long userId) {
+        int lookbackDays = Math.max(0, recommendationProperties.getSlotMixPopularLookbackDays());
+        int cacheSize = recommendationProperties.getSlotMixPopularCacheSize();
+        int ttlSeconds = recommendationProperties.getSlotMixPopularCacheTtlSeconds();
+        List<Post> cached;
+
+        synchronized (cacheLock) {
+            if (popularCache != null && popularCache.isValid(lookbackDays, cacheSize)) {
+                cached = popularCache.posts();
+            } else {
+                LocalDateTime threshold = now.minusDays(lookbackDays);
+                try {
+                    Page<Post> page = postRepository.findByStatusAndCreatedAtAfter(
+                            Post.PostStatus.AVAILABLE,
+                            threshold,
+                            PageRequest.of(0, cacheSize, Sort.by(Sort.Direction.DESC, "viewCount"))
+                    );
+                    cached = page.getContent();
+                } catch (Exception e) {
+                    log.warn("인기 풀 조회 실패, 전체 조회로 대체", e);
+                    cached = postRepository.findByStatus(Post.PostStatus.AVAILABLE, PageRequest.of(0, cacheSize,
+                            Sort.by(Sort.Direction.DESC, "viewCount"))).getContent();
+                }
+                popularCache = new CachedPool(cached, Instant.now().plusSeconds(ttlSeconds), lookbackDays, cacheSize);
+            }
+        }
+
+        return filterExcludedPosts(cached, userId);
+    }
+
+    private List<Post> getFreshCandidates(LocalDateTime now, Long userId) {
+        int windowDays = Math.max(0, recommendationProperties.getSlotMixFreshWindowDays());
+        int cacheSize = recommendationProperties.getSlotMixFreshCacheSize();
+        int ttlSeconds = recommendationProperties.getSlotMixFreshCacheTtlSeconds();
+        List<Post> cached;
+
+        synchronized (cacheLock) {
+            if (freshCache != null && freshCache.isValid(windowDays, cacheSize)) {
+                cached = freshCache.posts();
+            } else {
+                LocalDateTime threshold = now.minusDays(windowDays);
+                try {
+                    Page<Post> page = postRepository.findByStatusAndCreatedAtAfter(
+                            Post.PostStatus.AVAILABLE,
+                            threshold,
+                            PageRequest.of(0, cacheSize, Sort.by(Sort.Direction.DESC, "createdAt"))
+                    );
+                    cached = page.getContent();
+                } catch (Exception e) {
+                    log.warn("신선 풀 조회 실패, 전체 조회로 대체", e);
+                    cached = postRepository.findByStatus(Post.PostStatus.AVAILABLE, PageRequest.of(0, cacheSize,
+                            Sort.by(Sort.Direction.DESC, "createdAt"))).getContent();
+                }
+                freshCache = new CachedPool(cached, Instant.now().plusSeconds(ttlSeconds), windowDays, cacheSize);
+            }
+        }
+
+        return filterExcludedPosts(cached, userId);
+    }
+
+    private List<Post> filterExcludedPosts(List<Post> posts, Long userId) {
+        if (posts == null || posts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (userId == null) {
+            return posts;
+        }
+        return posts.stream()
+                .filter(p -> p.getUser() != null && !Objects.equals(p.getUser().getUserId(), userId))
+                .toList();
     }
 
     /**

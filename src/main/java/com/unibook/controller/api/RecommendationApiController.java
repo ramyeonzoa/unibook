@@ -94,9 +94,9 @@ public class RecommendationApiController {
      * POST /api/recommendations/track-click
      */
     @PostMapping("/track-click")
-    public ResponseEntity<Map<String, Object>> trackClick(
-            @RequestBody RecommendationMetricsDto.ClickTrackingRequest request,
-            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+  public ResponseEntity<Map<String, Object>> trackClick(
+          @RequestBody RecommendationMetricsDto.ClickTrackingRequest request,
+          @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             Long userId = userPrincipal != null ? userPrincipal.getUserId() : null;
@@ -110,7 +110,8 @@ public class RecommendationApiController {
                     userId,
                     request.getTypeEnum(),
                     request.getPosition(),
-                    request.getSourcePostId()
+                    request.getSourcePostId(),
+                    request.getSourceLabel()
             );
 
             return ResponseEntity.ok(Map.of("success", true));
@@ -127,9 +128,9 @@ public class RecommendationApiController {
      * POST /api/recommendations/track-impression
      */
     @PostMapping("/track-impression")
-    public ResponseEntity<Map<String, Object>> trackImpression(
-            @RequestBody RecommendationMetricsDto.ImpressionTrackingRequest request,
-            @AuthenticationPrincipal UserPrincipal userPrincipal) {
+  public ResponseEntity<Map<String, Object>> trackImpression(
+          @RequestBody RecommendationMetricsDto.ImpressionTrackingRequest request,
+          @AuthenticationPrincipal UserPrincipal userPrincipal) {
 
         try {
             Long userId = userPrincipal != null ? userPrincipal.getUserId() : null;
@@ -145,7 +146,8 @@ public class RecommendationApiController {
                     request.getTypeEnum(),
                     request.getCount(),
                     request.getPageType(),
-                    request.getSourcePostId()
+                    request.getSourcePostId(),
+                    request.getSourceLabel()
             );
 
             return ResponseEntity.ok(Map.of("success", true));

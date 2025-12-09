@@ -40,7 +40,7 @@ public class RecommendationImpressionService {
   @Async
   @Transactional
   public void recordImpression(String sessionId, Long userId, RecommendationType type,
-                                Integer count, String pageType, Long sourcePostId) {
+                                Integer count, String pageType, Long sourcePostId, String sourceLabel) {
     try {
       // 입력 검증
       if (sessionId == null || sessionId.trim().isEmpty()) {
@@ -81,6 +81,7 @@ public class RecommendationImpressionService {
               .count(count)
               .pageType(pageType)
               .sourcePostId(sourcePostId)
+              .sourceLabel(sourceLabel)
               .impressedAt(LocalDateTime.now())
               .build();
 
